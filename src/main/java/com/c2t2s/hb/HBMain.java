@@ -1,8 +1,7 @@
-package com.ct2ts.hb;
+package com.c2t2s.hb;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
-import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 
 import java.util.HashMap;
