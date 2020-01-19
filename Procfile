@@ -1,1 +1,1 @@
-web: java -cp target/classes:target/dependency/* com.c2t2s.hb.HBMain $BOT_TOKEN
+web: java -Dserver.port=$PORT -cp target/classes:target/dependency/* com.c2t2s.hb.HBMain $BOT_TOKEN
