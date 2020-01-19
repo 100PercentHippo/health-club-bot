@@ -14,6 +14,9 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="MavenImportPreferences">
     <option name="importingSettings">
       <MavenImportingSettings>
@@ -77,26 +80,26 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="828" y="239" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1579399855400">
+    <state x="828" y="239" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1579402317345">
       <screen x="0" y="0" width="1920" height="1160" />
     </state>
-    <state x="828" y="239" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579399855400" />
-    <state width="914" height="321" key="GridCell.Tab.0.bottom" timestamp="1579400617761">
+    <state x="828" y="239" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579402317345" />
+    <state width="914" height="321" key="GridCell.Tab.0.bottom" timestamp="1579402356395">
       <screen x="0" y="0" width="1920" height="1160" />
     </state>
-    <state width="914" height="321" key="GridCell.Tab.0.bottom/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579400617761" />
-    <state width="914" height="321" key="GridCell.Tab.0.center" timestamp="1579400617761">
+    <state width="914" height="321" key="GridCell.Tab.0.bottom/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579402356395" />
+    <state width="914" height="321" key="GridCell.Tab.0.center" timestamp="1579402356394">
       <screen x="0" y="0" width="1920" height="1160" />
     </state>
-    <state width="914" height="321" key="GridCell.Tab.0.center/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579400617761" />
-    <state width="914" height="321" key="GridCell.Tab.0.left" timestamp="1579400617761">
+    <state width="914" height="321" key="GridCell.Tab.0.center/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579402356394" />
+    <state width="914" height="321" key="GridCell.Tab.0.left" timestamp="1579402356394">
       <screen x="0" y="0" width="1920" height="1160" />
     </state>
-    <state width="914" height="321" key="GridCell.Tab.0.left/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579400617761" />
-    <state width="914" height="321" key="GridCell.Tab.0.right" timestamp="1579400617761">
+    <state width="914" height="321" key="GridCell.Tab.0.left/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579402356394" />
+    <state width="914" height="321" key="GridCell.Tab.0.right" timestamp="1579402356394">
       <screen x="0" y="0" width="1920" height="1160" />
     </state>
-    <state width="914" height="321" key="GridCell.Tab.0.right/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579400617761" />
+    <state width="914" height="321" key="GridCell.Tab.0.right/0.0.1920.1160/1920.387.1440.900@0.0.1920.1160" timestamp="1579402356394" />
     <state x="661" y="405" key="com.intellij.ide.util.TipDialog" timestamp="1579397318068">
       <screen x="0" y="0" width="1920" height="1160" />
     </state>
