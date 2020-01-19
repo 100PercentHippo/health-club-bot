@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 public class HBMain {
 
-    private static final String version = "0.2.0"; //Update this in pom.xml too
+    private static final String version = "0.2.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -44,7 +44,7 @@ public class HBMain {
                 .createMessage("Health Bot Version " + version
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
-                + "\n\t+test Placeholder test command");
+                + "\n\t+test Placeholder test command").block();
     }
 
     private static void handleTest(MessageCreateEvent event, String args) {
