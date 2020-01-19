@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 public class HBMain {
 
-    private static final String version = "0.2.1"; //Update this in pom.xml too
+    private static final String version = "0.2.2"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -26,7 +26,7 @@ public class HBMain {
     }
 
     private static void HandleMessage(MessageCreateEvent event) {
-        String content = event.getMessage().getContent().orElse("");
+        String content = event.getMessage().getContent().orElse("").toLowerCase();
         if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
             content = content.substring(1); //Remove the prefix character
             String[] args = content.split(" ", 2);
@@ -34,8 +34,11 @@ public class HBMain {
                 commands.get(args[0]).execute(event, args.length > 1 ? args[1] : "");
             } else { //Received command not present in command map
                 event.getMessage().getChannel().block()
-                        .createMessage("Unrecognized command, try `+help`");
+                        .createMessage("Unrecognized command, try `+help`").block();
             }
+        } else if (content.contains("i love health bot")) {
+            event.getMessage().getChannel().block()
+                    .createMessage(":heart:").block();
         }
     }
 
