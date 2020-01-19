@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -cp target/classes:target/dependency/* com/c2t2s/hub/HBMain $BOT_TOKEN
+web: java -cp target/classes:target/dependency/* com.c2t2s.hb.HBMain $BOT_TOKEN
