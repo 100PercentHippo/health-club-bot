@@ -8,13 +8,15 @@ import java.util.HashMap;
 
 public class HBMain {
 
-    private static final String version = "0.2.2"; //Update this in pom.xml too
+    private static final String version = "0.3.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
     public static void main(String[] args) {
         commands.put("help", HBMain::handleHelp);
         commands.put("test", HBMain::handleTest);
+        commands.put("workout", HBMain::handleWorkout);
+        DBConnection.initialize();
         final DiscordClient client = new DiscordClientBuilder(args[0]).build();
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .subscribe(HBMain::HandleMessage);
@@ -47,10 +49,18 @@ public class HBMain {
                 .createMessage("Health Bot Version " + version
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
+                + "\n\t+workout Report that you've completed a workout"
                 + "\n\t+test Placeholder test command").block();
     }
 
     private static void handleTest(MessageCreateEvent event, String args) {
         event.getMessage().getChannel().block().createMessage("Hi! I'm Health Bot").block();
+    }
+
+    private static void handleWorkout(MessageCreateEvent event, String args) {
+        event.getMember().ifPresent(member -> {
+            String response = DBConnection.handleWorkout(member.getId());
+            event.getMessage().getChannel().block().createMessage(response).block();
+        });
     }
 }
