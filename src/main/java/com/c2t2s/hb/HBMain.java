@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.9"; //Update this in pom.xml too
+    private static final String version = "0.4.10"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -88,18 +88,35 @@ public class HBMain {
                 String message = "";
                 int total = 0;
                 for (String piece : pieces) {
+                    boolean negative = false;
                     if (piece.startsWith("-")) {
                         piece = piece.substring(1);
-                        total -= RandomRolls.rollDice(piece, message, true);
-                    } else {
-                        total += RandomRolls.rollDice(piece, message, false);
+                        negative = true;
                     }
+                    if (!piece.contains("d")) {
+                        int roll = Integer.parseInt(piece);
+                        message += (negative ? "- " : "+ ");
+                        total += (negative ? -1 : 1) * roll;
+                        continue;
+                    }
+                    String[] splitArgs = piece.split("d");
+                    // If a NumberFormatException occurs, pass it up, don't catch
+                    int numDice = Integer.parseInt(splitArgs[0]);
+                    int diceSize = Integer.parseInt(splitArgs[1]);
+                    String text = "";
+                    for (int i = 0; i < numDice; ++i) {
+                        int roll = random.nextInt(diceSize) + 1;
+                        total += (roll * (negative ? -1 : 1));
+                        text += (negative ? "- " : "+ ") + "`" + roll + "`";
+                    }
+                    text = text.substring(2, text.length());
+                    message += text;
                 }
                 event.getMessage().getChannel().block().createMessage(message + "\n`" + total + "`").block();
             } else {
                 // Deathrolling
                 max = Integer.parseInt(args);
-                int roll = RandomRolls.deathroll(max);
+                int roll = random.nextInt(max) + 1;;
                 String oneText = (roll == 1) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
                 event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
             }
