@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.13"; //Update this in pom.xml too
+    private static final String version = "0.4.14"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -87,24 +87,24 @@ public class HBMain {
                 String[] pieces = args.split("\\+");
                 String message = "";
                 int total = 0;
-                for (String piece : pieces) {
+                for (int i = 0; i < pieces.length; ++i) {
                     boolean negative = false;
-                    if (piece.startsWith("-")) {
-                        piece = piece.substring(1);
+                    if (pieces[i].startsWith("-")) {
+                        pieces[i] = pieces[i].substring(1);
                         negative = true;
                     }
-                    if (!piece.contains("d")) {
-                        int roll = Integer.parseInt(piece);
+                    if (!pieces[i].contains("d")) {
+                        int roll = Integer.parseInt(pieces[i]);
                         message += ((negative ? " - " : " + ") + roll);
                         total += (negative ? -1 : 1) * roll;
                         continue;
                     }
-                    String[] splitArgs = piece.split("d");
+                    String[] splitArgs = pieces[i].split("d");
                     // If a NumberFormatException occurs, pass it up, don't catch
                     int numDice = Integer.parseInt(splitArgs[0]);
                     int diceSize = Integer.parseInt(splitArgs[1]);
                     String text = "";
-                    for (int i = 0; i < numDice; ++i) {
+                    for (int j = 0; i < numDice; ++i) {
                         int roll = random.nextInt(diceSize) + 1;
                         total += (roll * (negative ? -1 : 1));
                         text += (negative ? " - " : " + ") + "`" + roll + "`";
@@ -119,6 +119,10 @@ public class HBMain {
             } else {
                 // Deathrolling
                 max = Integer.parseInt(args);
+                if (max < 0) {
+                    event.getMessage().getChannel().block().createMessage("Negative numbers make me sad :slight_frown:").block();
+                    return;
+                }
                 int roll = random.nextInt(max) + 1;;
                 String oneText = (roll == 1) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
                 event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
