@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.12"; //Update this in pom.xml too
+    private static final String version = "0.4.13"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -81,7 +81,7 @@ public class HBMain {
         try {
             if (args.contains("d")) {
                 //Dice rolling
-                args.replace("-\\s*-", "");
+                //args.replace("-\\s*-", "");
                 args.replace("-", "+-");
                 args.replace("\\s", "");
                 String[] pieces = args.split("\\+");
@@ -107,7 +107,7 @@ public class HBMain {
                     for (int i = 0; i < numDice; ++i) {
                         int roll = random.nextInt(diceSize) + 1;
                         total += (roll * (negative ? -1 : 1));
-                        text += (negative ? "- " : "+ ") + "`" + roll + "`";
+                        text += (negative ? " - " : " + ") + "`" + roll + "`";
                     }
                     text = text.substring(2, text.length());
                     if (message.length() != 0) {
