@@ -27,7 +27,7 @@ public class RandomRolls {
             total += (roll * (negative ? -1 : 1));
             text += (negative ? "- " : "+ ") + "`" + roll + "`";
         }
-        text = textOut.substring(2, textOut.length());
+        text = text.substring(2, textOut.length());
         textOut += text;
         return total;
     }

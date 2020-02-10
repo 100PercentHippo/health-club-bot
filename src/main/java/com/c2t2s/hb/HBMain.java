@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.7"; //Update this in pom.xml too
+    private static final String version = "0.4.8"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
