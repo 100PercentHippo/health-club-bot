@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.5"; //Update this in pom.xml too
+    private static final String version = "0.4.6"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -52,9 +52,14 @@ public class HBMain {
                 .createMessage("Health Bot Version " + version
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
+                + "\n\t+version Display the bot's current version"
                 + "\n\t+workout Report that you've completed a workout"
                 + "\n\t+roll [number] Roll a number up to the inputted max"
                 + "\n\t+test Placeholder test command").block();
+    }
+
+    private static void handleVersion(MessageCreateEvent event, String args) {
+        event.getMessage().getChannel().block().createMessage(version).block();
     }
 
     private static void handleTest(MessageCreateEvent event, String args) {
@@ -70,16 +75,33 @@ public class HBMain {
 
     private static void handleRoll(MessageCreateEvent event, String args) {
         int max = 0;
-        boolean deathrolling = false;
-        try {
-            max = Integer.parseInt(args);
-            deathrolling = true;
-        } catch (NumberFormatException e) {
-            event.getMessage().getChannel().block().createMessage("Unrecognized roll syntax. Try `+roll 3`").block();
-        }
         Random random = new Random();
-        int roll = random.nextInt(max) + 1;
-        String oneText = (roll == 1 && deathrolling) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
-        event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
+        try {
+            if (args.contains("d")) {
+                //Dice rolling
+                String[] splitArgs = args.split("d");
+                int numDice = Integer.parseInt(splitArgs[0]);
+                int diceSize = Integer.parseInt(splitArgs[1]);
+                String message = "";
+                int total = 0;
+                for (int i = 0; i < numDice; ++i) {
+                    int roll = random.nextInt(diceSize) + 1;
+                    total += roll;
+                    message += "`" + roll + "` +";
+                }
+                message = message.substring(0, message.length() - 2);
+                event.getMessage().getChannel().block().createMessage(message + "\n`" + total + "`").block();
+            } else {
+                // Deathrolling
+                max = Integer.parseInt(args);
+                int roll = random.nextInt(max) + 1;
+                String oneText = (roll == 1) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
+                event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
+            }
+        } catch (NumberFormatException e) {
+            // Unrecognized syntax
+            event.getMessage().getChannel().block().createMessage("Unrecognized roll syntax. Try `+roll 3` or `+roll 2d6`").block();
+            return;
+        }
     }
 }
