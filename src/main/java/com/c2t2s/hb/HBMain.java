@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.3"; //Update this in pom.xml too
+    private static final String version = "0.4.4"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -75,7 +75,7 @@ public class HBMain {
         } catch (NumberFormatException e) {}
         Random random = new Random();
         int roll = random.nextInt(max) + 1;
-        String oneText = roll == 1 ? "\nIt's been a pleasure doing business with you" : "";
+        String oneText = roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
         event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
     }
 }
