@@ -5,6 +5,7 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 
 import java.util.HashMap;
+import java.util.Random;
 
 public class HBMain {
 
@@ -16,6 +17,7 @@ public class HBMain {
         commands.put("help", HBMain::handleHelp);
         commands.put("test", HBMain::handleTest);
         commands.put("workout", HBMain::handleWorkout);
+        commands.put("roll", HBMain::handleRoll);
         DBConnection.initialize();
         final DiscordClient client = new DiscordClientBuilder(args[0]).build();
         client.getEventDispatcher().on(MessageCreateEvent.class)
@@ -62,5 +64,11 @@ public class HBMain {
             String response = DBConnection.handleWorkout(member.getId());
             event.getMessage().getChannel().block().createMessage(response).block();
         });
+    }
+
+    private static void handleRoll(MessageCreateEvent event, String args) {
+        int max = Integer.parseInt(args);
+        Random random = new Random();
+        event.getMessage().getChannel().block().createMessage("" + random.nextInt(max - 1) + 1).block();
     }
 }

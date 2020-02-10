@@ -45,6 +45,7 @@ public class DBConnection {
 
         //Check if this levels them up
         //TODO: This is a rather non-elegant implementation, make it nicer
+        //TODO: Make this give ranks
         String levelUpMessage = "";
         if (count == 5)  {
             levelUpMessage = "\nCongratulations! You leveled up to Novice!";
@@ -61,6 +62,7 @@ public class DBConnection {
                 ? "\nWarning: This is a temporary solution, and data may be wiped."
                 : "";
 
+        //TODO: Fix this returning "You now have 1 points"
         return complements.get(nextComplement++ % complements.size())
                 + " You now have " + count + " points." + levelUpMessage
                 + newUserMessage;
