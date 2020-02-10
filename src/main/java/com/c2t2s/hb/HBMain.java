@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.4"; //Update this in pom.xml too
+    private static final String version = "0.4.5"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -70,12 +70,16 @@ public class HBMain {
 
     private static void handleRoll(MessageCreateEvent event, String args) {
         int max = 0;
+        boolean deathrolling = false;
         try {
             max = Integer.parseInt(args);
-        } catch (NumberFormatException e) {}
+            deathrolling = true;
+        } catch (NumberFormatException e) {
+            event.getMessage().getChannel().block().createMessage("Unrecognized roll syntax. Try `+roll 3`").block();
+        }
         Random random = new Random();
         int roll = random.nextInt(max) + 1;
-        String oneText = roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
+        String oneText = (roll == 1 && deathrolling) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
         event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
     }
 }
