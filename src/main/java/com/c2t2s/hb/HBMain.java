@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.11"; //Update this in pom.xml too
+    private static final String version = "0.4.12"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -95,7 +95,7 @@ public class HBMain {
                     }
                     if (!piece.contains("d")) {
                         int roll = Integer.parseInt(piece);
-                        message += (negative ? "- " : "+ ");
+                        message += ((negative ? " - " : " + ") + roll);
                         total += (negative ? -1 : 1) * roll;
                         continue;
                     }
@@ -111,7 +111,7 @@ public class HBMain {
                     }
                     text = text.substring(2, text.length());
                     if (message.length() != 0) {
-                        message += (negative ? "- " : "+ ");
+                        message += (negative ? " - " : " + ");
                     }
                     message += text;
                 }
