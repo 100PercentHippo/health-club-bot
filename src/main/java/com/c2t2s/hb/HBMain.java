@@ -4,6 +4,7 @@ import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -52,6 +53,7 @@ public class HBMain {
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
                 + "\n\t+workout Report that you've completed a workout"
+                + "\n\t+roll [number] Roll a number up to the inputted max"
                 + "\n\t+test Placeholder test command").block();
     }
 
@@ -67,9 +69,12 @@ public class HBMain {
     }
 
     private static void handleRoll(MessageCreateEvent event, String args) {
-        int max = Integer.parseInt(args);
+        int max = 0;
+        try {
+            max = Integer.parseInt(args);
+        } catch (NumberFormatException e) {}
         Random random = new Random();
-        int roll = random.nextInt(max - 1) + 1;
+        int roll = random.nextInt(max) + 1;
         event.getMessage().getChannel().block().createMessage("" + roll).block();
     }
 }
