@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.6"; //Update this in pom.xml too
+    private static final String version = "0.4.7"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -19,6 +19,8 @@ public class HBMain {
         commands.put("test", HBMain::handleTest);
         commands.put("workout", HBMain::handleWorkout);
         commands.put("roll", HBMain::handleRoll);
+        commands.put("r", HBMain::handleRoll);
+        commands.put("version", HBMain::handleVersion);
         DBConnection.initialize();
         final DiscordClient client = new DiscordClientBuilder(args[0]).build();
         client.getEventDispatcher().on(MessageCreateEvent.class)
@@ -79,22 +81,25 @@ public class HBMain {
         try {
             if (args.contains("d")) {
                 //Dice rolling
-                String[] splitArgs = args.split("d");
-                int numDice = Integer.parseInt(splitArgs[0]);
-                int diceSize = Integer.parseInt(splitArgs[1]);
+                args.replace("-\\s*-", "");
+                args.replace("-", "+-");
+                args.replace("\\s", "");
+                String[] pieces = args.split("\\+");
                 String message = "";
                 int total = 0;
-                for (int i = 0; i < numDice; ++i) {
-                    int roll = random.nextInt(diceSize) + 1;
-                    total += roll;
-                    message += "`" + roll + "` +";
+                for (String piece : pieces) {
+                    if (piece.startsWith("-")) {
+                        piece = piece.substring(1);
+                        total -= RandomRolls.rollDice(piece, message, true);
+                    } else {
+                        total += RandomRolls.rollDice(piece, message, false);
+                    }
                 }
-                message = message.substring(0, message.length() - 2);
                 event.getMessage().getChannel().block().createMessage(message + "\n`" + total + "`").block();
             } else {
                 // Deathrolling
                 max = Integer.parseInt(args);
-                int roll = random.nextInt(max) + 1;
+                int roll = RandomRolls.deathroll(max);
                 String oneText = (roll == 1) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
                 event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
             }
