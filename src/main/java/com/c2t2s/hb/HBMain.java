@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.3.0"; //Update this in pom.xml too
+    private static final String version = "0.4.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -69,6 +69,7 @@ public class HBMain {
     private static void handleRoll(MessageCreateEvent event, String args) {
         int max = Integer.parseInt(args);
         Random random = new Random();
-        event.getMessage().getChannel().block().createMessage("" + random.nextInt(max - 1) + 1).block();
+        int roll = random.nextInt(max - 1) + 1;
+        event.getMessage().getChannel().block().createMessage("" + roll).block();
     }
 }
