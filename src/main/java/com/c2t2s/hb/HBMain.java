@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.4.14"; //Update this in pom.xml too
+    private static final String version = "0.5.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -21,7 +21,6 @@ public class HBMain {
         commands.put("roll", HBMain::handleRoll);
         commands.put("r", HBMain::handleRoll);
         commands.put("version", HBMain::handleVersion);
-        DBConnection.initialize();
         final DiscordClient client = new DiscordClientBuilder(args[0]).build();
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .subscribe(HBMain::HandleMessage);
@@ -69,12 +68,16 @@ public class HBMain {
     }
 
     private static void handleWorkout(MessageCreateEvent event, String args) {
+        if (!DBConnection.initialized) {
+            DBConnection.initialize(event);
+        }
         event.getMember().ifPresent(member -> {
-            String response = DBConnection.handleWorkout(member.getId());
+            String response = DBConnection.handleWorkout(member);
             event.getMessage().getChannel().block().createMessage(response).block();
         });
     }
 
+    //TODO: Handle negative modifiers in dice rolls
     private static void handleRoll(MessageCreateEvent event, String args) {
         int max = 0;
         Random random = new Random();
