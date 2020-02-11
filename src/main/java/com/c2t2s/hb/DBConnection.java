@@ -94,16 +94,16 @@ public class DBConnection {
     }
 
     private static void applyRole(Member member, String newRole) {
-        if (!member.getRoleIds().contains(roleIDs.get(newRole))) {
-            // Remove all potentially incorrect roles
-            for (Snowflake role : roleIDs.values()) {
-                member.removeRole(role).doOnError(e -> {}).block();
-            }
-            // Add the current role
-            member.addRole(roleIDs.get(newRole)).doOnError(e -> {
-                //TODO: Handle
-            }).block();
-        }
+        //if (!member.getRoleIds().contains(roleIDs.get(newRole))) {
+        //    // Remove all potentially incorrect roles
+        //    for (Snowflake role : roleIDs.values()) {
+        //        member.removeRole(role).doOnError(e -> {}).block();
+        //    }
+        //    // Add the current role
+        //    member.addRole(roleIDs.get(newRole)).doOnError(e -> {
+        //        //TODO: Handle
+        //    }).block();
+        //}
     }
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
