@@ -110,9 +110,6 @@ public class DBConnection {
     private static Connection getConnection() throws URISyntaxException, SQLException {
         //URI dbUri = new URI(System.getenv("JDBC_DATABASE_URL"));
         //String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + "?sslmode=require";
-    	try {
-    	    Class.forName("org.postgresql.Driver");
-    	} catch (ClassNotFoundException e) { }
     	String dbUrl = System.getenv("JDBC_DATABASE_URL");
         return DriverManager.getConnection(dbUrl);
     }
@@ -136,7 +133,7 @@ public class DBConnection {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
 			if (results.next()) {
-				time = results.getTimestamp(0);
+				time = results.getTimestamp(1);
 				long elapsedTime = System.currentTimeMillis() - time.getTime();
 				if (elapsedTime < 3600000) {
 					long timeLeft = 3600000 - elapsedTime;
@@ -145,7 +142,7 @@ public class DBConnection {
 					query = "UPDATE money_user SET (balance, last_claim) = (balance + 100, NOW()) WHERE uid = " + uid + " RETURNING balance;";
 					results = statement.executeQuery(query);
 					if (results.next()) {
-						int balance = results.getInt(0);
+						int balance = results.getInt(1);
 						result = "Claimed 100 coins! New balance is " + balance;
 					} else {
 						result = "Error claiming coins :slight_frown:";
