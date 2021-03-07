@@ -17,10 +17,10 @@ public class HBMain {
     public static void main(String[] args) {
         commands.put("help", HBMain::handleHelp);
         commands.put("test", HBMain::handleTest);
-        commands.put("workout", HBMain::handleWorkout);
         commands.put("roll", HBMain::handleRoll);
         commands.put("r", HBMain::handleRoll);
         commands.put("version", HBMain::handleVersion);
+        commands.put("claim", HBMain::handleClaim);
         final DiscordClient client = new DiscordClientBuilder(args[0]).build();
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .subscribe(HBMain::HandleMessage);
@@ -54,7 +54,7 @@ public class HBMain {
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
                 + "\n\t+version Display the bot's current version"
-                + "\n\t+workout Report that you've completed a workout"
+                + "\n\t+claim Claim coins!"
                 + "\n\t+roll [number] Roll a number up to the inputted max"
                 + "\n\t+test Placeholder test command").block();
     }
@@ -68,13 +68,11 @@ public class HBMain {
     }
 
     private static void handleWorkout(MessageCreateEvent event, String args) {
-        if (!DBConnection.initialized) {
-            DBConnection.initialize(event);
-        }
-        event.getMember().ifPresent(member -> {
-            String response = DBConnection.handleWorkout(member);
-            event.getMessage().getChannel().block().createMessage(response).block();
-        });
+        //event.getMember().ifPresent(member -> {
+        //    String response = DBConnection.handleWorkout(member);
+        //    event.getMessage().getChannel().block().createMessage(response).block();
+        //});
+    	event.getMessage().getChannel().block().createMessage("This functionality has been deprecated").block();
     }
 
     //TODO: Handle negative modifiers in dice rolls
@@ -139,7 +137,7 @@ public class HBMain {
     
     private static void handleClaim(MessageCreateEvent event, String args) {
     	event.getMember().ifPresent(member -> {
-            String response = DBConnection.handleWorkout(member.getId().asLong());
+            String response = DBConnection.handleClaim(member.getId().asLong());
             event.getMessage().getChannel().block().createMessage(response).block();
         });
     }

@@ -134,14 +134,14 @@ public class DBConnection {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
 			if (results.next()) {
-				time = results.getTimestamp();
+				time = results.getTimestamp(0);
 				long elapsedTime = System.currentTimeMillis() - time.getTime();
 				if (elapsedTime < 3600000) {
 					long timeLeft = 3600000 - elapsedTime;
 					result = "You already claimed this hour! Try again in " + TimeUnit.MILLISECONDS.toMinutes(timeLeft) + " minutes and " + TimeUnit.MILLISECONDS.toSeconds(timeLeft) + " seconds.";
 				} else {
 					query = "UPDATE money_user SET (balance, last_claim) = (balance + 100, NOW()) WHERE uid = " + uid + " RETURNING balance;";
-					ResultSet results = statement.executeQuery(query);
+					results = statement.executeQuery(query);
 					if (results.next()) {
 						int balance = results.getInt(0);
 						result = "Claimed 100 coins! New balance is " + balance;
@@ -191,7 +191,6 @@ public class DBConnection {
             connection = getConnection();
             statement = connection.createStatement();
             inserted = statement.executeUpdate(query);
-            results.close();
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
