@@ -125,7 +125,7 @@ public class DBConnection {
 		boolean error = false;
 		String query = "SELECT last_claim FROM money_user WHERE uid = " + uid + ";";
 		boolean found = true;
-		String result;
+		String result = "";
 		Timestamp time;
         Connection connection = null;
         Statement statement = null;
