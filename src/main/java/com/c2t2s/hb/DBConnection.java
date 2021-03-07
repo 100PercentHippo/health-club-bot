@@ -112,7 +112,7 @@ public class DBConnection {
         //String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + "?sslmode=require";
     	try {
     	    Class.forName("org.postgresql.Driver");
-    	} catch (Exception e) {
+    	} catch (ClassNotFoundException e) {
     		throw e;
     	}
     	String dbUrl = System.getenv("JDBC_DATABASE_URL");
