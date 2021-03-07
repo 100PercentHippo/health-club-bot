@@ -110,7 +110,11 @@ public class DBConnection {
     private static Connection getConnection() throws URISyntaxException, SQLException {
         //URI dbUri = new URI(System.getenv("JDBC_DATABASE_URL"));
         //String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + "?sslmode=require";
-    	Class.forName("org.postgresql.Driver");
+    	try {
+    	    Class.forName("org.postgresql.Driver");
+    	} catch (Exception e) {
+    		throw e;
+    	}
     	String dbUrl = System.getenv("JDBC_DATABASE_URL");
         return DriverManager.getConnection(dbUrl);
     }
