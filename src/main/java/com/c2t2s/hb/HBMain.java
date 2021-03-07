@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.5.1"; //Update this in pom.xml too
+    private static final String version = "0.6.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -135,5 +135,12 @@ public class HBMain {
             event.getMessage().getChannel().block().createMessage("Unrecognized roll syntax. Try `+roll 3` or `+roll 2d6`").block();
             return;
         }
+    }
+    
+    private static void handleClaim(MessageCreateEvent event, String args) {
+    	event.getMember().ifPresent(member -> {
+            String response = DBConnection.handleWorkout(member.getId().asLong());
+            event.getMessage().getChannel().block().createMessage(response).block();
+        });
     }
 }
