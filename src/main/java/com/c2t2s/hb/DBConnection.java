@@ -121,7 +121,7 @@ public class DBConnection {
 	//	last_claim timestamp DEFAULT '2021-01-01 00:00:00'
 	//);
 	
-	private static String handleClaim(long uid) {
+	public static String handleClaim(long uid) {
 		boolean error = false;
 		String query = "SELECT last_claim FROM money_user WHERE uid = " + uid + ";";
 		boolean found = true;
