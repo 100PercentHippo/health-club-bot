@@ -166,7 +166,7 @@ public class HBMain {
     			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\\n\\t+give 100 @100% Hippo (you will need to ping the user)";
     		}
     	}
-    	long recepientUid;
+    	long recepientUid = 0;
     	try {
     		recepientUid = event.getMessage().getUserMentionIds().iterator().next().asLong();
     	} catch (NoSuchElementException e) {
@@ -174,9 +174,11 @@ public class HBMain {
     	}
     	if (!response.isEmpty()) {
 	    	event.getMember().ifPresent(member -> {
-	            response = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
+	            string res = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
+				event.getMessage().getChannel().block().createMessage(res).block();
 	        });
+		} else {
+			event.getMessage().getChannel().block().createMessage(response).block();
 		}
-		event.getMessage().getChannel().block().createMessage(response).block();
     }
 }
