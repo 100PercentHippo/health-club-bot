@@ -3,11 +3,13 @@ package com.c2t2s.hb;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.common.util;
 
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
+import java.util;
 
 public class HBMain {
 
@@ -157,8 +159,8 @@ public class HBMain {
     	if (!args.contains(" ")) {
     		response = "Unable to process transaction, not enough arguments. Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
     	} else {
+		    String firstArg = args.substring(0, args.indexOf(' '));
     		try {
-    		    String firstArg = args.substring(0, args.indexOf(' '));
     		    amount = Integer.parseInt(firstArg);
     		} catch (NumberFormatException e) {
     			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\\n\\t+give 100 @100% Hippo (you will need to ping the user)";
@@ -171,9 +173,9 @@ public class HBMain {
 			Iterator<Snowflake> it = mentions.iterator();
 			long recepientUid = it.next().asLong();
 	    	event.getMember().ifPresent(member -> {
-	            String response = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
-	            event.getMessage().getChannel().block().createMessage(response).block();
+	            response = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
 	        });
 		}
+		event.getMessage().getChannel().block().createMessage(response).block();
     }
 }
