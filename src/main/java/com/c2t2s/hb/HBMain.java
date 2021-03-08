@@ -3,13 +3,13 @@ package com.c2t2s.hb;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.common.util;
+import discord4j.common.util.Snowflake;
 
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
-import java.util;
+import java.util.Set;
 
 public class HBMain {
 
