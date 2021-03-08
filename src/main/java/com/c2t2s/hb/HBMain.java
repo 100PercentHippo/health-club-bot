@@ -26,7 +26,7 @@ public class HBMain {
         commands.put("claim", HBMain::handleClaim);
         commands.put("balance", HBMain::handleBalance);
         commands.put("give", HBMain::handleGive);
-        commands.put("workout", HBMain::handleWorkout)
+        commands.put("workout", HBMain::handleWorkout);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -126,8 +126,7 @@ public class HBMain {
                 if (max < 0) {
                 	finalMessage = "Negative numbers make me sad :slight_frown:";
                 }
-                int roll = random.nextInt(max) + 1;;
-                String oneText = ;
+                int roll = random.nextInt(max) + 1;
                 finalMessage = "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
             }
         } catch (NumberFormatException e) {
