@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.7.0"; //Update this in pom.xml too
+    private static final String version = "0.7.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -27,6 +27,7 @@ public class HBMain {
         commands.put("claim", HBMain::handleClaim);
         commands.put("balance", HBMain::handleBalance);
         commands.put("give", HBMain::handleGive);
+        commands.put("rob", HBMain::handleRob);
         commands.put("workout", HBMain::handleWorkout);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
@@ -58,6 +59,7 @@ public class HBMain {
                 + "\n\t+version Display the bot's current version"
                 + "\n\t+claim Claim coins!"
                 + "\n\t+balance Check your balance"
+                + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
                 + "\n\t+give <amount> <@User> Gives money to another person"
                 + "\n\t+roll [number] Roll a number up to the inputted max");
     }
@@ -139,6 +141,10 @@ public class HBMain {
     
     private static void handleClaim(MessageCreateEvent event, String args) {
     	event.getChannel().sendMessage(DBConnection.handleClaim(event.getMessageAuthor().getId()));
+    }
+    
+    private static void handleRob(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(DBConnection.handleRob(event.getMessageAuthor().getId()));
     }
     
     private static void handleBalance(MessageCreateEvent event, String args) {

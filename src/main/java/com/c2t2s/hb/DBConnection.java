@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.Random;
 
 public class DBConnection {
 
@@ -103,20 +104,55 @@ public class DBConnection {
         // //}
     // }
 	
+	public static String handleRob(long uid) {
+		Timestamp time = checkClaimTime(uid);
+		String response;
+		if (time == null) {
+			if (insertMoneyUser(uid)) {
+				response = "Welcome! You have been given an initial balance of 1000 coins\n";
+			} else {
+				return "Unable to add new user, something went wrong :slight_frown:. Try +claim";
+			}
+		}
+		long elapsedTime = System.currentTimeMillis() - time.getTime();
+		if (elapsedTime < 0) {
+			long hours = TimeUnit.MILLISECONDS.toHours(elapsedTime);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime);
+			long seconds = (TimeUnit.MILLISECONDS.toSeconds(elapsedTime)/100);
+			return response + "You are unable to rob! Try again in "
+				+ hours > 0 : (hours + " hour" + (hours == 1 ? "" : "s") + " and ") ? ""
+			    + minutes > 0 : (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") ? ""
+			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
+		} else {
+			Random random = new Random();
+			if (random.nextInt(2) == 0) { // Busted
+				setClaimTime(uid, "24 hours");
+				return response + "You were caught! You are dragged off to jail for 24 hours.";
+			} else { // Succeeded!
+				int haul = random.nextInt(10) + 1;
+				int balance = addMoney(uid, 100 * haul);
+				return response + "Your heist was successful, and you make away with a haul of " + haul + ". Your new balance is " + balance;
+			}
+		}
+	}
+	
 	public static String handleClaim(long uid) {
 		Timestamp time = checkClaimTime(uid);
 		if (time == null) {
 			return insertMoneyUser(uid);
 		}
 		long elapsedTime = System.currentTimeMillis() - time.getTime();
-		if (elapsedTime < 3600000) {
-			long timeLeft = 3600000 - elapsedTime;
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(timeLeft);
-			long seconds = (TimeUnit.MILLISECONDS.toSeconds(timeLeft)/100);
-			//TODO: Remove 's' if single minute or second
-			return "You already claimed this hour! Try again in " + minutes + " minute" + (minutes == 1 ? "" : "s") + " and " + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
+		if (elapsedTime < 0) {
+			long hours = TimeUnit.MILLISECONDS.toHours(elapsedTime);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime);
+			long seconds = (TimeUnit.MILLISECONDS.toSeconds(elapsedTime)/100);
+			return "You are unable to claim! Try again in "
+				+ hours > 0 : (hours + " hour" + (hours == 1 ? "" : "s") + " and ") ? ""
+			    + minutes > 0 : (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") ? ""
+			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
 		} else {
 			int balance = addMoney(uid, 100);
+			setClaimTime(uid, "1 hour");
 			return "Claimed 100 coins! New balance is " + balance;
 		}
 	}
@@ -204,6 +240,37 @@ public class DBConnection {
             }
         }
         return time;
+	}
+	
+	private static setClaimTime(long uid, String interval) {
+		String query = "UPDATE money_user SET last_claim = NOW() + INTERVAL '" + interval + "';";
+        Connection connection = null;
+        Statement statement = null;
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            statement.executeUpdate(query);
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 	}
 	
 	private static int checkBalance(long uid) {
