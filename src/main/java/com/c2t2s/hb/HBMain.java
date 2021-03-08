@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.7.1"; //Update this in pom.xml too
+    private static final String version = "0.7.2"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
