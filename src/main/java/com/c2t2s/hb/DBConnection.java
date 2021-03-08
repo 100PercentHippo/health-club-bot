@@ -137,7 +137,8 @@ public class DBConnection {
 				long elapsedTime = System.currentTimeMillis() - time.getTime();
 				if (elapsedTime < 3600000) {
 					long timeLeft = 3600000 - elapsedTime;
-					result = "You already claimed this hour! Try again in " + TimeUnit.MILLISECONDS.toMinutes(timeLeft) + " minutes and " + TimeUnit.MILLISECONDS.toSeconds(timeLeft) + " seconds.";
+					//TODO: Remove 's' if single minute or second
+					result = "You already claimed this hour! Try again in " + TimeUnit.MILLISECONDS.toMinutes(timeLeft) + " minutes and " + (TimeUnit.MILLISECONDS.toSeconds(timeLeft)/100) + " seconds.";
 				} else {
 					query = "UPDATE money_user SET (balance, last_claim) = (balance + 100, NOW()) WHERE uid = " + uid + " RETURNING balance;";
 					results = statement.executeQuery(query);
@@ -218,6 +219,106 @@ public class DBConnection {
 			return "Unable to add new user. Something may have gone wrong :slight_frown:";
 		}
     }
+	
+	private static int checkBalance(long uid) {
+		boolean error = false;
+		String query = "SELECT balance FROM money_user WHERE uid = " + uid + ";";
+		int balance = 0;
+        Connection connection = null;
+        Statement statement = null;
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            if (results.next()) {
+            	balance = results.getInt(1);
+            } else {
+            	balance = -1;
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+            error = true;
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                error = true;
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                error = true;
+            }
+        }
+        return balance;
+	}
+	
+	public static String handleBalance(long uid) {
+		int balance = checkBalance(uid);
+		if (balance < 0) {
+			return "There was an issue checking your balance, value returned was " + balance;
+		} else {
+			return "Your current balance is " + balance + " coins.";
+		}
+	}
+	
+	public static String handleGive(long donorUid, long recipientUid, int amount) {
+		int donorBalance = checkBalance(donorUid);
+		if (donorBalance < 0) {
+			return "Unable to give money. Balance check failed or was negative";
+		} else if (donorBalance < amount) {
+			return "Your balance of " + donorBalance + " is not enough to cover that!";
+		}
+		boolean error = false;
+		String query = "UPDATE money_user SET balance = balance - " + amount + " WHERE uid = " + donorUid + " RETURNING balance;";
+        Connection connection = null;
+        Statement statement = null;
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            if (results.next()) {
+            	donorBalance = results.getInt(1);
+            	query = "UPDATE money_user SET balance = balance + " + amount + " WHERE uid = " + recipientUid + ";";
+            	results = statement.executeQuery(query);
+            } else {
+            	donorBalance = -1;
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+            error = true;
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                error = true;
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                error = true;
+            }
+        }
+        if (donorBalance < 0) {
+        	return "Unable to process transaction";
+        } else {
+        	return "Gave " + amount + ", your new balance is " + donorBalance;
+        }
+	}
 
     private static boolean ExecuteQuery(String query) {
         boolean error = false;

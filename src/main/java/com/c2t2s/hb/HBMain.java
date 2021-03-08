@@ -6,11 +6,12 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Random;
 
 public class HBMain {
 
-    private static final String version = "0.6.0"; //Update this in pom.xml too
+    private static final String version = "0.6.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -55,8 +56,9 @@ public class HBMain {
                 + "\n\t+help Displays this help text"
                 + "\n\t+version Display the bot's current version"
                 + "\n\t+claim Claim coins!"
-                + "\n\t+roll [number] Roll a number up to the inputted max"
-                + "\n\t+test Placeholder test command").block();
+                + "\n\t+balance Check your balance"
+                + "\n\t+give <amount> <@User> Gives money to another person"
+                + "\n\t+roll [number] Roll a number up to the inputted max").block();
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
@@ -140,5 +142,38 @@ public class HBMain {
             String response = DBConnection.handleClaim(member.getId().asLong());
             event.getMessage().getChannel().block().createMessage(response).block();
         });
+    }
+    
+    private static void handleBalance(MessageCreateEvent event, String args) {
+    	event.getMember().ifPresent(member -> {
+            String response = DBConnection.handleBalance(member.getId().asLong());
+            event.getMessage().getChannel().block().createMessage(response).block();
+        });
+    }
+    
+    private static void handleGive(MessageCreateEvent event, String args) {
+		String response = "";
+		int amount = 0;
+    	if (!args.contains(" ")) {
+    		response = "Unable to process transaction, not enough arguments. Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
+    	} else {
+    		try {
+    		    String firstArg = args.substring(0, args.indexOf(' '));
+    		    amount = Integer.parseInt(firstArg);
+    		} catch (NumberFormatException e) {
+    			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\\n\\t+give 100 @100% Hippo (you will need to ping the user)";
+    		}
+    	}
+		Set<Snowflake> mentions = event.getMessage().getUserMentionIds();
+		if (response.isEmpty() && mentions.isEmpty()) {
+			response = "Unable to process transaction, no users were mentioned!";
+		} else if (response.isEmpty()) {
+			Iterator<Snowflake> it = mentions.iterator();
+			long recepientUid = it.next().asLong();
+	    	event.getMember().ifPresent(member -> {
+	            String response = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
+	            event.getMessage().getChannel().block().createMessage(response).block();
+	        });
+		}
     }
 }
