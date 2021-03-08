@@ -115,7 +115,7 @@ public class DBConnection {
 			}
 		}
 		long remainingWait = time.getTime() - System.currentTimeMillis();
-		if (elapsedTime > 0) {
+		if (remainingWait > 0) {
 			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
 			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait);
 			long seconds = (TimeUnit.MILLISECONDS.toSeconds(remainingWait)/100);
@@ -142,7 +142,7 @@ public class DBConnection {
 			return insertMoneyUser(uid);
 		}
 		long remainingWait = time.getTime() - System.currentTimeMillis();
-		if (elapsedTime > 0) {
+		if (remainingWait > 0) {
 			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
 			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait);
 			long seconds = (TimeUnit.MILLISECONDS.toSeconds(remainingWait)/100);
