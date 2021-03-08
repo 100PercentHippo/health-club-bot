@@ -107,11 +107,65 @@ public class DBConnection {
         // //}
     // }
 	
+	public static String handleClaim(long uid) {
+		Timestamp time = checkClaimTime(uid);
+		if (time == null) {
+			return insertMoneyUser(uid);
+		}
+		long elapsedTime = System.currentTimeMillis() - time.getTime();
+		if (elapsedTime < 3600000) {
+			long timeLeft = 3600000 - elapsedTime;
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(timeLeft);
+			long seconds = (TimeUnit.MILLISECONDS.toSeconds(timeLeft)/100);
+			//TODO: Remove 's' if single minute or second
+			return "You already claimed this hour! Try again in " + minutes + " minute" + (minutes == 1 ? "" : "s") + " and " + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
+		} else {
+			int balance = addMoney(uid, 100);
+			return "Claimed 100 coins! New balance is " + balance;
+		}
+	}
+	
+	private static String insertMoneyUser(long uid) {
+        boolean error = addUser(uid);
+        if (!error && inserted != 0) {
+			return "Welcome! You have been given an initial balance of 1000 coins";
+        } else {
+			return "Unable to add new user. Something may have gone wrong :slight_frown:";
+		}
+    }
+	
+	public static String handleBalance(long uid) {
+		int balance = checkBalance(uid);
+		if (balance < 0) {
+			return "There was an issue checking your balance, value returned was " + balance;
+		} else {
+			return "Your current balance is " + balance + " coins.";
+		}
+	}
+	
+	public static String handleGive(long donorUid, long recipientUid, int amount) {
+		if (amount <= 0) {
+			return "Can't give someone a negative number of coins. Try asking them nicely if you want money.";
+		}
+		int donorBalance = checkBalance(donorUid);
+		if (donorBalance < 0) {
+			return "Unable to give money. Balance check failed or was negative (" + donorBalance +")";
+		} else if (donorBalance < amount) {
+			return "Your balance of " + donorBalance + " is not enough to cover that!";
+		}
+		donorBalance = addMoney(donorUid, -1 * amount);
+		addMoney(recipientUid, amount);
+        if (donorBalance < 0) {
+        	return "Unable to process transaction";
+        } else {
+        	return "Gave " + amount + ", your new balance is " + donorBalance;
+        }
+	}
+	
+	//////////////////////////////////////////////////////////
+	
     private static Connection getConnection() throws URISyntaxException, SQLException {
-        //URI dbUri = new URI(System.getenv("JDBC_DATABASE_URL"));
-        //String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + "?sslmode=require";
-    	String dbUrl = System.getenv("JDBC_DATABASE_URL");
-        return DriverManager.getConnection(dbUrl);
+        return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"));
     }
 	
 	//CREATE TABLE IF NOT EXISTS money_user (
@@ -120,12 +174,9 @@ public class DBConnection {
 	//	last_claim timestamp DEFAULT '2021-01-01 00:00:00'
 	//);
 	
-	public static String handleClaim(long uid) {
-		boolean error = false;
+	private static Timestamp checkClaimTime(long uid) {
 		String query = "SELECT last_claim FROM money_user WHERE uid = " + uid + ";";
-		boolean found = true;
-		String result = "";
-		Timestamp time;
+		Timestamp time = null;
         Connection connection = null;
         Statement statement = null;
         try {
@@ -134,23 +185,6 @@ public class DBConnection {
             ResultSet results = statement.executeQuery(query);
 			if (results.next()) {
 				time = results.getTimestamp(1);
-				long elapsedTime = System.currentTimeMillis() - time.getTime();
-				if (elapsedTime < 3600000) {
-					long timeLeft = 3600000 - elapsedTime;
-					//TODO: Remove 's' if single minute or second
-					result = "You already claimed this hour! Try again in " + TimeUnit.MILLISECONDS.toMinutes(timeLeft) + " minutes and " + (TimeUnit.MILLISECONDS.toSeconds(timeLeft)/100) + " seconds.";
-				} else {
-					query = "UPDATE money_user SET (balance, last_claim) = (balance + 100, NOW()) WHERE uid = " + uid + " RETURNING balance;";
-					results = statement.executeQuery(query);
-					if (results.next()) {
-						int balance = results.getInt(1);
-						result = "Claimed 100 coins! New balance is " + balance;
-					} else {
-						result = "Error claiming coins :slight_frown:";
-					}
-				}
-			} else {
-				found = false;
 			}
             results.close();
             statement.close();
@@ -175,50 +209,8 @@ public class DBConnection {
                 error = true;
             }
         }
-        if (!found) {
-			return insertMoneyUser(uid);
-		}
-        return result;
+        return time;
 	}
-	
-	private static String insertMoneyUser(long uid) {
-        boolean error = false;
-		String query = "INSERT INTO money_user VALUES(" + uid + ",1000,NOW()) ON CONFLICT (uid) DO NOTHING;";
-		int inserted = 0;
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            inserted = statement.executeUpdate(query);
-            statement.close();
-            connection.close();
-        } catch (URISyntaxException | SQLException e) {
-            e.printStackTrace();
-            error = true;
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                error = true;
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                error = true;
-            }
-        }
-        if (!error && inserted != 0) {
-			return "Welcome! You have been given an initial balance of 1000 coins";
-        } else {
-			return "Unable to add new user. Something may have gone wrong :slight_frown:";
-		}
-    }
 	
 	private static int checkBalance(long uid) {
 		boolean error = false;
@@ -260,36 +252,19 @@ public class DBConnection {
         return balance;
 	}
 	
-	public static String handleBalance(long uid) {
-		int balance = checkBalance(uid);
-		if (balance < 0) {
-			return "There was an issue checking your balance, value returned was " + balance;
-		} else {
-			return "Your current balance is " + balance + " coins.";
-		}
-	}
-	
-	public static String handleGive(long donorUid, long recipientUid, int amount) {
-		int donorBalance = checkBalance(donorUid);
-		if (donorBalance < 0) {
-			return "Unable to give money. Balance check failed or was negative";
-		} else if (donorBalance < amount) {
-			return "Your balance of " + donorBalance + " is not enough to cover that!";
-		}
-		boolean error = false;
-		String query = "UPDATE money_user SET balance = balance - " + amount + " WHERE uid = " + donorUid + " RETURNING balance;";
+	private static int addMoney(long uid, int amount) {
+		String query = "UPDATE money_user SET balance = balance + " + amount + " WHERE uid = " + donorUid + " RETURNING balance;";
         Connection connection = null;
         Statement statement = null;
+        int balance = 0;
         try {
             connection = getConnection();
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             if (results.next()) {
-            	donorBalance = results.getInt(1);
-            	query = "UPDATE money_user SET balance = balance + " + amount + " WHERE uid = " + recipientUid + ";";
-            	results = statement.executeQuery(query);
+            	balance = results.getInt(1);
             } else {
-            	donorBalance = -1;
+            	balance = -1;
             }
             statement.close();
             connection.close();
@@ -313,11 +288,42 @@ public class DBConnection {
                 error = true;
             }
         }
-        if (donorBalance < 0) {
-        	return "Unable to process transaction";
-        } else {
-        	return "Gave " + amount + ", your new balance is " + donorBalance;
+        return balance;
+	}
+	
+	private static boolean addUser(long uid) {
+		boolean error = false;
+		String query = "INSERT INTO money_user VALUES(" + uid + ",1000,NOW()) ON CONFLICT (uid) DO NOTHING;";
+		int inserted = 0;
+        Connection connection = null;
+        Statement statement = null;
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            inserted = statement.executeUpdate(query);
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+            error = true;
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                error = true;
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                error = true;
+            }
         }
+        return error;
 	}
 
     private static boolean ExecuteQuery(String query) {

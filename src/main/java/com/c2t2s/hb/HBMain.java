@@ -1,19 +1,19 @@
 package com.c2t2s.hb;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.event.domain.message.MessageCreateEvent;
+import org.javacord.api.DiscordApi;
+import org.javacord.api.event.message.MessageCreateEvent;
+import org.javacord.api.entity.user.User;
 
 import java.text.ParseException;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.6.1"; //Update this in pom.xml too
+    private static final String version = "0.7.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -25,52 +25,48 @@ public class HBMain {
         commands.put("version", HBMain::handleVersion);
         commands.put("claim", HBMain::handleClaim);
         commands.put("balance", HBMain::handleBalance);
-        //commands.put("give", HBMain::handleGive);
-        final DiscordClient client = new DiscordClientBuilder(args[0]).build();
-        client.getEventDispatcher().on(MessageCreateEvent.class)
-                .subscribe(HBMain::HandleMessage);
-        client.login().block();
+        commands.put("give", HBMain::handleGive);
+        commands.put("workout", HBMain::handleWorkout)
+        DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
+        api.addMessageCreateListener(HBMain::handleMessage);
     }
 
     interface Command {
         void execute(MessageCreateEvent event, String args);
     }
 
-    private static void HandleMessage(MessageCreateEvent event) {
-        String content = event.getMessage().getContent().orElse("").toLowerCase();
-        if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
+    private static void handleMessage(MessageCreateEvent event) {
+    	String content = event.getMessageContent().toLowerCase();
+    	if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
             content = content.substring(1); //Remove the prefix character
             String[] args = content.split(" ", 2);
             if (commands.containsKey(args[0])) {
                 commands.get(args[0]).execute(event, args.length > 1 ? args[1] : "");
             } else { //Received command not present in command map
-                event.getMessage().getChannel().block()
-                        .createMessage("Unrecognized command, try `+help`").block();
+            	event.getChannel().sendMessage("Unrecognized command, try `+help`");
             }
         } else if (content.contains("i love health bot")) {
-            event.getMessage().getChannel().block()
-                    .createMessage(":heart:").block();
+        	event.getChannel().sendMessage(":heart:");
         }
     }
 
     private static void handleHelp(MessageCreateEvent event, String args) {
-        event.getMessage().getChannel().block()
-                .createMessage("Health Bot Version " + version
+    	event.getChannel().sendMessage("Health Bot Version " + version
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
                 + "\n\t+version Display the bot's current version"
                 + "\n\t+claim Claim coins!"
                 + "\n\t+balance Check your balance"
                 + "\n\t+give <amount> <@User> Gives money to another person"
-                + "\n\t+roll [number] Roll a number up to the inputted max").block();
+                + "\n\t+roll [number] Roll a number up to the inputted max");
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
-        event.getMessage().getChannel().block().createMessage(version).block();
+    	event.getChannel().sendMessage(version);
     }
 
     private static void handleTest(MessageCreateEvent event, String args) {
-        event.getMessage().getChannel().block().createMessage("Hi! I'm Health Bot").block();
+    	event.getChannel().sendMessage("Hi! I'm Health Bot");
     }
 
     private static void handleWorkout(MessageCreateEvent event, String args) {
@@ -78,13 +74,14 @@ public class HBMain {
         //    String response = DBConnection.handleWorkout(member);
         //    event.getMessage().getChannel().block().createMessage(response).block();
         //});
-    	event.getMessage().getChannel().block().createMessage("This functionality has been deprecated").block();
+    	event.getChannel().sendMessage("Nice job! I'll start tracking this again soon (tm). Running a casino is just more profitable");
     }
 
     //TODO: Handle negative modifiers in dice rolls
     private static void handleRoll(MessageCreateEvent event, String args) {
         int max = 0;
         Random random = new Random();
+        String finalMessage = "";
         try {
             if (args.contains("d")) {
                 //Dice rolling
@@ -122,37 +119,30 @@ public class HBMain {
                     }
                     message += text;
                 }
-                event.getMessage().getChannel().block().createMessage(message + "\n`" + total + "`").block();
+                finalMessage = message + "\n`" + total + "`";
             } else {
                 // Deathrolling
                 max = Integer.parseInt(args);
                 if (max < 0) {
-                    event.getMessage().getChannel().block().createMessage("Negative numbers make me sad :slight_frown:").block();
-                    return;
+                	finalMessage = "Negative numbers make me sad :slight_frown:";
                 }
                 int roll = random.nextInt(max) + 1;;
-                String oneText = (roll == 1) ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "";
-                event.getMessage().getChannel().block().createMessage("" + roll + oneText).block();
+                String oneText = ;
+                finalMessage = "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
             }
         } catch (NumberFormatException e) {
             // Unrecognized syntax
-            event.getMessage().getChannel().block().createMessage("Unrecognized roll syntax. Try `+roll 3` or `+roll 2d6`").block();
-            return;
+        	finalMessage = "Unrecognized roll syntax. Try `+roll 3` or `+roll 2d6`";
         }
+        event.getChannel().sendMessage(finalMessage);
     }
     
     private static void handleClaim(MessageCreateEvent event, String args) {
-    	event.getMember().ifPresent(member -> {
-            String response = DBConnection.handleClaim(member.getId().asLong());
-            event.getMessage().getChannel().block().createMessage(response).block();
-        });
+    	event.getChannel().sendMessage(DBConnection.handleClaim(event.getMessageAuthor().getId()));
     }
     
     private static void handleBalance(MessageCreateEvent event, String args) {
-    	event.getMember().ifPresent(member -> {
-            String response = DBConnection.handleBalance(member.getId().asLong());
-            event.getMessage().getChannel().block().createMessage(response).block();
-        });
+    	event.getChannel().sendMessage(DBConnection.handleBalance(event.getMessageAuthor().getId()));
     }
     
     private static void handleGive(MessageCreateEvent event, String args) {
@@ -164,25 +154,17 @@ public class HBMain {
 		    String firstArg = args.substring(0, args.indexOf(' '));
     		try {
     		    amount = Integer.parseInt(firstArg);
+    		    List<User> mentions = event.getMessage().getMentionedUsers();
+    	    	if (mentions.isEmpty()) {
+    	    		response = "Unable to process transaction, no users were mentioned! Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
+    	    	} else {
+    	    		long recepientUid = mentions.get(0).getId();
+    	    		response = DBConnection.handleGive(event.getMessageAuthor().getId(), recepientUid, amount);
+    	    	}
     		} catch (NumberFormatException e) {
-    			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\\n\\t+give 100 @100% Hippo (you will need to ping the user)";
+    			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
     		}
     	}
-    	long recepientUid = 0;
-    	try {
-    		recepientUid = event.getMessage().getUserMentionIds().iterator().next().asLong();
-    	} catch (NoSuchElementException e) {
-    		response = "Unable to process transaction, no users were mentioned!";
-    	}
-    	final long otherUid = recepientUid;
-    	final int finalAmount = amount;
-    	if (!response.isEmpty()) {
-	    	event.getMember().ifPresent(member -> {
-	            String res = DBConnection.handleGive(member.getId().asLong(), otherUid, finalAmount);
-				event.getMessage().getChannel().block().createMessage(res).block();
-	        });
-		} else {
-			event.getMessage().getChannel().block().createMessage(response).block();
-		}
+    	event.getChannel().sendMessage(response);
     }
 }
