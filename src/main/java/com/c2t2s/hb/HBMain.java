@@ -174,7 +174,7 @@ public class HBMain {
     	}
     	if (!response.isEmpty()) {
 	    	event.getMember().ifPresent(member -> {
-	            string res = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
+	            String res = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
 				event.getMessage().getChannel().block().createMessage(res).block();
 	        });
 		} else {
