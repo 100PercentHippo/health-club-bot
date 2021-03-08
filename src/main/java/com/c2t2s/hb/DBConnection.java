@@ -129,8 +129,8 @@ public class DBConnection {
 				setClaimTime(uid, "24 hours");
 				return response + "You were caught! You are dragged off to jail for 24 hours.";
 			} else { // Succeeded!
-				int haul = random.nextInt(10) + 1;
-				int balance = addMoney(uid, 100 * haul);
+				int haul = (random.nextInt(10) + 1) * 100;
+				int balance = addMoney(uid, haul);
 				return response + "Your heist was successful, and you make away with a haul of " + haul + ". Your new balance is " + balance;
 			}
 		}
