@@ -106,7 +106,7 @@ public class DBConnection {
 	
 	public static String handleRob(long uid) {
 		Timestamp time = checkClaimTime(uid);
-		String response;
+		String response = "";
 		if (time == null) {
 			if (addUser(uid)) {
 				response = "Welcome! You have been given an initial balance of 1000 coins\n";
