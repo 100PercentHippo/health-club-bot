@@ -1,6 +1,7 @@
 package com.c2t2s.hb;
 
 import org.javacord.api.DiscordApi;
+import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.entity.user.User;
 

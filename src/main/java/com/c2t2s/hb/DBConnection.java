@@ -1,9 +1,5 @@
 package com.c2t2s.hb;
 
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.util.Snowflake;
-import discord4j.core.object.entity.Member;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
@@ -127,7 +123,7 @@ public class DBConnection {
 	
 	private static String insertMoneyUser(long uid) {
         boolean error = addUser(uid);
-        if (!error && inserted != 0) {
+        if (!error) {
 			return "Welcome! You have been given an initial balance of 1000 coins";
         } else {
 			return "Unable to add new user. Something may have gone wrong :slight_frown:";
@@ -191,7 +187,6 @@ public class DBConnection {
             connection.close();
         } catch (URISyntaxException | SQLException e) {
             e.printStackTrace();
-            error = true;
         } finally {
             try {
                 if (statement != null) {
@@ -199,14 +194,13 @@ public class DBConnection {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
-                error = true;
             }
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                error = true;
+            	e.printStackTrace();
             }
         }
         return time;
@@ -231,7 +225,6 @@ public class DBConnection {
             connection.close();
         } catch (URISyntaxException | SQLException e) {
             e.printStackTrace();
-            error = true;
         } finally {
             try {
                 if (statement != null) {
@@ -239,21 +232,20 @@ public class DBConnection {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
-                error = true;
             }
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                error = true;
+                e.printStackTrace();
             }
         }
         return balance;
 	}
 	
 	private static int addMoney(long uid, int amount) {
-		String query = "UPDATE money_user SET balance = balance + " + amount + " WHERE uid = " + donorUid + " RETURNING balance;";
+		String query = "UPDATE money_user SET balance = balance + " + amount + " WHERE uid = " + uid + " RETURNING balance;";
         Connection connection = null;
         Statement statement = null;
         int balance = 0;
@@ -270,7 +262,6 @@ public class DBConnection {
             connection.close();
         } catch (URISyntaxException | SQLException e) {
             e.printStackTrace();
-            error = true;
         } finally {
             try {
                 if (statement != null) {
@@ -278,14 +269,13 @@ public class DBConnection {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
-                error = true;
             }
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                error = true;
+                e.printStackTrace();
             }
         }
         return balance;
@@ -300,12 +290,13 @@ public class DBConnection {
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            inserted = statement.executeUpdate(query);
+            if (statement.executeUpdate(query) < 1) {
+            	error = true;
+            }
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
             e.printStackTrace();
-            error = true;
         } finally {
             try {
                 if (statement != null) {
@@ -313,14 +304,13 @@ public class DBConnection {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
-                error = true;
             }
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                error = true;
+                e.printStackTrace();
             }
         }
         return error;
@@ -339,7 +329,6 @@ public class DBConnection {
             connection.close();
         } catch (URISyntaxException | SQLException e) {
             e.printStackTrace();
-            error = true;
         } finally {
             try {
                 if (statement != null) {
@@ -347,14 +336,13 @@ public class DBConnection {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
-                error = true;
             }
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                error = true;
+                e.printStackTrace();
             }
         }
         return error;
