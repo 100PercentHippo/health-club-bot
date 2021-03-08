@@ -172,9 +172,11 @@ public class HBMain {
     	} catch (NoSuchElementException e) {
     		response = "Unable to process transaction, no users were mentioned!";
     	}
+    	final long otherUid = recepientUid;
+    	final int finalAmount = amount;
     	if (!response.isEmpty()) {
 	    	event.getMember().ifPresent(member -> {
-	            String res = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
+	            String res = DBConnection.handleGive(member.getId().asLong(), otherUid, finalAmount);
 				event.getMessage().getChannel().block().createMessage(res).block();
 	        });
 		} else {
