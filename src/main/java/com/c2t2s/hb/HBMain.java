@@ -3,7 +3,6 @@ package com.c2t2s.hb;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.common.util.Snowflake;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -170,8 +169,7 @@ public class HBMain {
 		if (response.isEmpty() && mentions.isEmpty()) {
 			response = "Unable to process transaction, no users were mentioned!";
 		} else if (response.isEmpty()) {
-			Iterator<Snowflake> it = mentions.iterator();
-			long recepientUid = it.next().asLong();
+			long recepientUid = mentions.iterator().next().asLong();
 	    	event.getMember().ifPresent(member -> {
 	            response = DBConnection.handleGive(member.getId().asLong(), recepientUid, amount);
 	        });
