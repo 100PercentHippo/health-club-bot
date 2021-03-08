@@ -108,7 +108,7 @@ public class DBConnection {
 		Timestamp time = checkClaimTime(uid);
 		String response;
 		if (time == null) {
-			if (insertMoneyUser(uid)) {
+			if (addUser(uid)) {
 				response = "Welcome! You have been given an initial balance of 1000 coins\n";
 			} else {
 				return "Unable to add new user, something went wrong :slight_frown:. Try +claim";
