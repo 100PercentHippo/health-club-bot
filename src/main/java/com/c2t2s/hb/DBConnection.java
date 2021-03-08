@@ -243,13 +243,12 @@ public class DBConnection {
 	}
 	
 	private static void setClaimTime(long uid, String interval) {
-		String query = "UPDATE money_user SET last_claim = NOW() + INTERVAL '" + interval + "';";
+		String query = "UPDATE money_user SET last_claim = NOW() + INTERVAL '" + interval + "' WHERE uid = " + uid + ";";
         Connection connection = null;
         Statement statement = null;
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
             statement.executeUpdate(query);
             statement.close();
             connection.close();
