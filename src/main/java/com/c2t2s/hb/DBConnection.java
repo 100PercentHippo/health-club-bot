@@ -126,12 +126,18 @@ public class DBConnection {
 		} else {
 			Random random = new Random();
 			if (random.nextInt(2) == 0) { // Busted
-				setClaimTime(uid, "24 hours");
-				return response + "You were caught! You are dragged off to jail for 24 hours.";
+				setClaimTime(uid, "2 hours");
+				return response + "You were caught! You are dragged off to jail for 2 hours.";
 			} else { // Succeeded!
-				int haul = (random.nextInt(10) + 1) * 100;
-				int balance = addMoney(uid, haul);
-				return response + "Your heist was successful, and you make away with a haul of " + haul + ". Your new balance is " + balance;
+				if (random.nextInt(10) == 9) {
+					int haul = (random.nextInt(3) * 250) + 500;
+					int balance = addMoney(uid, haul);
+					return response + "You find a safebox packed with diamonds! You sell them for " + haul + " coins! Your new balance is " + balance;
+				} else {
+			    	int haul = (random.nextInt(3) + 1) * 100;
+			     	int balance = addMoney(uid, haul);
+				    return response + "Your heist was successful, and you make away with a haul of " + haul + " coins. Your new balance is " + balance;
+				}
 			}
 		}
 	}
