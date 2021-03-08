@@ -25,7 +25,7 @@ public class HBMain {
         commands.put("version", HBMain::handleVersion);
         commands.put("claim", HBMain::handleClaim);
         commands.put("balance", HBMain::handleBalance);
-        commands.put("give", HBMain::handleGive);
+        //commands.put("give", HBMain::handleGive);
         final DiscordClient client = new DiscordClientBuilder(args[0]).build();
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .subscribe(HBMain::HandleMessage);
