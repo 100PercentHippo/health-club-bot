@@ -114,11 +114,11 @@ public class DBConnection {
 				return "Unable to add new user, something went wrong :slight_frown:. Try +claim";
 			}
 		}
-		long elapsedTime = System.currentTimeMillis() - time.getTime();
-		if (elapsedTime < 0) {
-			long hours = TimeUnit.MILLISECONDS.toHours(elapsedTime);
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime);
-			long seconds = (TimeUnit.MILLISECONDS.toSeconds(elapsedTime)/100);
+		long remainingWait = time.getTime() - System.currentTimeMillis();
+		if (elapsedTime > 0) {
+			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait);
+			long seconds = (TimeUnit.MILLISECONDS.toSeconds(remainingWait)/100);
 			return response + "You are unable to rob! Try again in "
 				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : "")
 			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
@@ -141,11 +141,11 @@ public class DBConnection {
 		if (time == null) {
 			return insertMoneyUser(uid);
 		}
-		long elapsedTime = System.currentTimeMillis() - time.getTime();
-		if (elapsedTime < 0) {
-			long hours = TimeUnit.MILLISECONDS.toHours(elapsedTime);
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime);
-			long seconds = (TimeUnit.MILLISECONDS.toSeconds(elapsedTime)/100);
+		long remainingWait = time.getTime() - System.currentTimeMillis();
+		if (elapsedTime > 0) {
+			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait);
+			long seconds = (TimeUnit.MILLISECONDS.toSeconds(remainingWait)/100);
 			return "You are unable to claim! Try again in "
 				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : "")
 			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
