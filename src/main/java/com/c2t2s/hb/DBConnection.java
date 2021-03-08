@@ -120,8 +120,8 @@ public class DBConnection {
 			long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime);
 			long seconds = (TimeUnit.MILLISECONDS.toSeconds(elapsedTime)/100);
 			return response + "You are unable to rob! Try again in "
-				+ hours > 0 : (hours + " hour" + (hours == 1 ? "" : "s") + " and ") ? ""
-			    + minutes > 0 : (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") ? ""
+				+ hours > 0 ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : ""
+			    + minutes > 0 ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : ""
 			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
 		} else {
 			Random random = new Random();
@@ -147,8 +147,8 @@ public class DBConnection {
 			long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime);
 			long seconds = (TimeUnit.MILLISECONDS.toSeconds(elapsedTime)/100);
 			return "You are unable to claim! Try again in "
-				+ hours > 0 : (hours + " hour" + (hours == 1 ? "" : "s") + " and ") ? ""
-			    + minutes > 0 : (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") ? ""
+				+ hours > 0 ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : ""
+			    + minutes > 0 ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : ""
 			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
 		} else {
 			int balance = addMoney(uid, 100);
@@ -242,7 +242,7 @@ public class DBConnection {
         return time;
 	}
 	
-	private static setClaimTime(long uid, String interval) {
+	private static void setClaimTime(long uid, String interval) {
 		String query = "UPDATE money_user SET last_claim = NOW() + INTERVAL '" + interval + "';";
         Connection connection = null;
         Statement statement = null;
