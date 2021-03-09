@@ -184,6 +184,7 @@ public class DBConnection {
 //	4 of a kind: 1/25               6:1
 //	3 of a kind: 12/25              0.5:1
 //	Rainbow:     1/24               6:1
+//  2 of a kind: High chance        0.1:1
 //	1 diamond:   1/20               1:1
 //	2 diamonds:  1/1000             10:1
 //	3 diamonds:  1/1 000 000        100:1
@@ -199,7 +200,7 @@ public class DBConnection {
 		}
 		Random random = new Random();
 		int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-		String output = "";
+		String output = "Bid " + amount + " on slots\n";
 		int winnings = 0;
 		for (int i = 0; i < 5; i++) {
 			switch (random.nextInt(5)) {
@@ -221,7 +222,7 @@ public class DBConnection {
 				break;
 			case 4:
 				if (random.nextInt(20) == 10) {
-					output += ":diamond:";
+					output += ":gem:";
 					diamonds++;
 				} else {
 					output += ":grapes:";
@@ -243,18 +244,17 @@ public class DBConnection {
 		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
 			output += "Fruit salad! ";
 			winnings += 6 * amount;
+		} else {
+			output += "2 of a kind.";
+			winnings += (int)(0.1 * amount);
 		}
 		if (diamonds > 0) {
 			output += diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! ";
 			if (diamonds > 3) { output += "Jackpot!!! "; }
-			winnings += (int)Math.pow(10, diamonds - 1);
+			winnings += (int)Math.pow(10, diamonds);
 		}
 		balance = addMoney(uid, winnings - amount);
-		if (winnings == 0) {
-			output += "Better luck next time. New balance: " + balance;
-		} else {
-			output += "Total winnings: " + (winnings - amount) + " New balance: " + balance;
-		}
+	    output += "Total winnings: " + (winnings) + " New balance: " + balance;
 		return output;
 	}
 	
