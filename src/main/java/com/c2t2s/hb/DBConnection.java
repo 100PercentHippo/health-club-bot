@@ -163,6 +163,16 @@ public class DBConnection {
 		}
 	}
 	
+	public static String handleGuess(long uid, int guess, int amount) {
+		Random random = new Random();
+		int correct = random.nextInt(10) + 1
+		if (guess == correct) {
+			return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 10 * amount);
+		} else {
+		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
+		}
+	}
+	
 	private static String insertMoneyUser(long uid) {
         boolean error = addUser(uid);
         if (!error) {
@@ -393,7 +403,7 @@ public class DBConnection {
 	}
 	
 	private static String parseLeaderboard() {
-		String query = "SELECT (uid, balance) FROM money_user ORDER BY balance DESC LIMIT 3;";
+		String query = "SELECT * FROM money_user ORDER BY balance DESC LIMIT 3;";
         Connection connection = null;
         Statement statement = null;
         String leaderboard = "";

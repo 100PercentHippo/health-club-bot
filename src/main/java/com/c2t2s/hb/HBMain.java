@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.8.0"; //Update this in pom.xml too
+    private static final String version = "0.9.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -33,6 +33,7 @@ public class HBMain {
         commands.put("rob", HBMain::handleRob);
         commands.put("workout", HBMain::handleWorkout);
         commands.put("leaderboard", HBMain::handleLeaderboard);
+        commands.put("guess", HBMain::handleGuess);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -64,6 +65,7 @@ public class HBMain {
                 + "\n\t+claim Claim coins!"
                 + "\n\t+balance Check your balance"
                 + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
+                + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
                 + "\n\t+give <amount> <@User> Gives money to another person"
                 + "\n\t+leaderboard Check who's the richest"
                 + "\n\t+roll [number] Roll a number up to the inputted max");
@@ -184,6 +186,27 @@ public class HBMain {
     	    server = event.getServer().get();
     	} catch (NoSuchElementException e) { }
     	event.getChannel().sendMessage(DBConnection.handleLeaderboard());
+    }
+    
+    public static void handleGuess(MessageCreateEvent event, String args) {
+    	String response = "";
+    	try {
+    		if (!args.contains(" ")) {
+    			response = "Not enough arguments to guess. Sample usage: +guess 5 100"
+    		}
+    		int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
+    		int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
+    		if (guess < 1 || guess > 10) {
+    			response = "Guess a number from 1 to 10";
+    		} else if (amount < 10) {
+    			response = "Minimum bid for guessing is 10 coins";
+    		} else {
+    			response = DBConnection.handleGuess(event.getMessageAuthor().getId(), guess, amount);
+    		}
+    	} catch (NumberFormatException e) {
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: +guess 5 100";
+    	}
+    	event.getChannel().sendMessage(response);
     }
     
     public static String getUsername(long uid) {
