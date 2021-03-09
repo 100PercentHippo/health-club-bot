@@ -233,10 +233,10 @@ public class HBMain {
     		final String line2 = response.substring(index, index = response.indexOf('\n', index + 1));
     		final String line3 = response.substring(index);
         	event.getChannel().sendMessage(line1).thenAccept(message -> {
-        		message.edit(line1 + line2.substring(0, final index1 = (line2.indexOf("::") + 1))).thenAccept(v -> {
-        			message.edit(line1 + line2.substring(0, final index2 = (line2.indexOf("::", index1 + 1)))).thenAccept(v2 -> {
-            			message.edit(line1 + line2.substring(0, final index3 = (line2.indexOf("::", index2 + 1)))).thenAccept(v3 -> {
-                			message.edit(line1 + line2.substring(0, final index4 = (line2.indexOf("::", index3 + 1)))).thenAccept(v4 -> {
+        		message.edit(line1 + line2.substring(0, int index1 = (line2.indexOf("::") + 1))).thenAccept(v -> {
+        			message.edit(line1 + line2.substring(0, int index2 = (line2.indexOf("::", index1 + 1)))).thenAccept(v2 -> {
+            			message.edit(line1 + line2.substring(0, int index3 = (line2.indexOf("::", index2 + 1)))).thenAccept(v3 -> {
+                			message.edit(line1 + line2.substring(0, int index4 = (line2.indexOf("::", index3 + 1)))).thenAccept(v4 -> {
                 				message.edit(line1 + line2 + line3);
                 			});
             			});
