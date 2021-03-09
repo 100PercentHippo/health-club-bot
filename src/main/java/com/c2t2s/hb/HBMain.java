@@ -17,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "0.10.6"; //Update this in pom.xml too
+    private static final String version = "0.10.7"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -238,6 +238,7 @@ public class HBMain {
         	    	event.getChannel().sendMessage(response);
         		} else {
             	    response = DBConnection.handleSlots(event.getMessageAuthor().getId(), bid);
+            	    event.getChannel().sendMessage(response);
         		}
         	} catch (NumberFormatException e) {
         		response = "Unable to parse argument \"" + args + "\". Sample usage: `+slots` or `+slots 20`";
