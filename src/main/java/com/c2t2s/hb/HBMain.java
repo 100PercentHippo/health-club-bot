@@ -213,6 +213,7 @@ public class HBMain {
     	try {
     		return server.getMemberById(uid).get().getNickname(server).get();
     	} catch (NoSuchElementException e) {
+    		System.out.println("Server: " + server + ", uid: " + uid);
     		return "[Unknown]";
     	}
     }
