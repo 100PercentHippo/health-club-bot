@@ -214,7 +214,7 @@ public class HBMain {
     
     public static String getUsername(long uid) {
     	try {
-    		return server.getMemberById(uid).get().getMentionTag();
+    		return server.getMemberById(uid).get().getNicknameMentionTag();
     	} catch (NoSuchElementException e) {
     		System.out.println("Server: " + server + ", uid: " + uid);
     		return "[Unknown]";
