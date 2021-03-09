@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.10.2"; //Update this in pom.xml too
+    private static final String version = "0.10.3"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -233,7 +233,7 @@ public class HBMain {
     		String line3 = response.substring(index + 1);
     		line2.indexOf("::");
         	event.getChannel().sendMessage(line1).thenAccept(message -> {
-        		message.edit(line1 + line2).thenAccept({
+        		message.edit(line1 + line2).thenAccept(null -> {
         			message.edit(line1 + line2 + line3);
         		});
         	});
