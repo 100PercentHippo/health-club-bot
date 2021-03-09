@@ -185,6 +185,8 @@ public class HBMain {
     	try {
     	    server = event.getServer().get();
     	} catch (NoSuchElementException e) { }
+    	System.out.println("Author: " + event.getMessageAuthor().getId() + " " + getUsername(event.getMessageAuthor().getId())
+    	                   + "\nUser: " + event.getMessageAuthor().asUser().get().getId() + " " + getUsername(event.getMessageAuthor().asUser().get().getId()));)
     	event.getChannel().sendMessage(DBConnection.handleLeaderboard());
     }
     
@@ -193,15 +195,16 @@ public class HBMain {
     	try {
     		if (!args.contains(" ")) {
     			response = "Not enough arguments to guess. Sample usage: +guess 5 100";
-    		}
-    		int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
-    		int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
-    		if (guess < 1 || guess > 10) {
-    			response = "Guess a number from 1 to 10";
-    		} else if (amount < 10) {
-    			response = "Minimum bid for guessing is 10 coins";
-    		} else {
-    			response = DBConnection.handleGuess(event.getMessageAuthor().getId(), guess, amount);
+    	   	} else {
+    	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
+    	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
+    	     	if (guess < 1 || guess > 10) {
+    		    	response = "Guess a number from 1 to 10";
+    	    	} else if (amount < 10) {
+    			    response = "Minimum bid for guessing is 10 coins";
+    	    	} else {
+    	    		response = DBConnection.handleGuess(event.getMessageAuthor().getId(), guess, amount);
+    		    }
     		}
     	} catch (NumberFormatException e) {
     		response = "Unable to parse arguments \"" + args + "\". Sample usage: +guess 5 100";
