@@ -245,12 +245,12 @@ public class DBConnection {
 			winnings += 6 * amount;
 		}
 		if (diamonds > 0) {
-			ouput += diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! ";
+			output += diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! ";
 			if (diamonds > 3) { output += "Jackpot!!! "; }
 			winnings += (int)Math.pow(10, diamonds - 1);
 		}
-		int balance = addMoney(uid, winnings - amount);
-		if (winnings = 0) {
+		balance = addMoney(uid, winnings - amount);
+		if (winnings == 0) {
 			output += "Better luck next time. New balance: " + balance;
 		} else {
 			output += "Total winnings: " + (winnings - amount) + " New balance: " + balance;
