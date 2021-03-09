@@ -233,7 +233,7 @@ public class HBMain {
     		String line3 = response.substring(index + 1);
     		line2.indexOf("::");
         	event.getChannel().sendMessage(line1).thenAccept(message -> {
-        		message.edit(line1 + line2).thenAccept(() -> {
+        		message.edit(line1 + line2).thenAccept({
         			message.edit(line1 + line2 + line3);
         		});
         	});
