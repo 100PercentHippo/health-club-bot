@@ -120,7 +120,7 @@ public class DBConnection {
 			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait) - (60 * hours);
 			long seconds = TimeUnit.MILLISECONDS.toSeconds(remainingWait) - (3600 * hours) - (60 * minutes);
 			return response + "You are unable to rob! Try again in "
-				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : "")
+				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
 			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
 			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
 		} else {
@@ -153,7 +153,7 @@ public class DBConnection {
 			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait) - (60 * hours);
 			long seconds = TimeUnit.MILLISECONDS.toSeconds(remainingWait) - (3600 * hours) - (60 * minutes);
 			return "You are unable to claim! Try again in "
-				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : "")
+				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
 			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
 			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
 		} else {
@@ -272,7 +272,7 @@ public class DBConnection {
 		if (balance < 0) {
 			return "There was an issue checking your balance, value returned was " + balance;
 		} else {
-			return "Your current balance is " + balance + " coins.";
+			return "Your current balance is " + balance + " coin" + (balance == 1 ? "" : "s") + ".";
 		}
 	}
 	

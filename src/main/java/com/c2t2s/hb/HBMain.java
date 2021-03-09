@@ -202,8 +202,8 @@ public class HBMain {
     	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
     	     	if (guess < 1 || guess > 10) {
     		    	response = "Insead of " + guess + ", guess a number from 1 to 10";
-    	    	} else if (amount < 10) {
-    			    response = "Minimum bid for guessing is 10 coins";
+    	    	} else if (amount < 1) {
+    			    response = "Minimum bid for guessing is 1 coin";
     	    	} else {
     	    		response = DBConnection.handleGuess(event.getMessageAuthor().getId(), guess, amount);
     		    }
@@ -227,18 +227,29 @@ public class HBMain {
     	String response = "";
     	if (args.trim().isEmpty()) {
     		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
+    		int index = 0;
+    		String line1 = response.substring(0, index = response.indexOf('\n'));
+    		String line2 = response.substring(index + 1, index = response.indexOf('\n', index + 1));
+    		String line3 = response.substring(index + 1);
+    		line2.indexOf("::");
+        	event.getChannel().sendMessage(line1).thenAccept(message -> {
+        		message.edit(line1 + line2).thenAccept(() -> {
+        			message.edit(line1 + line2 + line3);
+        		});
+        	});
     	} else {
     		try {
         		int bid = Integer.parseInt(args.trim());
         		if (bid < 10) {
         			response = "Minimum bid for slots is 10 coins";
+        	    	event.getChannel().sendMessage(response);
         		} else {
             	    response = DBConnection.handleSlots(event.getMessageAuthor().getId(), bid);
         		}
         	} catch (NumberFormatException e) {
         		response = "Unable to parse argument \"" + args + "\". Sample usage: `+slots` or `+slots 20`";
+            	event.getChannel().sendMessage(response);
         	}
     	}
-    	event.getChannel().sendMessage(response);
     }
 }
