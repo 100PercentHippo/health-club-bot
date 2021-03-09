@@ -179,6 +179,85 @@ public class DBConnection {
 		}
 	}
 	
+// Payout:
+//	5 of a kind: 4/125              8:1
+//	4 of a kind: 1/25               6:1
+//	3 of a kind: 12/25              0.5:1
+//	Rainbow:     1/24               6:1
+//	1 diamond:   1/20               1:1
+//	2 diamonds:  1/1000             10:1
+//	3 diamonds:  1/1 000 000        100:1
+//	4 diamonds:  1/20 000 000       1000:1
+//	5 diamonds:  1/10 000 000 000   10000:1
+	
+	public static String handleSlots(long uid, int amount) {
+		int balance = checkBalance(uid);
+		if (balance < 0) {
+			return "Unable to guess. Balance check failed or was negative (" + balance +")";
+		} else if (balance < amount) {
+			return "Your balance of " + balance + " is not enough to cover that!";
+		}
+		Random random = new Random();
+		int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
+		String output = "";
+		int winnings = 0;
+		for (int i = 0; i < 5; i++) {
+			switch (random.nextInt(5)) {
+			case 0:
+				output += ":cherries:";
+				cherries++;
+				break;
+			case 1:
+				output += ":tangerine:";
+				oranges++;
+				break;
+			case 2:
+				output += ":lemon:";
+				lemons++;
+				break;
+			case 3:
+				output += ":blueberries:";
+				blueberries++;
+				break;
+			case 4:
+				if (random.nextInt(20) == 10) {
+					output += ":diamond:";
+					diamonds++;
+				} else {
+					output += ":grapes:";
+					grapes++;
+				}
+				break;
+			}
+		}
+		output += "\n";
+		if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
+			output += "5 of a kind! ";
+			winnings += 8 * amount;
+		} else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
+			output += "4 of a kind! ";
+			winnings += 6 * amount;
+		} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
+			output += "3 of a kind. ";
+			winnings += (int)(0.5 * amount);
+		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
+			output += "Fruit salad! ";
+			winnings += 6 * amount;
+		}
+		if (diamonds > 0) {
+			ouput += diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! ";
+			if (diamonds > 3) { output += "Jackpot!!! "}
+			winnings += (int)Math.pow(10, diamonds - 1);
+		}
+		int balance = addMoney(uid, winnings - amount);
+		if (winnings = 0) {
+			output += "Better luck next time. New balance: " + balance;
+		} else {
+			output += "Total winnings: " + (winnings - amount) + " New balance: " + balance;
+		}
+		return output;
+	}
+	
 	private static String insertMoneyUser(long uid) {
         boolean error = addUser(uid);
         if (!error) {
@@ -206,6 +285,10 @@ public class DBConnection {
 			return "Unable to give money. Balance check failed or was negative (" + donorBalance +")";
 		} else if (donorBalance < amount) {
 			return "Your balance of " + donorBalance + " is not enough to cover that!";
+		}
+		int recipientBalance = checkBalance(recipientUid);
+		if (recipientBalance < 0) {
+			insertMoneyUser(recipientUid);
 		}
 		donorBalance = addMoney(donorUid, -1 * amount);
 		addMoney(recipientUid, amount);

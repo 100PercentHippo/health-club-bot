@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.9.3"; //Update this in pom.xml too
+    private static final String version = "0.10.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -34,6 +34,7 @@ public class HBMain {
         commands.put("workout", HBMain::handleWorkout);
         commands.put("leaderboard", HBMain::handleLeaderboard);
         commands.put("guess", HBMain::handleGuess);
+        commands.put("slots", HBMain::handleSlots);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -66,6 +67,7 @@ public class HBMain {
                 + "\n\t+balance Check your balance"
                 + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
                 + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
+                + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
                 + "\n\t+give <amount> <@User> Gives money to another person"
                 + "\n\t+leaderboard Check who's the richest"
                 + "\n\t+roll [number] Roll a number up to the inputted max");
@@ -207,7 +209,7 @@ public class HBMain {
     		    }
     		}
     	} catch (NumberFormatException e) {
-    		response = "Unable to parse arguments \"" + args + "\". Sample usage: +guess 5 100";
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess 5` or `+guess 5 100`";
     	}
     	event.getChannel().sendMessage(response);
     }
@@ -219,5 +221,24 @@ public class HBMain {
     		System.out.println("Server: " + server + ", uid: " + uid);
     		return "<@!" + uid + ">";
     	}
+    }
+    
+    public static void handleSlots(MessageCreateEvent event, String args) {
+    	String response = "";
+    	if (args.trim().isEmpty()) {
+    		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
+    	} else {
+    		try {
+        		int bid = Integer.parseInt(args.trim()));
+        		if (bid < 10) {
+        			response = "Minimum bid for slots is 10 coins";
+        		} else {
+            	    response = DBConnection.handleSlots(event.getMessageAuthor().getId(), bid);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+slots` or `+slots 20`";
+        	}
+    	}
+    	event.getChannel().sendMessage(response);
     }
 }
