@@ -246,7 +246,7 @@ public class DBConnection {
 		}
 		if (diamonds > 0) {
 			ouput += diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! ";
-			if (diamonds > 3) { output += "Jackpot!!! "}
+			if (diamonds > 3) { output += "Jackpot!!! "; }
 			winnings += (int)Math.pow(10, diamonds - 1);
 		}
 		int balance = addMoney(uid, winnings - amount);

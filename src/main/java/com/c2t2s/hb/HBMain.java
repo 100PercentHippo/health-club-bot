@@ -229,7 +229,7 @@ public class HBMain {
     		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
     	} else {
     		try {
-        		int bid = Integer.parseInt(args.trim()));
+        		int bid = Integer.parseInt(args.trim());
         		if (bid < 10) {
         			response = "Minimum bid for slots is 10 coins";
         		} else {
