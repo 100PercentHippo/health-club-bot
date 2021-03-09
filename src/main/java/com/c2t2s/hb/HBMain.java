@@ -188,7 +188,7 @@ public class HBMain {
     
     public static String getUsername(long uid) {
     	try {
-    		return server.getMemberById(uid).get().getNickname(server);
+    		return server.getMemberById(uid).get().getNickname(server).get();
     	} catch (NoSuchElementException e) {
     		return "[Unknown]";
     	}
