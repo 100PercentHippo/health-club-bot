@@ -233,10 +233,10 @@ public class DBConnection {
 		}
 		output += "\n";
 		if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
-			output += "5 of a kind! ";
+			output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
 			winnings += 8 * amount;
 		} else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
-			output += "4 of a kind! ";
+			output += ":moneybag: 4 of a kind!! :moneybag: ";
 			winnings += 6 * amount;
 		} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
 			output += "3 of a kind. ";
@@ -244,17 +244,17 @@ public class DBConnection {
 		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
 			output += "Fruit salad! ";
 			winnings += 6 * amount;
-		} else {
-			output += "2 of a kind.";
-			winnings += (int)(0.1 * amount);
 		}
 		if (diamonds > 0) {
-			output += diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! ";
+			output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
 			if (diamonds > 3) { output += "Jackpot!!! "; }
 			winnings += (int)Math.pow(10, diamonds);
 		}
 		balance = addMoney(uid, winnings - amount);
-	    output += "Total winnings: " + (winnings) + " New balance: " + balance;
+		if (winnings > 0) {
+			output += "Total winnings: " + (winnings);
+		}
+	    output += " New balance: " + balance;
 		return output;
 	}
 	
