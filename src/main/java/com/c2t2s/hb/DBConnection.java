@@ -201,7 +201,7 @@ public class DBConnection {
 	}
 	
 	public static String handleLeaderboard() {
-		
+		return parseLeaderboard();
 	}
 	
 	//////////////////////////////////////////////////////////

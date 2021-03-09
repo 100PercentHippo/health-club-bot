@@ -181,7 +181,7 @@ public class HBMain {
     
     private static void handleLeaderboard(MessageCreateEvent event, String args) {
     	try {
-    	    server = event.GetServer().get();
+    	    server = event.getServer().get();
     	} catch (NoSuchElementException e) { }
     	event.getChannel().sendMessage(DBConnection.handleLeaderboard());
     }
