@@ -117,8 +117,8 @@ public class DBConnection {
 		long remainingWait = time.getTime() - System.currentTimeMillis();
 		if (remainingWait > 0) {
 			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait);
-			long seconds = (TimeUnit.MILLISECONDS.toSeconds(remainingWait)/100);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait) - (60 * hours);
+			long seconds = TimeUnit.MILLISECONDS.toSeconds(remainingWait) - (3600 * hours) - (60 * minutes);
 			return response + "You are unable to rob! Try again in "
 				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : "")
 			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
@@ -150,8 +150,8 @@ public class DBConnection {
 		long remainingWait = time.getTime() - System.currentTimeMillis();
 		if (remainingWait > 0) {
 			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait);
-			long seconds = (TimeUnit.MILLISECONDS.toSeconds(remainingWait)/100);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait) - (60 * hours);
+			long seconds = TimeUnit.MILLISECONDS.toSeconds(remainingWait) - (3600 * hours) - (60 * minutes);
 			return "You are unable to claim! Try again in "
 				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + " and ") : "")
 			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
@@ -198,6 +198,10 @@ public class DBConnection {
         } else {
         	return "Gave " + amount + ", your new balance is " + donorBalance;
         }
+	}
+	
+	public static String handleLeaderboard() {
+		
 	}
 	
 	//////////////////////////////////////////////////////////
@@ -387,16 +391,22 @@ public class DBConnection {
         }
         return error;
 	}
-
-    private static boolean ExecuteQuery(String query) {
-        boolean error = false;
+	
+	private static String parseLeaderboard() {
+		String query = "SELECT (uid, balance) FROM money_user ORDER BY balance DESC LIMIT 3;";
         Connection connection = null;
         Statement statement = null;
+        String leaderboard = "";
         try {
             connection = getConnection();
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
-            results.close();
+            int place = 1;
+            while (results.next()) {
+            	leaderboard += "#" + place + " ";
+            	leaderboard += HBMain.getUsername(results.getLong(1));
+            	leaderboard += " " + results.getInt(2) + "\n";
+            }
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
@@ -417,7 +427,7 @@ public class DBConnection {
                 e.printStackTrace();
             }
         }
-        return error;
-    }
+        return leaderboard;
+	}
 
 }

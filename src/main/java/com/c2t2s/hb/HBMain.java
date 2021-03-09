@@ -4,6 +4,7 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.entity.user.User;
+import org.javacord.api.entity.server.Server;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -14,9 +15,10 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.7.2"; //Update this in pom.xml too
+    private static final String version = "0.8.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
+    private static Server server;
 
     public static void main(String[] args) {
         commands.put("help", HBMain::handleHelp);
@@ -26,9 +28,11 @@ public class HBMain {
         commands.put("version", HBMain::handleVersion);
         commands.put("claim", HBMain::handleClaim);
         commands.put("balance", HBMain::handleBalance);
+        commands.put("bal", HBMain::handleBalance);
         commands.put("give", HBMain::handleGive);
         commands.put("rob", HBMain::handleRob);
         commands.put("workout", HBMain::handleWorkout);
+        commands.put("leaderboard", HBMain::handleLeaderboard);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -61,6 +65,7 @@ public class HBMain {
                 + "\n\t+balance Check your balance"
                 + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
                 + "\n\t+give <amount> <@User> Gives money to another person"
+                + "\n\t+leaderboard Check who's the richest"
                 + "\n\t+roll [number] Roll a number up to the inputted max");
     }
 
@@ -172,5 +177,20 @@ public class HBMain {
     		}
     	}
     	event.getChannel().sendMessage(response);
+    }
+    
+    private static void handleLeaderboard(MessageCreateEvent event, String args) {
+    	try {
+    	    server = event.GetServer().get();
+    	} catch (NoSuchElementException e) { }
+    	event.getChannel().sendMessage(DBConnection.handleLeaderboard());
+    }
+    
+    public static String getUsername(long uid) {
+    	try {
+    		return server.getMemberById(uid).get().getNickname(server);
+    	} catch (NoSuchElementException e) {
+    		return "[Unknown]";
+    	}
     }
 }
