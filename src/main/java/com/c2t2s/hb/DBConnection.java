@@ -252,9 +252,9 @@ public class DBConnection {
 		}
 		balance = addMoney(uid, winnings - amount);
 		if (winnings > 0) {
-			output += "Total winnings: " + (winnings);
+			output += "Total winnings: " + (winnings) + " ";
 		}
-	    output += " New balance: " + balance;
+	    output += "New balance: " + balance;
 		return output;
 	}
 	
