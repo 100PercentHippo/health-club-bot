@@ -186,7 +186,7 @@ public class HBMain {
     	    server = event.getServer().get();
     	} catch (NoSuchElementException e) { }
     	System.out.println("Author: " + event.getMessageAuthor().getId() + " " + getUsername(event.getMessageAuthor().getId())
-    	                   + "\nUser: " + event.getMessageAuthor().asUser().get().getId() + " " + getUsername(event.getMessageAuthor().asUser().get().getId()));)
+    	                   + "\nUser: " + event.getMessageAuthor().asUser().get().getId() + " " + getUsername(event.getMessageAuthor().asUser().get().getId()));
     	event.getChannel().sendMessage(DBConnection.handleLeaderboard());
     }
     
