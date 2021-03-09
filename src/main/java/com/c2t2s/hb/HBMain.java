@@ -9,6 +9,7 @@ import org.javacord.api.entity.server.Server;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 import java.util.NoSuchElementException;
@@ -16,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "0.10.4"; //Update this in pom.xml too
+    private static final String version = "0.10.5"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -224,7 +225,7 @@ public class HBMain {
     	}
     }
     
-    private static List<long> slotting;
+    private static List<Long> slotting = new LinkedList();
     
     public static void handleSlots(MessageCreateEvent event, String args) {
     	long uid = event.getMessageAuthor().getId();
