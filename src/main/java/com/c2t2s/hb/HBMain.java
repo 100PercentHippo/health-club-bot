@@ -229,11 +229,10 @@ public class HBMain {
     	if (args.trim().isEmpty()) {
     		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
     		int index = 0;
-    		String line1 = response.substring(0, index = response.indexOf('\n'));
-    		String line2 = response.substring(index, index = response.indexOf('\n', index + 1));
-    		String line3 = response.substring(index);
+    		final String line1 = response.substring(0, index = response.indexOf('\n'));
+    		final String line2 = response.substring(index, index = response.indexOf('\n', index + 1));
+    		final String line3 = response.substring(index);
         	event.getChannel().sendMessage(line1).thenAccept(message -> {
-        		try {
         		message.edit(line1 + line2.substring(0, index = (line2.indexOf("::") + 1))).thenAccept(v -> {
         			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v2 -> {
             			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v3 -> {
@@ -243,9 +242,6 @@ public class HBMain {
             			});
         			});
         		});
-        		} catch (InterruptedException e) {
-        			e.printStackTrace();
-        		}
         	});
     	} else {
     		try {
