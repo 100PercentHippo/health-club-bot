@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.9.2"; //Update this in pom.xml too
+    private static final String version = "0.9.3"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -199,7 +199,7 @@ public class HBMain {
     	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
     	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
     	     	if (guess < 1 || guess > 10) {
-    		    	response = "Guess a number from 1 to 10";
+    		    	response = "Insead of " + guess + ", guess a number from 1 to 10";
     	    	} else if (amount < 10) {
     			    response = "Minimum bid for guessing is 10 coins";
     	    	} else {

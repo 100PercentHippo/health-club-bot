@@ -6,7 +6,7 @@
 
     <groupId>com.c2t2s.hb</groupId>
     <artifactId>HealthBot</artifactId>
-    <version>0.9.2</version>
+    <version>0.9.3</version>
 
     <build>
         <plugins>
