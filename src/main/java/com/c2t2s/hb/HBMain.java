@@ -192,7 +192,7 @@ public class HBMain {
     	String response = "";
     	try {
     		if (!args.contains(" ")) {
-    			response = "Not enough arguments to guess. Sample usage: +guess 5 100"
+    			response = "Not enough arguments to guess. Sample usage: +guess 5 100";
     		}
     		int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
     		int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());

@@ -165,7 +165,7 @@ public class DBConnection {
 	
 	public static String handleGuess(long uid, int guess, int amount) {
 		Random random = new Random();
-		int correct = random.nextInt(10) + 1
+		int correct = random.nextInt(10) + 1;
 		if (guess == correct) {
 			return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 10 * amount);
 		} else {
