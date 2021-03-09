@@ -17,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "0.10.7"; //Update this in pom.xml too
+    private static final String version = "0.11.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -37,6 +37,8 @@ public class HBMain {
         commands.put("leaderboard", HBMain::handleLeaderboard);
         commands.put("guess", HBMain::handleGuess);
         commands.put("slots", HBMain::handleSlots);
+        commands.put("pickpocket", HBMain::handlePickpocket);
+        commands.put("pick", HBMain::handlePickpocket);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -68,6 +70,7 @@ public class HBMain {
                 + "\n\t+claim Claim coins!"
                 + "\n\t+balance Check your balance"
                 + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
+                + "\n\t+pickpocket Attempt a petty theft of pickpocketting"
                 + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
                 + "\n\t+give <amount> <@User> Gives money to another person"
@@ -156,6 +159,10 @@ public class HBMain {
     
     private static void handleRob(MessageCreateEvent event, String args) {
     	event.getChannel().sendMessage(DBConnection.handleRob(event.getMessageAuthor().getId()));
+    }
+    
+    private static void handlePickpocket(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(DBConnection.handlePickpocket(event.getMessageAuthor().getId()));
     }
     
     private static void handleBalance(MessageCreateEvent event, String args) {

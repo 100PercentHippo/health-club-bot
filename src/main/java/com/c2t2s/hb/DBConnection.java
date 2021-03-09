@@ -142,6 +142,44 @@ public class DBConnection {
 		}
 	}
 	
+	public static String handlePickpocket(long uid) {
+		Timestamp time = checkClaimTime(uid);
+		String response = "";
+		if (time == null) {
+			if (addUser(uid)) {
+				response = "Welcome! You have been given an initial balance of 1000 coins\n";
+			} else {
+				return "Unable to add new user, something went wrong :slight_frown:. Try +claim";
+			}
+		}
+		long remainingWait = time.getTime() - System.currentTimeMillis();
+		if (remainingWait > 0) {
+			long hours = TimeUnit.MILLISECONDS.toHours(remainingWait);
+			long minutes = TimeUnit.MILLISECONDS.toMinutes(remainingWait) - (60 * hours);
+			long seconds = TimeUnit.MILLISECONDS.toSeconds(remainingWait) - (3600 * hours) - (60 * minutes);
+			return response + "You are unable to pickpocket! Try again in "
+				+ ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
+			    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
+			    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
+		} else {
+			Random random = new Random();
+			if (random.nextInt(2) == 0) { // Busted
+				setClaimTime(uid, "30 minutes");
+				return response + "You were caught! You are dragged off to jail for 30 minutes.";
+			} else { // Succeeded!
+				if (random.nextInt(10) == 9) {
+					int haul = (random.nextInt(3) * 75) + 125;
+					int balance = addMoney(uid, haul);
+					return response + "You find a purse filled with diamonds! You sell them for " + haul + " coins! Your new balance is " + balance;
+				} else {
+			    	int haul = (random.nextInt(3) + 1) * 25;
+			     	int balance = addMoney(uid, haul);
+				    return response + "Your heist was successful, and you make away with a haul of " + haul + " coins. Your new balance is " + balance;
+				}
+			}
+		}
+	}
+	
 	public static String handleClaim(long uid) {
 		Timestamp time = checkClaimTime(uid);
 		if (time == null) {
@@ -184,7 +222,6 @@ public class DBConnection {
 //	4 of a kind: 1/25               6:1
 //	3 of a kind: 12/25              0.5:1
 //	Rainbow:     1/24               6:1
-//  2 of a kind: High chance        0.1:1
 //	1 diamond:   1/20               1:1
 //	2 diamonds:  1/1000             10:1
 //	3 diamonds:  1/1 000 000        100:1
