@@ -166,9 +166,9 @@ public class DBConnection {
 	public static String handleGuess(long uid, int guess, int amount) {
 		int balance = checkBalance(uid);
 		if (balance < 0) {
-			return "Unable to guess. Balance check failed or was negative (" + donorBalance +")";
+			return "Unable to guess. Balance check failed or was negative (" + balance +")";
 		} else if (balance < amount) {
-			return "Your balance of " + donorBalance + " is not enough to cover that!";
+			return "Your balance of " + balance + " is not enough to cover that!";
 		}
 		Random random = new Random();
 		int correct = random.nextInt(10) + 1;
