@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.NoSuchElementException;
+import java.lang.Thread;
 
 public class HBMain {
 
@@ -229,12 +230,21 @@ public class HBMain {
     		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
     		int index = 0;
     		String line1 = response.substring(0, index = response.indexOf('\n'));
-    		String line2 = response.substring(index + 1, index = response.indexOf('\n', index + 1));
-    		String line3 = response.substring(index + 1);
-    		line2.indexOf("::");
+    		String line2 = response.substring(index, index = response.indexOf('\n', index + 1));
         	event.getChannel().sendMessage(line1).thenAccept(message -> {
-        		message.edit(line1 + line2).thenAccept(v -> {
-        			message.edit(line1 + line2 + line3);
+        		Thread.sleep(500);
+        		message.edit(line1 + line2.substring(0, index = (line2.indexOf("::") + 1))).thenAccept(v -> {
+        			Thread.sleep(500);
+        			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v -> {
+        				Thread.sleep(500);
+            			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v -> {
+            				Thread.sleep(500);
+                			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v -> {
+                				Thread.sleep(500);
+                				message.edit(response);
+                			});
+            			});
+        			});
         		});
         	});
     	} else {
