@@ -235,11 +235,11 @@ public class HBMain {
         		Thread.sleep(500);
         		message.edit(line1 + line2.substring(0, index = (line2.indexOf("::") + 1))).thenAccept(v -> {
         			Thread.sleep(500);
-        			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v -> {
+        			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v2 -> {
         				Thread.sleep(500);
-            			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v -> {
+            			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v3 -> {
             				Thread.sleep(500);
-                			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v -> {
+                			message.edit(line1 + line2.substring(0, index = (line2.indexOf("::", index + 1)))).thenAccept(v4 -> {
                 				Thread.sleep(500);
                 				message.edit(response);
                 			});
