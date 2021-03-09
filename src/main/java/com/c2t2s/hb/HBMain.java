@@ -17,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "0.10.5"; //Update this in pom.xml too
+    private static final String version = "0.10.6"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -225,38 +225,11 @@ public class HBMain {
     	}
     }
     
-    private static List<Long> slotting = new LinkedList();
-    
     public static void handleSlots(MessageCreateEvent event, String args) {
-    	long uid = event.getMessageAuthor().getId();
-    	if (slotting.contains(uid)) {
-    		event.getChannel().sendMessage("You're already rolling slots!");
-    		return;
-    	} else {
-    		slotting.add(uid);
-    	}
     	String response = "";
     	if (args.trim().isEmpty()) {
-    		response = DBConnection.handleSlots(uid, 10);
-    		int index = 0;
-    		final String line1 = response.substring(0, index = response.indexOf('\n'));
-    		final String line2 = response.substring(index, index = response.indexOf('\n', index + 1));
-    		final String line3 = response.substring(index);
-        	event.getChannel().sendMessage(line1).thenAccept(message -> {
-        		int index1;
-        		message.edit(line1 + line2.substring(0, index1 = (line2.indexOf("::") + 1) + 1)).thenAccept(v -> {
-        			int index2;
-        			message.edit(line1 + line2.substring(0, index2 = (line2.indexOf("::", index1 + 1) + 1))).thenAccept(v2 -> {
-        				int index3;
-            			message.edit(line1 + line2.substring(0, index3 = (line2.indexOf("::", index2 + 1) + 1))).thenAccept(v3 -> {
-            				int index4;
-                			message.edit(line1 + line2.substring(0, index4 = (line2.indexOf("::", index3 + 1) + 1))).thenAccept(v4 -> {
-                				message.edit(line1 + line2 + line3);
-                			});
-            			});
-        			});
-        		});
-        	});
+    		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
+    		event.getChannel().sendMessage(response);
     	} else {
     		try {
         		int bid = Integer.parseInt(args.trim());
@@ -271,6 +244,5 @@ public class HBMain {
             	event.getChannel().sendMessage(response);
         	}
     	}
-    	slotting.remove(uid);
     }
 }
