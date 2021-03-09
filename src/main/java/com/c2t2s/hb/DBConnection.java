@@ -413,7 +413,7 @@ public class DBConnection {
             ResultSet results = statement.executeQuery(query);
             int place = 1;
             while (results.next()) {
-            	leaderboard += "#" + place + " ";
+            	leaderboard += "#" + place++ + " ";
             	leaderboard += HBMain.getUsername(results.getLong(1));
             	leaderboard += " " + results.getInt(2) + "\n";
             }

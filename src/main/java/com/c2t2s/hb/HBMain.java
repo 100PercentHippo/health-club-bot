@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 public class HBMain {
 
-    private static final String version = "0.9.1"; //Update this in pom.xml too
+    private static final String version = "0.9.2"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -217,7 +217,7 @@ public class HBMain {
     		return server.getMemberById(uid).get().getNicknameMentionTag();
     	} catch (NoSuchElementException e) {
     		System.out.println("Server: " + server + ", uid: " + uid);
-    		return "[Unknown]";
+    		return "<@!" + uid + ">";
     	}
     }
 }
