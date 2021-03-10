@@ -18,7 +18,7 @@ public class Casino {
 		private boolean inJail;
 		private Timestamp timer;
 		
-		public User(int w, int f, int p, int r, long b, boolean jail, Timestamp time) {
+		public static User(int w, int f, int p, int r, long b, boolean jail, Timestamp time) {
 			work = w;
 			fish = f;
 			pick = p;
