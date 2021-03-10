@@ -277,7 +277,7 @@ public class Casino {
 		    + "\n\t`+fish` Fish for 30 minutes. This is a lawful pursuit"
 		    + "\n\t`+pickpocket` Attempt to pickpocket. This is a criminal pursuit and risks 30 minutes in jail"
 		    + "\n\t`+rob` Attempt a robbery. This is a crimal pursuit and risks 2 hours of jail time"
-		    + "If you get a particularly lawful or particularly crimal record, you may get unique options."
+		    + "\nIf you get a particularly lawful or particularly crimal record, you may get unique options."
 		    + "You can also gamble with `+guess`, `+slots`, or `+minislots`";
 	}
 	
@@ -620,7 +620,7 @@ public class Casino {
 	
 	private static boolean addUser(long uid, String name) {
 		boolean error = false;
-		String query = "INSERT INTO money_user (uid, name) VALUES(" + uid + ", " + name +") ON CONFLICT (uid) DO NOTHING;";
+		String query = "INSERT INTO money_user (uid, name) VALUES(" + uid + ", '" + name +"') ON CONFLICT (uid) DO NOTHING;";
 		String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
@@ -632,10 +632,12 @@ public class Casino {
             connection = getConnection();
             statement = connection.createStatement();
             error = statement.executeUpdate(query) < 1;
-            error &= statement.executeUpdate(job) < 1;
-            error &= statement.executeUpdate(slots) < 1;
-            error &= statement.executeUpdate(guess) < 1;
-            error &= statement.executeUpdate(minislots) < 1;
+            if (!error) {
+                statement.executeUpdate(job);
+                statement.executeUpdate(slots);
+                statement.executeUpdate(guess);
+                statement.executeUpdate(minislots);
+            }
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
