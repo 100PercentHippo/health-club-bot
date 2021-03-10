@@ -632,10 +632,10 @@ public class Casino {
             connection = getConnection();
             statement = connection.createStatement();
             error = statement.executeUpdate(query) < 1;
-            error &= statement.executeUpdate(job);
-            error &= statement.executeUpdate(slots);
-            error &= statement.executeUpdate(guess);
-            error &= statement.executeUpdate(minislots);
+            error &= statement.executeUpdate(job) < 1;
+            error &= statement.executeUpdate(slots) < 1;
+            error &= statement.executeUpdate(guess) < 1;
+            error &= statement.executeUpdate(minislots) < 1;
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
