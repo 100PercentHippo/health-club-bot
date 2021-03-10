@@ -17,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "0.11.0"; //Update this in pom.xml too
+    private static final String version = "1.0.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
     private static Server server;
@@ -27,18 +27,25 @@ public class HBMain {
         commands.put("test", HBMain::handleTest);
         commands.put("roll", HBMain::handleRoll);
         commands.put("r", HBMain::handleRoll);
+        commands.put("ver", HBMain::handleVersion);
         commands.put("version", HBMain::handleVersion);
         commands.put("claim", HBMain::handleClaim);
         commands.put("balance", HBMain::handleBalance);
         commands.put("bal", HBMain::handleBalance);
+        commands.put("pay", HBMain::handleGive);
         commands.put("give", HBMain::handleGive);
         commands.put("rob", HBMain::handleRob);
+        commands.put("robert", HBMain::handleRob);
         commands.put("workout", HBMain::handleWorkout);
         commands.put("leaderboard", HBMain::handleLeaderboard);
+        commands.put("leaderboards", HBMain::handleLeaderboard);
         commands.put("guess", HBMain::handleGuess);
         commands.put("slots", HBMain::handleSlots);
         commands.put("pickpocket", HBMain::handlePickpocket);
         commands.put("pick", HBMain::handlePickpocket);
+        commands.put("work", HBMain::handleWork);
+        commands.put("fish", HBMain::handleFish);
+        commands.put("minislots", HBMain::handleMinislots);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -67,12 +74,15 @@ public class HBMain {
                 + "\nCommands:"
                 + "\n\t+help Displays this help text"
                 + "\n\t+version Display the bot's current version"
-                + "\n\t+claim Claim coins!"
+                + "\n\t+claim Register with the casino if you're new or get a refresher of main commands"
                 + "\n\t+balance Check your balance"
+                + "\n\t+work Work for 2 hours to earn some coins"
+                + "\n\t+fish Fish for 30 minutes to earn some coins"
                 + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
                 + "\n\t+pickpocket Attempt a petty theft of pickpocketting"
                 + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
+                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5"
                 + "\n\t+give <amount> <@User> Gives money to another person"
                 + "\n\t+leaderboard Check who's the richest"
                 + "\n\t+roll [number] Roll a number up to the inputted max");
@@ -88,7 +98,7 @@ public class HBMain {
 
     private static void handleWorkout(MessageCreateEvent event, String args) {
         //event.getMember().ifPresent(member -> {
-        //    String response = DBConnection.handleWorkout(member);
+        //    String response = Casino.handleWorkout(member);
         //    event.getMessage().getChannel().block().createMessage(response).block();
         //});
     	event.getChannel().sendMessage("Nice job! I'll start tracking this again soon (tm). Running a casino is just more profitable");
@@ -154,39 +164,47 @@ public class HBMain {
     }
     
     private static void handleClaim(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(DBConnection.handleClaim(event.getMessageAuthor().getId()));
+    	event.getChannel().sendMessage(Casino.handleClaim(event.getMessageAuthor().getId()));
     }
     
     private static void handleRob(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(DBConnection.handleRob(event.getMessageAuthor().getId()));
+    	event.getChannel().sendMessage(Casino.handleRob(event.getMessageAuthor().getId()));
     }
     
     private static void handlePickpocket(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(DBConnection.handlePickpocket(event.getMessageAuthor().getId()));
+    	event.getChannel().sendMessage(Casino.handlePickpocket(event.getMessageAuthor().getId()));
     }
     
     private static void handleBalance(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(DBConnection.handleBalance(event.getMessageAuthor().getId()));
+    	event.getChannel().sendMessage(Casino.handleBalance(event.getMessageAuthor().getId()));
+    }
+    
+    private static void handleWork(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(Casino.handleWork(event.getMessageAuthor().getId()));
+    }
+    
+    private static void handleFish(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(Casino.handleFish(event.getMessageAuthor().getId()));
     }
     
     private static void handleGive(MessageCreateEvent event, String args) {
 		String response = "";
 		int amount = 0;
     	if (!args.contains(" ")) {
-    		response = "Unable to process transaction, not enough arguments. Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
+    		response = "Unable to process transaction, not enough arguments. Sample usage:\n\t`+give 100 @100% Hippo` (you will need to ping the user)";
     	} else {
 		    String firstArg = args.substring(0, args.indexOf(' '));
     		try {
     		    amount = Integer.parseInt(firstArg);
     		    List<User> mentions = event.getMessage().getMentionedUsers();
     	    	if (mentions.isEmpty()) {
-    	    		response = "Unable to process transaction, no users were mentioned! Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
+    	    		response = "Unable to process transaction, no users were mentioned! Sample usage:\n\t`+give 100 @100% Hippo` (you will need to ping the user)";
     	    	} else {
     	    		long recepientUid = mentions.get(0).getId();
-    	    		response = DBConnection.handleGive(event.getMessageAuthor().getId(), recepientUid, amount);
+    	    		response = Casino.handleGive(event.getMessageAuthor().getId(), recepientUid, amount);
     	    	}
     		} catch (NumberFormatException e) {
-    			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\n\t+give 100 @100% Hippo (you will need to ping the user)";
+    			response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\n\t`+give 100 @100% Hippo` (you will need to ping the user)";
     		}
     	}
     	event.getChannel().sendMessage(response);
@@ -198,27 +216,27 @@ public class HBMain {
     	} catch (NoSuchElementException e) { }
     	System.out.println("Author: " + event.getMessageAuthor().getId() + " " + getUsername(event.getMessageAuthor().getId())
     	                   + "\nUser: " + event.getMessageAuthor().asUser().get().getId() + " " + getUsername(event.getMessageAuthor().asUser().get().getId()));
-    	event.getChannel().sendMessage(DBConnection.handleLeaderboard());
+    	event.getChannel().sendMessage(Casino.handleLeaderboard());
     }
     
     public static void handleGuess(MessageCreateEvent event, String args) {
     	String response = "";
     	try {
     		if (!args.contains(" ")) {
-    			response = "Not enough arguments to guess. Sample usage: +guess 5 100";
+    			response = "Not enough arguments to guess. Sample usage: `+guess 5 10`";
     	   	} else {
     	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
     	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
     	     	if (guess < 1 || guess > 10) {
-    		    	response = "Insead of " + guess + ", guess a number from 1 to 10";
+    		    	response = "Instead of " + guess + ", guess a number from 1 to 10";
     	    	} else if (amount < 1) {
     			    response = "Minimum bid for guessing is 1 coin";
     	    	} else {
-    	    		response = DBConnection.handleGuess(event.getMessageAuthor().getId(), guess, amount);
+    	    		response = Casino.handleGuess(event.getMessageAuthor().getId(), guess, amount);
     		    }
     		}
     	} catch (NumberFormatException e) {
-    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess 5` or `+guess 5 100`";
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess 5` or `+guess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
     }
@@ -235,7 +253,7 @@ public class HBMain {
     public static void handleSlots(MessageCreateEvent event, String args) {
     	String response = "";
     	if (args.trim().isEmpty()) {
-    		response = DBConnection.handleSlots(event.getMessageAuthor().getId(), 10);
+    		response = Casino.handleSlots(event.getMessageAuthor().getId(), 10);
     		event.getChannel().sendMessage(response);
     	} else {
     		try {
@@ -244,7 +262,7 @@ public class HBMain {
         			response = "Minimum bid for slots is 10 coins";
         	    	event.getChannel().sendMessage(response);
         		} else {
-            	    response = DBConnection.handleSlots(event.getMessageAuthor().getId(), bid);
+            	    response = Casino.handleSlots(event.getMessageAuthor().getId(), bid);
             	    event.getChannel().sendMessage(response);
         		}
         	} catch (NumberFormatException e) {
@@ -252,5 +270,24 @@ public class HBMain {
             	event.getChannel().sendMessage(response);
         	}
     	}
+    }
+    
+    public static void handleMinislots(MessageCreateEvent event, String args) {
+    	String response = "";
+    	if (args.trim().isEmpty()) {
+    		response = Casino.handleMinislots(event.getMessageAuthor().getId(), 5);
+    	} else {
+    		try {
+        		int bid = Integer.parseInt(args.trim());
+        		if (bid < 5) {
+        			response = "Minimum bid for mini slots is 5 coins";
+        		} else {
+            	    response = Casino.handleSlots(event.getMessageAuthor().getId(), bid);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+minislots` or `+minislots 10`";
+        	}
+    	}
+		event.getChannel().sendMessage(response);
     }
 }
