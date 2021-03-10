@@ -4,7 +4,6 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.entity.user.User;
-import org.javacord.api.entity.server.Server;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -20,7 +19,6 @@ public class HBMain {
     private static final String version = "1.0.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
-    private static Server server;
 
     public static void main(String[] args) {
         commands.put("help", HBMain::handleHelp);
@@ -211,9 +209,6 @@ public class HBMain {
     }
     
     private static void handleLeaderboard(MessageCreateEvent event, String args) {
-    	try {
-    	    server = event.getServer().get();
-    	} catch (NoSuchElementException e) { }
     	System.out.println("Author: " + event.getMessageAuthor().getId() + " " + getUsername(event.getMessageAuthor().getId())
     	                   + "\nUser: " + event.getMessageAuthor().asUser().get().getId() + " " + getUsername(event.getMessageAuthor().asUser().get().getId()));
     	event.getChannel().sendMessage(Casino.handleLeaderboard());
@@ -239,15 +234,6 @@ public class HBMain {
     		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess 5` or `+guess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
-    }
-    
-    public static String getUsername(long uid) {
-    	try {
-    		return server.getMemberById(uid).get().getNicknameMentionTag();
-    	} catch (NoSuchElementException e) {
-    		System.out.println("Server: " + server + ", uid: " + uid);
-    		return "<@!" + uid + ">";
-    	}
     }
     
     public static void handleSlots(MessageCreateEvent event, String args) {

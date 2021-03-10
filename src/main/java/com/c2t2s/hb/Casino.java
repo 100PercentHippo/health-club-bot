@@ -662,7 +662,7 @@ public class Casino {
 	}
 	
 	private static String parseLeaderboard() {
-		String query = "SELECT * FROM money_user ORDER BY balance DESC LIMIT 3;";
+		String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT 3;";
         Connection connection = null;
         Statement statement = null;
         String leaderboard = "";
@@ -673,8 +673,8 @@ public class Casino {
             int place = 1;
             while (results.next()) {
             	leaderboard += "#" + place++ + " ";
-            	leaderboard += HBMain.getUsername(results.getLong(1));
-            	leaderboard += " " + results.getInt(2) + "\n";
+            	leaderboard += results.getString(1);
+            	leaderboard += " " + results.getLong(2) + "\n";
             }
             statement.close();
             connection.close();
@@ -746,7 +746,7 @@ public class Casino {
             	long balance = results.getLong(5);
             	boolean isJail = results.getBoolean(6);
             	Timestamp time = results.getTimestamp(7);
-            	user = new Casino.User(work, fish, pick, rob, balance, false, null);
+            	user = new Casino.User(work, fish, pick, rob, balance, isJail, time);
             }
             statement.close();
             connection.close();
