@@ -620,7 +620,7 @@ public class Casino {
 	
 	private static boolean addUser(long uid, String name) {
 		boolean error = false;
-		String query = "INSERT INTO money_user (uid, name) VALUES(" + uid + ", '" + name +"') ON CONFLICT (uid) DO NOTHING;";
+		String query = "INSERT INTO money_user (uid, name, balance) VALUES(" + uid + ", '" + name +"', 1000) ON CONFLICT (uid) DO NOTHING;";
 		String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
@@ -776,8 +776,8 @@ public class Casino {
 	
 	private static long logWork(long uid, int income) {
 		addWorkMoney(uid, income, "2 hours");
-		return executeBalanceQuery("UPDATE job_user SET (work_count, work_profit) = (work_count + "
-	        + uid + ", work_profit + " + income + ") WHERE uid = " + uid 
+		return executeBalanceQuery("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
+	        + "work_profit + " + income + ") WHERE uid = " + uid 
 	        + " RETURNING (SELECT balance FROM money_user WHERE uid = " + uid +");");
 	}
 	
