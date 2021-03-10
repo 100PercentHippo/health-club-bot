@@ -296,11 +296,15 @@ public class Casino {
 		Random random = new Random();
 		int correct = random.nextInt(10) + 1;
 		if (guess == correct) {
+			if (guess == 1 || guess == 10) {
+				guessWin(uid, amount, 10 * amount);
+				return "Correct!! Big win of " + (10 * amount) + "! New balance is " + addMoney(uid, 10 * amount);
+			}
 			guessWin(uid, amount, 6 * amount);
 			return "Correct! You win " + (6 * amount) + "! New balance is " + addMoney(uid, 6 * amount);
 		} else if (guess + 1 == correct || guess - 1 == correct) {
 			guessClose(uid, amount, 2 * amount);
-			return "Very close. You get " + (2 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 2 * amount);
+			return "Very close. The value was " + correct + ". You get " + (2 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 2 * amount);
 		} else {
 			if (random.nextInt(70) == 0) {
 				guessMistake(uid, amount, ((int)2.5 * amount));
@@ -406,7 +410,7 @@ public class Casino {
 		}
 		Random random = new Random();
 		int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-		String output = "Bid " + amount + " on slots\n";
+		String output = "Bid " + amount + " on mini slots\n";
 		int winnings = 0;
 		for (int i = 0; i < 3; i++) {
 			switch (random.nextInt(5)) {
@@ -775,16 +779,17 @@ public class Casino {
 	}
 	
 	private static long logWork(long uid, int income) {
-		addWorkMoney(uid, income, "2 hours");
-		return executeBalanceQuery("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
-	        + "work_profit + " + income + ") WHERE uid = " + uid 
-	        + " RETURNING (SELECT balance FROM money_user WHERE uid = " + uid +");");
+		long balance = addWorkMoney(uid, income, "2 hours");
+		executeUpdate("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
+	        + "work_profit + " + income + ") WHERE uid = " + uid + ";");
+		return balance;
 	}
 	
 	private static long logFish(long uid, boolean rare, int income) {
-		addWorkMoney(uid, income, "30 minutes");
-		return executeBalanceQuery("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
+		long balance = addWorkMoney(uid, income, "30 minutes");
+		executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
 	        + (rare ? 1 : 0) + ", fish_profit + " + income + ") WHERE uid = " + uid + ";");
+		return balance;
 	}
 	
 	private static void pickFailed(long uid) {

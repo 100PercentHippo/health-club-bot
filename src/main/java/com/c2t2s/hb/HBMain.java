@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.0.0"; //Update this in pom.xml too
+    private static final String version = "1.0.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -266,7 +266,7 @@ public class HBMain {
         		if (bid < 5) {
         			response = "Minimum bid for mini slots is 5 coins";
         		} else {
-            	    response = Casino.handleSlots(event.getMessageAuthor().getId(), bid);
+            	    response = Casino.handleMinislots(event.getMessageAuthor().getId(), bid);
         		}
         	} catch (NumberFormatException e) {
         		response = "Unable to parse argument \"" + args + "\". Sample usage: `+minislots` or `+minislots 10`";
