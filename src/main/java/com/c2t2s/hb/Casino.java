@@ -618,19 +618,24 @@ public class Casino {
 	        + interval + "') WHERE uid = " + uid + ";");
 	}
 	
-	private static boolean addUser(long uid) {
+	private static boolean addUser(long uid, String name) {
 		boolean error = false;
-		String job = "INSERT INTO job_user VALUES(" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-		String query = "INSERT INTO money_user VALUES(" + uid + ",1000,NOW()) ON CONFLICT (uid) DO NOTHING;";
+		String query = "INSERT INTO money_user (uid, name) VALUES(" + uid + ", " + name +") ON CONFLICT (uid) DO NOTHING;";
+		String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            if (statement.executeUpdate(query) < 1) {
-            	error = true;
-            }
+            error = statement.executeUpdate(query) < 1;
+            error &= statement.executeUpdate(job);
+            error &= statement.executeUpdate(slots);
+            error &= statement.executeUpdate(guess);
+            error &= statement.executeUpdate(minislots);
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
