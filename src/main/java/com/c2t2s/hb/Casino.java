@@ -228,7 +228,7 @@ public class Casino {
 		Random random = new Random();
 		if (random.nextInt(2) == 0) {
 			pickFailed(uid);
-			return "You were caught! You are dragged off to jail for 2 hours.";
+			return "You were caught! You are dragged off to jail for 30 minutes.";
 		}
 		int roll = random.nextInt(100);
 		if (roll < 10) {
@@ -282,9 +282,9 @@ public class Casino {
 	}
 	
 // Payout:
-//  Correct:        1/10  6:1
-//  Close:          1/5   2:1
-//  Dealer mistake: 1/100 2.5:1
+//  Correct:        1/10  5:1
+//  Close:          1/5   1:1
+//  Dealer mistake: 1/200 2.5:1
 	
 	public static String handleGuess(long uid, int guess, int amount) {
 		long balance = checkBalance(uid);
@@ -306,7 +306,7 @@ public class Casino {
 			guessClose(uid, amount, 1 * amount);
 			return "Very close. The value was " + correct + ". You get " + (1 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 1 * amount);
 		} else {
-			if (random.nextInt(70) == 0) {
+			if (random.nextInt(140) == 0) {
 				guessMistake(uid, amount, ((int)2.5 * amount));
 				return "The correct value was " + (random.nextInt(5) + 11) + ". Wait, that isn't right. Here, take " + ((int)2.5 * amount) + " to pretend that never happened. New balance is " + addMoney(uid, ((int)2.5 * amount));
 			}
