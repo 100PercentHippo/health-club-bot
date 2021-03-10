@@ -263,7 +263,7 @@ public class Casino {
 	
 	public static String handleClaim(long uid) {
 		User user = getUser(uid);
-		String response;
+		String response = "";
 		if (user == null) {
 			boolean error = addUser(uid);
 	        if (!error) {
@@ -784,7 +784,7 @@ public class Casino {
 	}
 	
 	private static long logPick(long uid, boolean rare, int income) {
-		executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
+		return executeBalanceQuery("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
 	        + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid
 	        + " RETURNING (SELECT balance FROM money_user WHERE uid = " + uid + ");");
 	}
@@ -796,7 +796,7 @@ public class Casino {
 	}
 	
 	private static long logRob(long uid, boolean rare, int income) {
-		executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
+		return executeBalanceQuery("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
 	        + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid
 	        + " RETURNING (SELECT balance FROM money_user WHERE uid = " + uid + ");");
 	}
