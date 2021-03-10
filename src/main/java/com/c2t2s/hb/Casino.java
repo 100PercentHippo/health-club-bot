@@ -316,10 +316,10 @@ public class Casino {
 	}
 	
 // Payout:
-//	5 of a kind: 4/125              8:1
-//	4 of a kind: 1/25               6:1
-//	3 of a kind: 12/25              0.5:1
-//	Rainbow:     1/24               6:1
+//	5 of a kind: 1/625              150:1
+//	4 of a kind: 4/125              8:1
+//	3 of a kind: 32/125             1:1
+//	Rainbow:     24/625             6.5:1
 //	1 diamond:   1/20               1:1
 //	2 diamonds:  1/1000             10:1
 //	3 diamonds:  1/1 000 000        100:1
@@ -369,16 +369,16 @@ public class Casino {
 		output += "\n";
 		if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
 			output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
-			winnings += 8 * amount;
+			winnings += 150 * amount;
 		} else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
 			output += ":moneybag: 4 of a kind!! :moneybag: ";
-			winnings += 6 * amount;
+			winnings += 8 * amount;
 		} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
 			output += "3 of a kind. ";
-			winnings += (int)(0.5 * amount);
+			winnings += amount;
 		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
 			output += "Fruit salad! ";
-			winnings += 6 * amount;
+			winnings += (int)(6.5 * amount);
 		}
 		if (diamonds > 0) {
 			output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
