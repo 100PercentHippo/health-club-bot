@@ -164,7 +164,7 @@ public class HBMain {
     }
     
     private static void handleClaim(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(Casino.handleClaim(event.getMessageAuthor().getId()));
+    	event.getChannel().sendMessage(Casino.handleClaim(event.getMessageAuthor().getId(), event.getMessageAuthor().getDiscriminatedName()));
     }
     
     private static void handleRob(MessageCreateEvent event, String args) {

@@ -261,11 +261,11 @@ public class Casino {
 		}
 	}
 	
-	public static String handleClaim(long uid) {
+	public static String handleClaim(long uid, String name) {
 		User user = getUser(uid);
 		String response = "";
 		if (user == null) {
-			boolean error = addUser(uid);
+			boolean error = addUser(uid, name);
 	        if (!error) {
 				response += "Welcome! You have been given an initial balance of 1000 coins";
 	        } else {
