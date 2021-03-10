@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class Casino {
 	
-	public class User() {
+	public class User {
 		private int work;
 		private int fish;
 		private int pick;
