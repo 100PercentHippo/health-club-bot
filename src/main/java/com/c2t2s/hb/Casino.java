@@ -730,7 +730,7 @@ public class Casino {
 	}
 	
 	private static User getUser(long uid) {
-		String query = "SELECT (work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim) FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
+		String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
 		Connection connection = null;
         Statement statement = null;
         User user = null;
