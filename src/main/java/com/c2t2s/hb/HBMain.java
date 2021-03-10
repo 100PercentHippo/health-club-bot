@@ -75,7 +75,7 @@ public class HBMain {
                 + "\n\t+claim Register with the casino if you're new or get a refresher of main commands"
                 + "\n\t+balance Check your balance"
                 + "\n\t+leaderboard Check who's the richest"
-                + "\n\t+roll [number] Roll a number up to the inputted max");
+                + "\n\t+roll [number] Roll a number up to the inputted max"
                 + "\nIncome commands:"
                 + "\n\t+work Work for 2 hours to earn some coins"
                 + "\n\t+fish Fish for 30 minutes to earn some coins"
@@ -85,7 +85,7 @@ public class HBMain {
                 + "\nGambling commands:"
                 + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
-                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5"
+                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5");
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
