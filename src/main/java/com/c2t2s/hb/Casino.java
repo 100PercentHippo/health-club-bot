@@ -18,7 +18,7 @@ public class Casino {
 		private boolean inJail;
 		private Timestamp timer;
 		
-		public User(int w, int f, int p, int r, long b, bool jail, Timestamp time) {
+		public User(int w, int f, int p, int r, long b, boolean jail, Timestamp time) {
 			work = w;
 			fish = f;
 			pick = p;
@@ -474,7 +474,7 @@ public class Casino {
 		if (amount <= 0) {
 			return "Can't give someone a negative number of coins. Try asking them nicely if you want money.";
 		}
-		int donorBalance = checkBalance(donorUid);
+		long donorBalance = checkBalance(donorUid);
 		if (donorBalance < 0) {
 			return "Unable to give money. Balance check failed or was negative (" + donorBalance +")";
 		} else if (donorBalance < amount) {
@@ -483,9 +483,9 @@ public class Casino {
 		if (donorUid == recipientUid) {
 			return "You give yourself " + amount + ". Your balance is unchanged for some reason.";
 		}
-		int recipientBalance = checkBalance(recipientUid);
-		if (recipientBalance < 0) {
-			insertMoneyUser(recipientUid);
+		long recipientBalance = checkBalance(recipientUid);
+		if (recipientBalance == -1) {
+			return "Unable to give money. Has that user run `+claim`?";
 		}
 		donorBalance = addMoney(donorUid, -1 * amount);
 		addMoney(recipientUid, amount);
@@ -613,7 +613,7 @@ public class Casino {
 	        + amount + ", NOW() + INTERVAL '" + delay + "') WHERE uid = " + uid + ";");
 	}
 	
-	private static long setJailTime(long uid, String time) {
+	private static long setJailTime(long uid, String interval) {
 		return executeBalanceQuery("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
 	        + interval + "') WHERE uid = " + uid + ";");
 	}
@@ -723,7 +723,7 @@ public class Casino {
 	}
 	
 	private static User getUser(long uid) {
-		String query = "SELECT (work_count, fish_count, pick_count, rob_count, balance) FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
+		String query = "SELECT (work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim) FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
 		Connection connection = null;
         Statement statement = null;
         User user = null;
@@ -737,7 +737,9 @@ public class Casino {
             	int pick = results.getInt(3);
             	int rob = results.getInt(4);
             	long balance = results.getLong(5);
-            	user = new User(work, fish, pick, rob, balance, false, null);
+            	boolean isJail = results.getBoolean(6);
+            	Timestamp time = results.getTimestamp(7);
+            	user = new Casino.User(work, fish, pick, rob, balance, false, null);
             }
             statement.close();
             connection.close();
