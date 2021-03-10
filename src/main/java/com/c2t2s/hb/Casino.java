@@ -794,7 +794,7 @@ public class Casino {
 	
 	private static void pickFailed(long uid) {
 		setJailTime(uid, "30 minutes");
-		executeUpdate("UPDATE job_user SET (pick_count, jail_time) = (pick_count + 1, jail_time + 30) WHERE uid = "
+		executeUpdate("UPDATE job_user SET (pick_count, pick_fails, jail_time) = (pick_count + 1, pick_fails + 1, jail_time + 30) WHERE uid = "
 	        + uid + ";");
 	}
 	
@@ -807,7 +807,7 @@ public class Casino {
 	
 	private static void robFailed(long uid) {
 		setJailTime(uid, "2 hours");
-		executeUpdate("UPDATE job_user SET (pick_count, jail_time) = (pick_count + 1, jail_time + 120) WHERE uid = "
+		executeUpdate("UPDATE job_user SET (pick_count, rob_fails, jail_time) = (pick_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
 		        + uid + ";");
 	}
 	

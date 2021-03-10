@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.0.3"; //Update this in pom.xml too
+    private static final String version = "1.0.4"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -74,16 +74,18 @@ public class HBMain {
                 + "\n\t+version Display the bot's current version"
                 + "\n\t+claim Register with the casino if you're new or get a refresher of main commands"
                 + "\n\t+balance Check your balance"
+                + "\n\t+leaderboard Check who's the richest"
+                + "\n\t+roll [number] Roll a number up to the inputted max");
+                + "\nIncome commands:"
                 + "\n\t+work Work for 2 hours to earn some coins"
                 + "\n\t+fish Fish for 30 minutes to earn some coins"
                 + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
                 + "\n\t+pickpocket Attempt a petty theft of pickpocketting"
+                + "\n\t+give <amount> <@User> Gives money to another person"
+                + "\nGambling commands:"
                 + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
                 + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5"
-                + "\n\t+give <amount> <@User> Gives money to another person"
-                + "\n\t+leaderboard Check who's the richest"
-                + "\n\t+roll [number] Roll a number up to the inputted max");
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
