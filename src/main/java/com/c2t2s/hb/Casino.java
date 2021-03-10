@@ -300,10 +300,10 @@ public class Casino {
 				guessWin(uid, amount, 8 * amount);
 				return "Correct!! Big win of " + (8 * amount) + "! New balance is " + addMoney(uid, 8 * amount);
 			}
-			guessWin(uid, amount, 6 * amount);
+			guessWin(uid, amount, 5 * amount);
 			return "Correct! You win " + (6 * amount) + "! New balance is " + addMoney(uid, 6 * amount);
 		} else if (guess + 1 == correct || guess - 1 == correct) {
-			guessClose(uid, amount, 2 * amount);
+			guessClose(uid, amount, 1 * amount);
 			return "Very close. The value was " + correct + ". You get " + (2 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 2 * amount);
 		} else {
 			if (random.nextInt(70) == 0) {
