@@ -610,7 +610,7 @@ public class Casino {
 	
 	private static long addWorkMoney(long uid, int amount, String delay) {
 		return executeBalanceQuery("UPDATE money_user SET (in_jail, balance, last_claim) = (false, balance + "
-	        + amount + ", NOW() + INTERVAL '" + delay + "') WHERE uid = " + uid + ";");
+	        + amount + ", NOW() + INTERVAL '" + delay + "') WHERE uid = " + uid + " RETURNING balance;");
 	}
 	
 	private static long setJailTime(long uid, String interval) {
@@ -794,9 +794,10 @@ public class Casino {
 	}
 	
 	private static long logPick(long uid, boolean rare, int income) {
-		return executeBalanceQuery("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
-	        + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid
-	        + " RETURNING (SELECT balance FROM money_user WHERE uid = " + uid + ");");
+		long balance = addMoney(uid, income);
+		executeBalanceQuery("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
+	        + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid + ";");
+		return balance;
 	}
 	
 	private static void robFailed(long uid) {
@@ -806,9 +807,10 @@ public class Casino {
 	}
 	
 	private static long logRob(long uid, boolean rare, int income) {
-		return executeBalanceQuery("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
-	        + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid
-	        + " RETURNING (SELECT balance FROM money_user WHERE uid = " + uid + ");");
+		long balance = addMoney(uid, income);
+		executeBalanceQuery("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
+	        + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
+		return balance;
 	}
 	
 	private static void executeUpdate(String query) {
