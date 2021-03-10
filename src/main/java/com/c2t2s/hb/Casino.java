@@ -297,8 +297,8 @@ public class Casino {
 		int correct = random.nextInt(10) + 1;
 		if (guess == correct) {
 			if (guess == 1 || guess == 10) {
-				guessWin(uid, amount, 10 * amount);
-				return "Correct!! Big win of " + (10 * amount) + "! New balance is " + addMoney(uid, 10 * amount);
+				guessWin(uid, amount, 8 * amount);
+				return "Correct!! Big win of " + (8 * amount) + "! New balance is " + addMoney(uid, 8 * amount);
 			}
 			guessWin(uid, amount, 6 * amount);
 			return "Correct! You win " + (6 * amount) + "! New balance is " + addMoney(uid, 6 * amount);
