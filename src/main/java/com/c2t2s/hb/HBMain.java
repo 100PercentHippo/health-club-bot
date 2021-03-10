@@ -209,8 +209,6 @@ public class HBMain {
     }
     
     private static void handleLeaderboard(MessageCreateEvent event, String args) {
-    	System.out.println("Author: " + event.getMessageAuthor().getId() + " " + getUsername(event.getMessageAuthor().getId())
-    	                   + "\nUser: " + event.getMessageAuthor().asUser().get().getId() + " " + getUsername(event.getMessageAuthor().asUser().get().getId()));
     	event.getChannel().sendMessage(Casino.handleLeaderboard());
     }
     

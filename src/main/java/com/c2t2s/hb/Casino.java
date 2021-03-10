@@ -673,8 +673,11 @@ public class Casino {
             int place = 1;
             while (results.next()) {
             	leaderboard += "#" + place++ + " ";
-            	leaderboard += results.getString(1);
-            	leaderboard += " " + results.getLong(2) + "\n";
+            	String name = results.getString(1);
+            	if (name.contains("#")) {
+            		name = name.substring(0, name.indexOf('#'));
+            	}
+            	leaderboard += name + " " + results.getLong(2) + "\n";
             }
             statement.close();
             connection.close();
