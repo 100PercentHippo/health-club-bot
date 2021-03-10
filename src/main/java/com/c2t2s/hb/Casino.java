@@ -328,10 +328,31 @@ public class Casino {
 		Random random = new Random();
 		int correct = random.nextInt(10) + 1;
 		if (guess == correct) {
-			guessWin(uid, amount, 10 * amount);
-			return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 10 * amount);
+			guessWin(uid, amount, 9 * amount);
+			return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 9 * amount);
 		} else {
 			guessLoss(uid, amount);
+		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
+		}
+	}
+	
+// Huge Guess Payout:
+//  Correct:    1/100  100:1
+	
+	public static String handleHugeGuess(long uid, int guess, int amount) {
+		long balance = checkBalance(uid);
+		if (balance < 0) {
+			return "Unable to guess. Balance check failed or was negative (" + balance +")";
+		} else if (balance < amount) {
+			return "Your balance of " + balance + " is not enough to cover that!";
+		}
+		Random random = new Random();
+		int correct = random.nextInt(100) + 1;
+		if (guess == correct) {
+			hugeGuessWin(uid, amount, 99 * amount);
+			return "Correct! You win " + (100 * amount) + "! New balance is " + addMoney(uid, 99 * amount);
+		} else {
+			hugeGuessLoss(uid, amount);
 		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
 		}
 	}
@@ -579,6 +600,15 @@ public class Casino {
     //  CONSTRAINT guess_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     //);
     
+    //CREATE TABLE IF NOT EXISTS hugeguess_user (
+    //  uid bigint PRIMARY KEY,
+    //  guesses integer DEFAULT 0,
+    //  correct integer DEFAULT 0,
+    //  spent bigint DEFAULT 0,
+    //  winnings bigint DEFAULT 0,
+    //  CONSTRAINT hugeguess_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    //);
+    
     //CREATE TABLE IF NOT EXISTS minislots_user (
     //  uid bigint PRIMARY KEY,
     //  pulls integer DEFAULT 0,
@@ -650,6 +680,7 @@ public class Casino {
 		String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String hugeguess = "INSERT INTO hugeguess_user (uid) VALUE (" + uid + " ON CONFLICT (uid) DO NOTHING;";
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
@@ -662,6 +693,7 @@ public class Casino {
                 statement.executeUpdate(slots);
                 statement.executeUpdate(guess);
                 statement.executeUpdate(minislots);
+                statement.executeUpdate(hugeguess);
             }
             statement.close();
             connection.close();
@@ -725,6 +757,16 @@ public class Casino {
             }
         }
         return leaderboard;
+	}
+	
+	private static void hugeGuessWin(long uid, int spent, int winnings) {
+		executeUpdate("UPDATE hugeguess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
+	        + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
+	}
+	
+	private static void hugeGuessLoss(long uid, int spent) {
+		executeUpdate("UPDATE hugeguess_user SET (guesses, spent) = (guesses + 1, spent + "
+		        + spent + ") WHERE uid = " + uid + ";");
 	}
 	
 	private static void guessWin(long uid, int spent, int winnings) {
@@ -828,7 +870,7 @@ public class Casino {
 	
 	private static void robFailed(long uid) {
 		setJailTime(uid, "2 hours");
-		executeUpdate("UPDATE job_user SET (pick_count, rob_fails, jail_time) = (pick_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
+		executeUpdate("UPDATE job_user SET (rob_count, rob_fails, jail_time) = (rob_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
 		        + uid + ";");
 	}
 	
