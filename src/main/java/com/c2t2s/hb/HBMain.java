@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.0.5"; //Update this in pom.xml too
+    private static final String version = "1.0.6"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -38,6 +38,7 @@ public class HBMain {
         commands.put("leaderboard", HBMain::handleLeaderboard);
         commands.put("leaderboards", HBMain::handleLeaderboard);
         commands.put("guess", HBMain::handleGuess);
+        commands.put("bigguess", HBMain::handleBigGuess);
         commands.put("slots", HBMain::handleSlots);
         commands.put("pickpocket", HBMain::handlePickpocket);
         commands.put("pick", HBMain::handlePickpocket);
@@ -84,6 +85,7 @@ public class HBMain {
                 + "\n\t+give <amount> <@User> Gives money to another person"
                 + "\nGambling commands:"
                 + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
+                + "\n\t+bigguess <guess> <amount> Guess a number from 1 to 10, no consolation prizes"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
                 + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5");
     }
@@ -232,6 +234,28 @@ public class HBMain {
     		}
     	} catch (NumberFormatException e) {
     		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess 5` or `+guess 5 10`";
+    	}
+    	event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleBigGuess(MessageCreateEvent event, String args) {
+    	String response = "";
+    	try {
+    		if (!args.contains(" ")) {
+    			response = "Not enough arguments to guess. Sample usage: `+bigguess 5 10`";
+    	   	} else {
+    	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
+    	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
+    	     	if (guess < 1 || guess > 10) {
+    		    	response = "Instead of " + guess + ", guess a number from 1 to 10";
+    	    	} else if (amount < 1) {
+    			    response = "Minimum bid for guessing is 1 coin";
+    	    	} else {
+    	    		response = Casino.handleBigGuess(event.getMessageAuthor().getId(), guess, amount);
+    		    }
+    		}
+    	} catch (NumberFormatException e) {
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bigguess 5` or `+bigguess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
     }
