@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class Casino {
 	
-	public class User {
+	public static class User {
 		private int work;
 		private int fish;
 		private int pick;
@@ -18,7 +18,7 @@ public class Casino {
 		private boolean inJail;
 		private Timestamp timer;
 		
-		public static User(int w, int f, int p, int r, long b, boolean jail, Timestamp time) {
+		public User(int w, int f, int p, int r, long b, boolean jail, Timestamp time) {
 			work = w;
 			fish = f;
 			pick = p;
