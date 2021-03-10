@@ -297,14 +297,14 @@ public class Casino {
 		int correct = random.nextInt(10) + 1;
 		if (guess == correct) {
 			if (guess == 1 || guess == 10) {
-				guessWin(uid, amount, 8 * amount);
-				return "Correct!! Big win of " + (8 * amount) + "! New balance is " + addMoney(uid, 8 * amount);
+				guessWin(uid, amount, 6 * amount);
+				return "Correct!! Big win of " + (6 * amount) + "! New balance is " + addMoney(uid, 6 * amount);
 			}
 			guessWin(uid, amount, 5 * amount);
-			return "Correct! You win " + (6 * amount) + "! New balance is " + addMoney(uid, 6 * amount);
+			return "Correct! You win " + (5 * amount) + "! New balance is " + addMoney(uid, 5 * amount);
 		} else if (guess + 1 == correct || guess - 1 == correct) {
 			guessClose(uid, amount, 1 * amount);
-			return "Very close. The value was " + correct + ". You get " + (2 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 2 * amount);
+			return "Very close. The value was " + correct + ". You get " + (1 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 1 * amount);
 		} else {
 			if (random.nextInt(70) == 0) {
 				guessMistake(uid, amount, ((int)2.5 * amount));
