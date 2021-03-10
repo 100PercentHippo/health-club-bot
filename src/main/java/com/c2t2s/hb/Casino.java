@@ -91,7 +91,7 @@ public class Casino {
 				return ":farmer: You work hard in a field for 2 hours and make 150 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 150);
 			}
 		} else if (roll < 70) {
-			return ":chef: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
+			return ":cook: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
 		} else if (roll < 75) {
 			return ":detective: You work as a detective trying to find a missing satellite. You're unable to find it after 2 hours, but are still paid 200 coins. Your new balance is " + logWork(uid, 200);
 		} else {
@@ -281,7 +281,7 @@ public class Casino {
 		    + "You can also gamble with `+guess`, `+slots`, or `+minislots`";
 	}
 	
-// Payout:
+// Guess Payout:
 //  Correct:        1/10  6:1
 //  Close:          1/5   2:1
 //  Dealer mistake: 1/200 2.5:1
@@ -315,7 +315,7 @@ public class Casino {
 		}
 	}
 	
-// Payout:
+// Big Guess Payout:
 //  Correct:        1/10  10:1
 	
 	public static String handleBigGuess(long uid, int guess, int amount) {
@@ -336,7 +336,7 @@ public class Casino {
 		}
 	}
 	
-// Payout:
+// Slots Payout:
 //	5 of a kind: 1/625              150:1
 //	4 of a kind: 4/125              8:1
 //	3 of a kind: 32/125             1:1
@@ -415,7 +415,7 @@ public class Casino {
 		return output;
 	}
 	
-// Payout
+// Minislots Payout
 //  3 of a kind: 1/25      5:1
 //  2 of a kind: 12/25     1.6:1
 //  1 diamond:   3/100     0.4:1
