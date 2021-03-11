@@ -955,7 +955,7 @@ public class Casino {
 		long balance = addMoney(uid, -1 * bet);
 		addMoney(MONEY_MACHINE_UID, bet);
 		setTimer2Time(uid, "1 minute");
-		executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feed + 1, spent + "
+		executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
 		    + bet + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
