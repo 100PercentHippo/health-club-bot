@@ -721,8 +721,8 @@ public class Casino {
 	        + amount + ", NOW() + INTERVAL '" + delay + "') WHERE uid = " + uid + " RETURNING balance;");
 	}
 	
-	private static long setJailTime(long uid, String interval) {
-		return executeBalanceQuery("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
+	private static void setJailTime(long uid, String interval) {
+		executeUpdate("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
 	        + interval + "') WHERE uid = " + uid + ";");
 	}
 	
