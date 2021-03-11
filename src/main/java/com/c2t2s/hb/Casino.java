@@ -51,7 +51,7 @@ public class Casino {
 		}
 	}
 	
-	private const int MONEY_MACHINE_UID = -1;
+	private static final int MONEY_MACHINE_UID = -1;
 	
 	private static String formatTime(long time) {
 		long hours = TimeUnit.MILLISECONDS.toHours(time);
