@@ -92,9 +92,9 @@ public class HBMain {
                 + "\n\t+bigguess <guess> <amount> Guess a number from 1 to 10, no consolation prizes"
                 + "\n\t+hugeguess <guess> <amount> Guess a number from 1 to 100!"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
-                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5")
+                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5"
     	        + "\n\t+moneymachine <amount> Feed the money machine"
-    	        + "\n\t+pot Check the current money machine pot";
+    	        + "\n\t+pot Check the current money machine pot");
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {

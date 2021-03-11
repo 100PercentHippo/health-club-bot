@@ -385,7 +385,7 @@ public class Casino {
 		if (pot < 20000) {
 			winChance = 0.05 + (0.2 * (pot / 20000));
 		}
-		if (random.nextDouble() < winChance && (amount >= 100 || random.nextInt(100) < amount) { // Win
+		if (random.nextDouble() < winChance && (amount >= 100 || random.nextInt(100) < amount)) { // Win
 			return "The money machine is satisfied! :dollar: You win "
 				+ pot + "! Your new balance is " + moneyMachineWin(uid, pot - amount)
 				+ "\n The money machine creates more money, and the pot is now 100";
@@ -737,7 +737,7 @@ public class Casino {
 		String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;"
+		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
