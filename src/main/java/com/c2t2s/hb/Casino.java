@@ -17,8 +17,9 @@ public class Casino {
 		private long balance;
 		private boolean inJail;
 		private Timestamp timer;
+		private Timestamp timer2;
 		
-		public User(int w, int f, int p, int r, long b, boolean jail, Timestamp time) {
+		public User(int w, int f, int p, int r, long b, boolean jail, Timestamp time, Timestamp time2) {
 			work = w;
 			fish = f;
 			pick = p;
@@ -26,6 +27,7 @@ public class Casino {
 			balance = b;
 			inJail = jail;
 			timer = time;
+			timer2 = time2;
 		}
 		
 		public int getMorality() {
@@ -42,6 +44,10 @@ public class Casino {
 		
 		public Timestamp getTimer() {
 			return timer;
+		}
+		
+		public Timestamp getTimer2() {
+			return timer2;
 		}
 	}
 	
@@ -207,7 +213,7 @@ public class Casino {
 //  :paperclip:         10% 0
 //  :satellite_orbital:  5% 0
 //  :lungs:              5% 0 (150 if low morality)
-//  :moneybags:         50% 50/70/90
+//  :moneybag:         50% 50/70/90
 //  :computer:          15% 100
 //  :medal:             10% 125
 //  :gem:                5% 250
@@ -247,7 +253,7 @@ public class Casino {
 			return ":satellite_orbital: You pickpocket an orbital satellite???? Unsure what to do with it you ditch it in a nearby lake.";
 		} else if (roll < 70) {
 			int haul = 50 + (random.nextInt(3) * 20);
-			return ":moneybags: You successfully pickpocket " + haul + " coins. Your new balance is "
+			return ":moneybag: You successfully pickpocket " + haul + " coins. Your new balance is "
 				+ logPick(uid, false, haul);
 		} else if (roll < 85) {
 			return ":computer: You pickpocket a laptop computer! You sell it for 100 coins, and your new balance is "
@@ -355,6 +361,42 @@ public class Casino {
 			hugeGuessLoss(uid, amount);
 		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
 		}
+	}
+	
+	public static String handleFeed(long uid, int amount) {
+		User user = getUser(uid);
+		if (user == null) {
+			return "Unable to fetch user. If you're new type `+claim` to start";
+		}
+		if (user.getBalance() < amount) {
+			return "Your balance of " + balance + " is not enough to cover that!";
+		}
+		long remainingTime = user.getTimer2().getTime() - System.currentTimeMillis();
+		if (remainingTime > 0) {
+	        return "You have recently fed the money machine. Try again in " + formatTime(remainingTime);
+		}
+		User moneyMachine = getUser(-1);
+		if (moneyMachine == null) {
+			return "A database error occurred. The money machine is nowhere to be found.";
+		}
+		Random random = new Random();
+		int pot = moneyMachine.getBalance() + amount;
+		double winChance = 0.25;
+		if (pot < 20000) {
+			winChance = 0.05 + (0.2 * (pot / 20000));
+		}
+		if (random.nextDouble() < winChance && (amount >= 100 || random.nextInt(100) < amount) { // Win
+			return "The money machine is satisfied! :dollar: You win "
+				+ pot + "! Your new balance is " + moneyMachineWin(uid, pot - amount)
+				+ "\n The money machine creates more money, and the pot is now 100";
+		} else { // Lose
+			return "Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
+				+ moneyMachineLoss(uid, amount);
+		}
+	}
+	
+	public static String handlePot() {
+		return "The current pot is " + checkBalance(-1);
 	}
 	
 // Slots Payout:
@@ -617,6 +659,15 @@ public class Casino {
     //  winnings integer DEFAULT 0,
     //  CONSTRAINT minislots_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     //);
+    
+    //CREATE TABLE IF NOT EXISTS moneymachine_user (
+    //  uid bigint PRIMARY KEY,
+    //  feeds integer DEFAULT 0,
+    //  wins integer DEFAULT 0,
+    //  spent integer DEFAULT 0,
+    //  winnings integer DEFAULT 0,
+    //  CONSTRAINT moneymachine_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    //);
 	
 	private static Timestamp checkClaimTime(long uid) {
 		String query = "SELECT last_claim FROM money_user WHERE uid = " + uid + ";";
@@ -673,6 +724,11 @@ public class Casino {
 	        + interval + "') WHERE uid = " + uid + ";");
 	}
 	
+	private static long setTimer2Time(long uid, String interval) {
+		return executeBalanceQuery("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
+	        + interval + "' WHERE uid = " + uid + ";");
+	}
+	
 	private static boolean addUser(long uid, String name) {
 		boolean error = false;
 		String query = "INSERT INTO money_user (uid, name, balance) VALUES(" + uid + ", '" + name +"', 1000) ON CONFLICT (uid) DO NOTHING;";
@@ -680,7 +736,8 @@ public class Casino {
 		String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-		String hugeguess = "INSERT INTO hugeguess_user (uid) VALUE (" + uid + " ON CONFLICT (uid) DO NOTHING;";
+		String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;"
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
@@ -694,6 +751,7 @@ public class Casino {
                 statement.executeUpdate(guess);
                 statement.executeUpdate(minislots);
                 statement.executeUpdate(hugeguess);
+                statement.executeUpdate(monemachine);
             }
             statement.close();
             connection.close();
@@ -800,7 +858,7 @@ public class Casino {
 	}
 	
 	private static User getUser(long uid) {
-		String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
+		String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim, timestamp2 FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
 		Connection connection = null;
         Statement statement = null;
         User user = null;
@@ -816,7 +874,8 @@ public class Casino {
             	long balance = results.getLong(5);
             	boolean isJail = results.getBoolean(6);
             	Timestamp time = results.getTimestamp(7);
-            	user = new Casino.User(work, fish, pick, rob, balance, isJail, time);
+            	Timestamp time2 = results.getTimestamp(8);
+            	user = new Casino.User(work, fish, pick, rob, balance, isJail, time, time2);
             }
             statement.close();
             connection.close();
@@ -878,6 +937,24 @@ public class Casino {
 		long balance = addMoney(uid, income);
 		executeBalanceQuery("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
 	        + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
+		return balance;
+	}
+	
+	private static long moneyMachineWin(long uid, int winnings) {
+		long balance = addMoney(uid, winnings);
+		executeUpdate("UPDATE money_user SET balance = 100 WHERE uid = -1;");
+		setTimer2Time(uid, "1 minute");
+		executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
+		    + winnings + ") WHERE uid = " + uid + ";");
+		return balance;
+	}
+	
+	private static long moneyMachineLoss(long uid, int bet) {
+		long balance = addMoney(uid, -1 * bet);
+		addMoney(-1, bet);
+		setTimer2Time(uid, "1 minute");
+		executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feed + 1, spent + "
+		    + bet + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
 	

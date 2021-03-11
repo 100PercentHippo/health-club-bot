@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.0.9"; //Update this in pom.xml too
+    private static final String version = "1.1.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -46,6 +46,9 @@ public class HBMain {
         commands.put("work", HBMain::handleWork);
         commands.put("fish", HBMain::handleFish);
         commands.put("minislots", HBMain::handleMinislots);
+        commands.put("pot", HBMain::handlePot);
+        commands.put("feed", HBMain::handleFeed);
+        commands.put("moneymachine", HBMain::handleFeed);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -89,7 +92,9 @@ public class HBMain {
                 + "\n\t+bigguess <guess> <amount> Guess a number from 1 to 10, no consolation prizes"
                 + "\n\t+hugeguess <guess> <amount> Guess a number from 1 to 100!"
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
-                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5");
+                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5")
+    	        + "\n\t+moneymachine <amount> Feed the money machine"
+    	        + "\n\t+pot Check the current money machine pot";
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
@@ -222,7 +227,7 @@ public class HBMain {
     	String response = "";
     	try {
     		if (!args.contains(" ")) {
-    			response = "Not enough arguments to guess. Sample usage: `+guess 5 10`";
+    			response = "Not enough arguments to guess. Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
     	   	} else {
     	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
     	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
@@ -235,7 +240,7 @@ public class HBMain {
     		    }
     		}
     	} catch (NumberFormatException e) {
-    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess 5` or `+guess 5 10`";
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
     }
@@ -244,7 +249,7 @@ public class HBMain {
     	String response = "";
     	try {
     		if (!args.contains(" ")) {
-    			response = "Not enough arguments to guess. Sample usage: `+bigguess 5 10`";
+    			response = "Not enough arguments to guess. Sample usage: `+bigguess <guess> <amount>` `+bigguess 5 10`";
     	   	} else {
     	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
     	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
@@ -257,7 +262,7 @@ public class HBMain {
     		    }
     		}
     	} catch (NumberFormatException e) {
-    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bigguess 5` or `+bigguess 5 10`";
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bigguess <guess> <amount>` `+bigguess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
     }
@@ -266,7 +271,7 @@ public class HBMain {
     	String response = "";
     	try {
     		if (!args.contains(" ")) {
-    			response = "Not enough arguments to guess. Sample usage: `+hugeguess 5 10`";
+    			response = "Not enough arguments to guess. Sample usage: `+hugeguess <guess> <amount>` `+hugeguess 5 10`";
     	   	} else {
     	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
     	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
@@ -279,7 +284,7 @@ public class HBMain {
     		    }
     		}
     	} catch (NumberFormatException e) {
-    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+hugeguess 5` or `+hugeguess 5 10`";
+    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+hugeguess <guess> <amount>` `+hugeguess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
     }
@@ -323,5 +328,24 @@ public class HBMain {
         	}
     	}
 		event.getChannel().sendMessage(response);
+    }
+    
+    public static void handlePot(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(Casino.handlePot());
+    }
+    
+    public static void handleFeed(MessageCreateEvent event, String args) {
+    	String response = "";
+    	if (args.trim().isEmpty()) {
+    		response = "Expected an amount. Sample usage: `+moneymachine 100`";
+    	} else {
+    		try {
+        		int bid = Integer.parseInt(args.trim());
+        		response = Casino.handleFeed(event.getMessageAuthor().getId(), bid);
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+moneymachine 100`";
+        	}
+    	}
+    	event.getChannel().sendMessage(response);
     }
 }
