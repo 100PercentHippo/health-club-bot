@@ -51,6 +51,8 @@ public class Casino {
 		}
 	}
 	
+	private static const int MONEY_MACHINE_UID = -1;
+	
 	private static String formatTime(long time) {
 		long hours = TimeUnit.MILLISECONDS.toHours(time);
 		long minutes = TimeUnit.MILLISECONDS.toMinutes(time) - (60 * hours);
@@ -369,18 +371,18 @@ public class Casino {
 			return "Unable to fetch user. If you're new type `+claim` to start";
 		}
 		if (user.getBalance() < amount) {
-			return "Your balance of " + balance + " is not enough to cover that!";
+			return "Your balance of " + user.getBalance() + " is not enough to cover that!";
 		}
 		long remainingTime = user.getTimer2().getTime() - System.currentTimeMillis();
 		if (remainingTime > 0) {
 	        return "You have recently fed the money machine. Try again in " + formatTime(remainingTime);
 		}
-		User moneyMachine = getUser(-1);
+		User moneyMachine = getUser(MONEY_MACHINE_UID);
 		if (moneyMachine == null) {
 			return "A database error occurred. The money machine is nowhere to be found.";
 		}
 		Random random = new Random();
-		int pot = moneyMachine.getBalance() + amount;
+		long pot = moneyMachine.getBalance() + amount;
 		double winChance = 0.25;
 		if (pot < 20000) {
 			winChance = 0.05 + (0.2 * (pot / 20000));
@@ -396,7 +398,7 @@ public class Casino {
 	}
 	
 	public static String handlePot() {
-		return "The current pot is " + checkBalance(-1);
+		return "The current pot is " + checkBalance(MONEY_MACHINE_UID);
 	}
 	
 // Slots Payout:
@@ -940,9 +942,9 @@ public class Casino {
 		return balance;
 	}
 	
-	private static long moneyMachineWin(long uid, int winnings) {
+	private static long moneyMachineWin(long uid, long winnings) {
 		long balance = addMoney(uid, winnings);
-		executeUpdate("UPDATE money_user SET balance = 100 WHERE uid = -1;");
+		executeUpdate("UPDATE money_user SET balance = 100 WHERE uid = " + MONEY_MACHINE_UID + ";");
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
 		    + winnings + ") WHERE uid = " + uid + ";");
@@ -951,7 +953,7 @@ public class Casino {
 	
 	private static long moneyMachineLoss(long uid, int bet) {
 		long balance = addMoney(uid, -1 * bet);
-		addMoney(-1, bet);
+		addMoney(MONEY_MACHINE_UID, bet);
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feed + 1, spent + "
 		    + bet + ") WHERE uid = " + uid + ";");
