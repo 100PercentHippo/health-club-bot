@@ -711,7 +711,7 @@ public class Casino {
 		return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
 	}
 	
-	private static long addMoney(long uid, int amount) {
+	private static long addMoney(long uid, long amount) {
 		return executeBalanceQuery("UPDATE money_user SET balance = balance + "
 	        + amount + " WHERE uid = " + uid + " RETURNING balance;");
 	}
