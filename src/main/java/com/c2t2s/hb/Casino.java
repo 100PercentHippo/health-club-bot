@@ -726,8 +726,8 @@ public class Casino {
 	        + interval + "') WHERE uid = " + uid + ";");
 	}
 	
-	private static long setTimer2Time(long uid, String interval) {
-		return executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
+	private static void setTimer2Time(long uid, String interval) {
+		executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
 	        + interval + "' WHERE uid = " + uid + ";");
 	}
 	
