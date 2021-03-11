@@ -727,7 +727,7 @@ public class Casino {
 	}
 	
 	private static long setTimer2Time(long uid, String interval) {
-		return executeBalanceQuery("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
+		return executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
 	        + interval + "' WHERE uid = " + uid + ";");
 	}
 	
@@ -924,7 +924,7 @@ public class Casino {
 	
 	private static long logPick(long uid, boolean rare, int income) {
 		long balance = addMoney(uid, income);
-		executeBalanceQuery("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
+		executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
 	        + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
@@ -937,7 +937,7 @@ public class Casino {
 	
 	private static long logRob(long uid, boolean rare, int income) {
 		long balance = addMoney(uid, income);
-		executeBalanceQuery("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
+		executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
 	        + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
