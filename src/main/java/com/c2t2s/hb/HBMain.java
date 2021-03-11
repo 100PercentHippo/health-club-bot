@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.1.0"; //Update this in pom.xml too
+    private static final String version = "1.1.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -341,7 +341,11 @@ public class HBMain {
     	} else {
     		try {
         		int bid = Integer.parseInt(args.trim());
-        		response = Casino.handleFeed(event.getMessageAuthor().getId(), bid);
+        		if (bid < 1) {
+        			response = "The money machine requires real sustenence of 1 or more coins";
+        		} else {
+            		response = Casino.handleFeed(event.getMessageAuthor().getId(), bid);
+        		}
         	} catch (NumberFormatException e) {
         		response = "Unable to parse argument \"" + args + "\". Sample usage: `+moneymachine 100`";
         	}
