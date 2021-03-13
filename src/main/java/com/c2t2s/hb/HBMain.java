@@ -105,6 +105,7 @@ public class HBMain {
     private static void handleTest(MessageCreateEvent event, String args) {
     	if (!event.getMessageAuthor().getDiscriminatedName().contains("Hippo")) {
         	event.getChannel().sendMessage("Hi! I'm Health Bot");
+        	return;
     	}
     	Random random = new Random();
     	int zero = 0, one = 0, two = 0, three = 0;
