@@ -626,21 +626,21 @@ public class Casino {
 		return parseLeaderboard();
 	}
 	
-	private static char cardIntToChar(int card, bool hasAce) {
+	private static char cardIntToChar(int card, boolean hasAce) {
 		if (card == 1) {
 			if (hasAce) {
-				return "1";
+				return '1';
 			} else {
-				return "A";
+				return 'A';
 			}
 		} else if (card == 11) {
-			return "J";
+			return 'J';
 		} else if (card == 12) {
-			return "Q";
+			return 'Q';
 		} else if (card == 13) {
-			return "K";
+			return 'K';
 		} else {
-			return "" + card;
+			return ' '; //TODO: Change
 		}
 	}
 	
