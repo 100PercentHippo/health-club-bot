@@ -115,7 +115,7 @@ public class HBMain {
     			if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
     				three++;
     			} else {
-    				two++
+    				two++;
     			}
     		} else {
     			one++;
