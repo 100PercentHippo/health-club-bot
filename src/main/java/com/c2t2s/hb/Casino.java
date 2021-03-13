@@ -51,42 +51,6 @@ public class Casino {
 		}
 	}
 	
-	public static class BlackJackGame {
-		private String hand;
-		private int sum;
-		private boolean contains_ace;
-		private char dealer_hand;
-		private int wager;
-		
-		public BlackJackGame(String hand, int sum, boolean ace, char dealer, int wager) {
-			this.hand = hand;
-			this.sum = sum;
-			this.contains_ace = ace;
-			this.dealer_hand = dealer;
-			this.wager = wager;
-		}
-		
-		public String getHand() {
-			return hand;
-		}
-		
-		public int getsum() {
-			return sum;
-		}
-		
-		public boolean hasAce() {
-			return contains_ace;
-		}
-		
-		public char getDealerHand() {
-			return dealer_hand;
-		}
-		
-		public int getWager() {
-			return wager;
-		}
-	}
-	
 	private static final long MONEY_MACHINE_UID = -1;
 	
 	private static String formatTime(long time) {
@@ -587,6 +551,14 @@ public class Casino {
 		return output;
 	}
 	
+// Payout:
+//  Correct over/under: 7/10 1.5:1
+//  Correct same:       1/10 3:1
+	
+	public static String handleOverUnder(long uid, int amount) {
+		return "";
+	}
+	
 	public static String handleBalance(long uid) {
 		long balance = checkBalance(uid);
 		if (balance < 0) {
@@ -626,42 +598,7 @@ public class Casino {
 		return parseLeaderboard();
 	}
 	
-	private static char cardIntToChar(int card, boolean hasAce) {
-		if (card == 1) {
-			if (hasAce) {
-				return '1';
-			} else {
-				return 'A';
-			}
-		} else if (card == 11) {
-			return 'J';
-		} else if (card == 12) {
-			return 'Q';
-		} else if (card == 13) {
-			return 'K';
-		} else {
-			return ' '; //TODO: Change
-		}
-	}
 	
-	public static String handleBlackjack(long uid, int wager) {
-		return "";
-	}
-	
-	public static String handleStand(long uid) {
-		return "";
-	}
-	
-	public static String handleHit(long uid) {
-		BlackJackGame game = getBlackjackGame(uid);
-		if (game == null) {
-			return "No active game found. Type `+blackjack <amount>` to start a new game";
-		}
-		Random random = new Random();
-		int card = random.nextInt(13) + 1;
-		
-		return "";
-	}
 	
 	//////////////////////////////////////////////////////////
 	
@@ -742,6 +679,15 @@ public class Casino {
     //  spent integer DEFAULT 0,
     //  winnings integer DEFAULT 0,
     //  CONSTRAINT moneymachine_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    //);
+    
+    //CREATE TABLE IF NOT EXISTS overunder_user (
+    //  uid bigint PRIMARY KEY,
+    //  played integer DEFAULT 0,
+    //  wins integer DEFAULT 0,
+    //  bid integer DEFAULT -1,
+    //  winnings bigint DEFAULT 0,
+    //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     //);
 	
 	private static Timestamp checkClaimTime(long uid) {
@@ -1033,28 +979,20 @@ public class Casino {
 		return balance;
 	}
 	
-	public static long blackjackBust(long uid, int bet) {
-		return 0;
-	}
-	
-	public static long blackjackLoss(long uid, int bet) {
-		return 0;
-	}
-	
-	public static long blackjackWin(long uid, int bet) {
-		return 0;
-	}
-	
-	public static BlackJackGame getBlackjackGame(long uid) {
-		return null;
-	}
-	
-	public static void newBlackjackGame(long uid, int wager) {
+	public static void logInitialOverUnder(long uid, int bet) {
 		
 	}
 	
-	public static void updateBlackjackGame(long uid, int sum, boolean contain_ace, char dealer_hand) {
-		
+	public static long getOverUnderBet(long uid) {
+		return 0;
+	}
+	
+	public static long logOverUnderLoss(long uid) {
+		return 0;
+	}
+	
+	public static long logOverUnderWin(long uid, int winnings, boolean wasSame) {
+		return 0;
 	}
 	
 	private static void executeUpdate(String query) {

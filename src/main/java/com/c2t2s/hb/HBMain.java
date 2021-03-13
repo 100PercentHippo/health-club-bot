@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.1.3"; //Update this in pom.xml too
+    private static final String version = "1.1.4"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -103,7 +103,28 @@ public class HBMain {
     }
 
     private static void handleTest(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage("Hi! I'm Health Bot");
+    	if (!event.getMessageAuthor().getDiscriminatedName().contains("Hippo")) {
+        	event.getChannel().sendMessage("Hi! I'm Health Bot");
+    	}
+    	Random random = new Random();
+    	int zero = 0, one = 0, two = 0, three = 0;
+    	for (int i = 0; i < 100; ++i) {
+    	int target = random.nextInt(10) + 1;
+    	if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
+    		if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
+    			if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
+    				three++;
+    			} else {
+    				two++
+    			}
+    		} else {
+    			one++;
+    		}
+    	} else {
+    		zero++;
+    	}
+    	}
+    	event.getChannel().sendMessage("0:" + zero + " 1:" + one + " 2:" + two + " 3:" + three);
     }
 
     private static void handleWorkout(MessageCreateEvent event, String args) {
