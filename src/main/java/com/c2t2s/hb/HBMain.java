@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.1.2"; //Update this in pom.xml too
+    private static final String version = "1.1.3"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -49,6 +49,7 @@ public class HBMain {
         commands.put("pot", HBMain::handlePot);
         commands.put("feed", HBMain::handleFeed);
         commands.put("moneymachine", HBMain::handleFeed);
+        commands.put("amogus", HBMain::handleAmogus);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -351,5 +352,9 @@ public class HBMain {
         	}
     	}
     	event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleAmogus(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage("Due to your overwhelming sus-ness, your criminal rating has been maxed, and you have been sent to jail for 12 hours");
     }
 }
