@@ -584,7 +584,7 @@ public class Casino {
 	
 	public static String handleOverUnderInitial(long uid, int amount) {
 		OverUnderGame game = getOverUnderRound(uid);
-		if (game != null || game.getRound() != -1) {
+		if (game != null && game.getRound() != -1)) {
 			return "You already have an active game: Round " + game.getRound() + " with the current value "
 		        + game.getTarget() + ".\nUse `+over`, `+under`, or `+same` to predict which the next value will be";
 		}
