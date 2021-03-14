@@ -583,7 +583,7 @@ public class Casino {
 		return output;
 	}
 	
-// Payout:
+// OverUnder Payout:
 //  2 correct then 1 wrong: ~12% 2:1
 //  3 correct:              ~25% 3:1
 	
@@ -615,7 +615,7 @@ public class Casino {
 		int target = random.nextInt(10) + 1;
 		if ((prediction == PREDICTION_OVER && target > game.getTarget())
 				|| (prediction == PREDICTION_UNDER && target < game.getTarget())
-				|| target == game.getTarget()) { // Correct
+				|| (prediction == PREDICTION_SAME && target == game.getTarget())) { // Correct
 			if (game.getRound() == 3) {
 				return "Correct! The value was " + target + ". You win " + (3 * game.getWager())
 				    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true);
