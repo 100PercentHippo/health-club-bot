@@ -616,8 +616,8 @@ public class Casino {
 				    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true);
 			} else {
 				logOverUnderProgress(uid, game.getRound() + 1, target);
-				return "Correct! Your new value for round " + (game.getRound() + 1)
-					+ " is " + target; 
+				return "Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
+					+ " round is " + target; 
 			}
 		} else { // Loss
 			String correct = "";
@@ -629,7 +629,7 @@ public class Casino {
 				correct = "same";
 			}
 			String response = "The answer was " + correct + ": " + target + ".";
-			if (game.getRound() == 2) {
+			if (game.getRound() == 3) {
 				return response + " With 2 correct you win " + (2 * game.getWager())
 					+ ". Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false);
 			} else {
