@@ -584,7 +584,7 @@ public class Casino {
 	
 	public static String handleOverUnderInitial(long uid, int amount) {
 		OverUnderGame game = getOverUnderRound(uid);
-		if (game != null) {
+		if (game != null || game.getRound() != -1) {
 			return "You already have an active game: Round " + game.getRound() + " with the current value "
 		        + game.getTarget() + ".\nUse `+over`, `+under`, or `+same` to predict which the next value will be";
 		}
@@ -603,7 +603,7 @@ public class Casino {
 	
 	public static String handleOverUnderFollowup(long uid, int prediction) {
 		OverUnderGame game = getOverUnderRound(uid);
-		if (game == null) {
+		if (game == null || game.getRound() != -1) {
 			return "No active game found. Use `+overunder <amount>` to start a new game";
 		}
 		Random random = new Random();
@@ -830,6 +830,7 @@ public class Casino {
 		String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
@@ -844,6 +845,7 @@ public class Casino {
                 statement.executeUpdate(minislots);
                 statement.executeUpdate(hugeguess);
                 statement.executeUpdate(monemachine);
+                statement.executeUpdate(overunder);
             }
             statement.close();
             connection.close();
