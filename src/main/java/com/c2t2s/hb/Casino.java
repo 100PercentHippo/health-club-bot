@@ -429,13 +429,13 @@ public class Casino {
 	}
 	
 // Slots Payout:
-//	5 of a kind: 1/625              150:1
-//	4 of a kind: 4/125              8:1
-//	3 of a kind: 32/125             1:1
+//	5 of a kind: 1/625              30:1
+//	4 of a kind: 4/125              10:1
+//	3 of a kind: 32/125             2:1
 //	Fruit Salad: 24/125             2:1
 //	1 diamond:   1/20               1:1
 //	2 diamonds:  1/1000             10:1
-//	3 diamonds:  1/1 000 000        100:1
+//	3 diamonds:  1/100 000          100:1
 //	4 diamonds:  1/20 000 000       1000:1
 //	5 diamonds:  1/10 000 000 000   10000:1
 	
@@ -480,18 +480,23 @@ public class Casino {
 			}
 		}
 		output += "\n";
+		int win_condition = 0;
 		if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
 			output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
-			winnings += 150 * amount;
+			winnings += 30 * amount;
+			win_condition = 5;
 		} else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
 			output += ":moneybag: 4 of a kind!! :moneybag: ";
-			winnings += 8 * amount;
+			winnings += 10 * amount;
+			win_condition = 4;
 		} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
 			output += "3 of a kind. ";
-			winnings += amount;
+			winnings += 2 * amount;
+			win_condition = 3;
 		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
 			output += "Fruit salad! ";
-			winnings += (int)(2 * amount);
+			winnings += 2 * amount;
+			win_condition = 1;
 		}
 		if (diamonds > 0) {
 			output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
@@ -503,7 +508,7 @@ public class Casino {
 			output += "Total winnings: " + (winnings) + " ";
 		}
 	    output += "New balance: " + balance;
-	    logSlots(uid, amount, winnings, diamonds);
+	    logSlots(uid, amount, winnings, diamonds, win_condition);
 		return output;
 	}
 	
@@ -720,6 +725,10 @@ public class Casino {
     //  diamonds integer DEFAULT 0,
     //  spent bigint DEFAULT 0,
     //  winnings bigint DEFAULT 0,
+    //  threes integer DEFAULT 0,
+    //  fours integer DEFAULT 0,
+    //  fives integer DEFAULT 0,
+    //  fruitsalads integer DEFAULT 0,
     //  CONSTRAINT slots_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     //);
     
@@ -941,9 +950,11 @@ public class Casino {
 	        + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
 	}
 	
-	private static void logSlots(long uid, int spent, int winnings, int diamonds) {
-		executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
-	        + diamonds + ", spent + " + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
+	private static void logSlots(long uid, int spent, int winnings, int diamonds, int winCondition) {
+		executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
+	        + diamonds + ", spent + " + spent + ", winnings + " + winnings + ", threes + "
+			+ (winCondition == 3 ? 1 : 0) + ", fours + " + (winCondition == 4 ? 1 : 0) + ", fives + "
+	        + (winCondition == 5 ? 1 : 0) + ", fruitsalads + " + (winCondition == 1 ? 1 : 0) + ") WHERE uid = " + uid + ";");
 	}
 	
 	private static void logMinislots(long uid, int spent, int winnings, int diamonds) {
