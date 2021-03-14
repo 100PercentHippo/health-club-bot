@@ -620,8 +620,14 @@ public class Casino {
 					+ " is " + target; 
 			}
 		} else { // Loss
-			String correct = ((target > game.getTarget()) : "over"
-				? (target < game.getTarget() : "under" ? "same"));
+			String correct = "";
+			if (target > game.getTarget()) {
+				correct = "over";
+			} else if (target < game.getTarget()) {
+				correct = "under";
+			} else {
+				correct = "same";
+			}
 			String response = "The answer was " + correct + ": " + target + ".";
 			if (game.getRound() == 2) {
 				return response + " With 2 correct you win " + (2 * game.getWager())

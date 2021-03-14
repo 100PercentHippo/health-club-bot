@@ -419,3 +419,4 @@ public class HBMain {
     	event.getChannel().sendMessage(
     			Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_SAME));
     }
+}
