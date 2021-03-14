@@ -597,8 +597,8 @@ public class Casino {
 		Random random = new Random();
 		int target = random.nextInt(10) + 1;
 		logInitialOverUnder(uid, amount, target);
-		return "Your initial value is " + target
-			+ ". Predict if the next value will be `+over`, `+under`, or the `+same`";
+		return "Bid " + amount + " on overunder.\nYour initial value is " + target
+			+ ". Predict if the next value (1-10) will be `+over`, `+under`, or the `+same`";
 	}
 	
 	public static String handleOverUnderFollowup(long uid, int prediction) {
