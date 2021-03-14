@@ -1064,10 +1064,9 @@ public class Casino {
     //);
 	
 	public static void logInitialOverUnder(long uid, int bet, int target) {
-		long balance = addMoney(uid, -1 * bet);
+		addMoney(uid, -1 * bet);
 		executeUpdate("UPDATE overunder_user SET (round, played, bet, target) = (1, played + 1, "
 	        + bet + ", " + target + ") WHERE uid = " + uid + ";");
-		return balance;
 	}
 	
 	public static void logOverUnderProgress(long uid, int round, int target) {
@@ -1101,7 +1100,7 @@ public class Casino {
             	int round = results.getInt(1);
             	int wager = results.getInt(2);
             	int target = results.getInt(3);
-            	user = new Casino.OverUnderGame(round, wager, target);
+            	game = new Casino.OverUnderGame(round, wager, target);
             }
             statement.close();
             connection.close();
