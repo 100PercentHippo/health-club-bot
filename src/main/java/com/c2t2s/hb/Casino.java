@@ -1067,8 +1067,8 @@ public class Casino {
 	
 	public static void logInitialOverUnder(long uid, int bet, int target) {
 		addMoney(uid, -1 * bet);
-		executeUpdate("UPDATE overunder_user SET (round, played, bet, target) = (1, played + 1, "
-	        + bet + ", " + target + ") WHERE uid = " + uid + ";");
+		executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
+		    + bet + ", " + bet + ", " + target + ") WHERE uid = " + uid + ";");
 	}
 	
 	public static void logOverUnderProgress(long uid, int round, int target) {
