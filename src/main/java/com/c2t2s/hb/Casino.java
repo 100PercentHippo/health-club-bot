@@ -431,7 +431,7 @@ public class Casino {
 // Slots Payout:
 //	5 of a kind: 1/625              30:1
 //	4 of a kind: 4/125              10:1
-//	3 of a kind: 32/125             2:1
+//	3 of a kind: 32/125             1.5:1
 //	Fruit Salad: 24/125             2:1
 //	1 diamond:   1/20               1:1
 //	2 diamonds:  1/1000             10:1
@@ -491,7 +491,7 @@ public class Casino {
 			win_condition = 4;
 		} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
 			output += "3 of a kind. ";
-			winnings += 2 * amount;
+			winnings += (int)(1.5 * amount);
 			win_condition = 3;
 		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
 			output += "Fruit salad! ";
