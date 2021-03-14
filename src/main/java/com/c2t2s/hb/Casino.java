@@ -631,7 +631,7 @@ public class Casino {
 			String response = "The answer was " + correct + ": " + target + ".";
 			if (game.getRound() == 3) {
 				return response + " With 2 correct you win " + (2 * game.getWager())
-					+ ". Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false);
+					+ " coins. Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false);
 			} else {
 				logOverUnderLoss(uid);
 				return response + " Your current balance is " + checkBalance(uid);
