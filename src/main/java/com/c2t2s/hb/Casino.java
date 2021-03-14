@@ -603,7 +603,7 @@ public class Casino {
 	
 	public static String handleOverUnderFollowup(long uid, int prediction) {
 		OverUnderGame game = getOverUnderRound(uid);
-		if (game == null || game.getRound() != -1) {
+		if (game == null || game.getRound() == -1) {
 			return "No active game found. Use `+overunder <amount>` to start a new game";
 		}
 		Random random = new Random();
