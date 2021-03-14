@@ -51,7 +51,34 @@ public class Casino {
 		}
 	}
 	
+	public static class OverUnderGame {
+		private int round;
+		private int wager;
+		private int target;
+		
+		public OverUnderGame(int round, int wager, int target) {
+			this.round = round;
+			this.wager = wager;
+			this.target = target;
+		}
+		
+		public int getRound() {
+			return round;
+		}
+		
+		public int getWager() {
+			return wager;
+		}
+		
+		public int getTarget() {
+			return target;
+		}
+	}
+	
 	private static final long MONEY_MACHINE_UID = -1;
+	public static final int PREDICTION_OVER = 0;
+	public static final int PREDICTION_UNDER = 1;
+	public static final int PREDICTION_SAME = 2;
 	
 	private static String formatTime(long time) {
 		long hours = TimeUnit.MILLISECONDS.toHours(time);
@@ -552,11 +579,58 @@ public class Casino {
 	}
 	
 // Payout:
-//  Correct over/under: 7/10 1.5:1
-//  Correct same:       1/10 3:1
+//  2 correct then 1 wrong: ~12% 2:1
+//  3 correct:              ~25% 3:1
 	
-	public static String handleOverUnder(long uid, int amount) {
-		return "";
+	public static String handleOverUnderInitial(long uid, int amount) {
+		OverUnderGame game = getOverUnderRound(uid);
+		if (game != null) {
+			return "You already have an active game: Round " + game.getRound() + " with the current value "
+		        + game.getTarget() + ".\nUse `+over`, `+under`, or `+same` to predict which the next value will be";
+		}
+		long balance = checkBalance(uid);
+		if (balance < 0) {
+			return "Unable to start game. Balance check failed or was negative (" + balance +")";
+		} else if (balance < amount) {
+			return "Your current balance of " + balance + " is not enough to cover that";
+		}
+		Random random = new Random();
+		int target = random.nextInt(10) + 1;
+		logInitialOverUnder(uid, amount, target);
+		return "Your initial value is " + target
+			+ ". Predict if the next value will be `+over`, `+under`, or the `+same`";
+	}
+	
+	public static String handleOverUnderFollowup(long uid, int prediction) {
+		OverUnderGame game = getOverUnderRound(uid);
+		if (game == null) {
+			return "No active game found. Use `+overunder <amount>` to start a new game";
+		}
+		Random random = new Random();
+		int target = random.nextInt(10) + 1;
+		if ((prediction == PREDICTION_OVER && target > game.getTarget())
+				|| (prediction == PREDICTION_UNDER && target < game.getTarget())
+				|| target == game.getTarget()) { // Correct
+			if (game.getRound() == 3) {
+				return "Correct! The value was " + target + ". You win " + (3 * game.getWager())
+				    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true);
+			} else {
+				logOverUnderProgress(uid, game.getRound() + 1, target);
+				return "Correct! Your new value for round " + (game.getRound() + 1)
+					+ " is " + target; 
+			}
+		} else { // Loss
+			String correct = target > game.getTarget() : "over"
+				? (target < game.getTarget() : "under" ? "same");
+			String response = "The answer was " + correct + ": " + target + ".";
+			if (game.getRound() == 2) {
+				return response + " With 2 correct you win " + (2 * game.getWager())
+					+ ". Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false);
+			} else {
+				logOverUnderLoss(uid);
+				return response + " Your current balance is " + checkBalance(uid);
+			}
+		}
 	}
 	
 	public static String handleBalance(long uid) {
@@ -679,15 +753,6 @@ public class Casino {
     //  spent integer DEFAULT 0,
     //  winnings integer DEFAULT 0,
     //  CONSTRAINT moneymachine_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
-    
-    //CREATE TABLE IF NOT EXISTS overunder_user (
-    //  uid bigint PRIMARY KEY,
-    //  played integer DEFAULT 0,
-    //  wins integer DEFAULT 0,
-    //  bid integer DEFAULT -1,
-    //  winnings bigint DEFAULT 0,
-    //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     //);
 	
 	private static Timestamp checkClaimTime(long uid) {
@@ -978,21 +1043,81 @@ public class Casino {
 		    + bet + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
+    
+    //CREATE TABLE IF NOT EXISTS overunder_user (
+    //  uid bigint PRIMARY KEY,
+    //  played integer DEFAULT 0,
+    //  consolations integer DEFAULT 0,
+    //  wins integer DEFAULT 0,
+	//  spent bigint DEFAULT 0,
+    //  winnings bigint DEFAULT 0,
+    //  bet integer DEFAULT -1,
+    //  round integer DEFAULT -1,
+    //  target integer DEFAULT -1,
+    //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    //);
 	
-	public static void logInitialOverUnder(long uid, int bet) {
-		
+	public static void logInitialOverUnder(long uid, int bet, int target) {
+		long balance = addMoney(uid, -1 * bet);
+		executeUpdate("UPDATE overunder_user SET (round, played, bet, target) = (1, played + 1, "
+	        + bet + ", " + target + ") WHERE uid = " + uid + ";");
+		return balance;
 	}
 	
-	public static long getOverUnderBet(long uid) {
-		return 0;
+	public static void logOverUnderProgress(long uid, int round, int target) {
+		executeUpdate("UPDATE overunder_user SET (round, target) = ("
+	        + round + ", " + target") WHERE uid = " + uid + ";");
 	}
 	
-	public static long logOverUnderLoss(long uid) {
-		return 0;
+	public static void logOverUnderLoss(long uid) {
+		executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
+	        + uid + ";")
 	}
 	
-	public static long logOverUnderWin(long uid, int winnings, boolean wasSame) {
-		return 0;
+	public static long logOverUnderWin(long uid, int winnings, boolean thirdRound) {
+		long balance = addMoney(uid, winnings);
+		executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
+		    + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
+		    + winnings + ") WHERE uid = " + uid + ";");
+		return balance;
+	}
+	
+	public static OverUnderGame getOverUnderRound(long uid) {
+		String query = "SELECT round, bet, target FROM overunder_user WHERE uid = " + uid + ";";
+		Connection connection = null;
+        Statement statement = null;
+        OverUnderGame game = null;
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            if (results.next()) {
+            	int round = results.getInt(1);
+            	int wager = results.getInt(2);
+            	int target = results.getInt(3);
+            	user = new Casino.OverUnderGame(round, wager, target);
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return game;
 	}
 	
 	private static void executeUpdate(String query) {

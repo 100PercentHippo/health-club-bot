@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.1.4"; //Update this in pom.xml too
+    private static final String version = "1.2.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -50,6 +50,10 @@ public class HBMain {
         commands.put("feed", HBMain::handleFeed);
         commands.put("moneymachine", HBMain::handleFeed);
         commands.put("amogus", HBMain::handleAmogus);
+        commands.put("overunder", HBMain::handleOverUnder);
+        commands.put("over", HBMain::handleOver);
+        commands.put("under", HBMain::handleUnder);
+        commands.put("same", HBMain::handleSame);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -95,7 +99,9 @@ public class HBMain {
                 + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
                 + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5"
     	        + "\n\t+moneymachine <amount> Feed the money machine"
-    	        + "\n\t+pot Check the current money machine pot");
+    	        + "\n\t+pot Check the current money machine pot"
+    	        + "\n\t+overunder Multiple rounds of predicting if the next number is over or under"
+    	        + "\n\t\tPlace predictions with +over, +under, or +same");
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
@@ -379,4 +385,37 @@ public class HBMain {
     public static void handleAmogus(MessageCreateEvent event, String args) {
     	event.getChannel().sendMessage("Due to your overwhelming sus-ness, your criminal rating has been maxed, and you have been sent to jail for 12 hours");
     }
-}
+    
+    public static void handleOverUnder(MessageCreateEvent event, String args) {
+    	String response = "";
+    	if (args.trim().isEmpty()) {
+    		response = Casino.handleOverUnderInitial(event.getMessageAuthor().getId(), 10);
+    	} else {
+    		try {
+        		int bid = Integer.parseInt(args.trim());
+        		if (bid < 5) {
+        			response = "Minimum bid for overunder is 10 coins";
+        		} else {
+            	    response = Casino.handleOverUnderInitial(event.getMessageAuthor().getId(), bid);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+overunder` or `+overunder 10`";
+        	}
+    	}
+		event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleOver(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(
+    			Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_OVER));
+    }
+    
+    public static void handleUnder(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(
+    			Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_UNDER));
+    }
+    
+    public static void handleSame(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(
+    			Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_SAME));
+    }
