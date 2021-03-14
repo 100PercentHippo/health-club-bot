@@ -620,8 +620,8 @@ public class Casino {
 					+ " is " + target; 
 			}
 		} else { // Loss
-			String correct = target > game.getTarget() : "over"
-				? (target < game.getTarget() : "under" ? "same");
+			String correct = ((target > game.getTarget()) : "over"
+				? (target < game.getTarget() : "under" ? "same"));
 			String response = "The answer was " + correct + ": " + target + ".";
 			if (game.getRound() == 2) {
 				return response + " With 2 correct you win " + (2 * game.getWager())
@@ -1066,12 +1066,12 @@ public class Casino {
 	
 	public static void logOverUnderProgress(long uid, int round, int target) {
 		executeUpdate("UPDATE overunder_user SET (round, target) = ("
-	        + round + ", " + target") WHERE uid = " + uid + ";");
+	        + round + ", " + target + ") WHERE uid = " + uid + ";");
 	}
 	
 	public static void logOverUnderLoss(long uid) {
 		executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
-	        + uid + ";")
+	        + uid + ";");
 	}
 	
 	public static long logOverUnderWin(long uid, int winnings, boolean thirdRound) {
