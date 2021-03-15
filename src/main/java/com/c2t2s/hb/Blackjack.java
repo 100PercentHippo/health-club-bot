@@ -54,7 +54,9 @@ public class Blackjack {
 	
 	public static String handleBlackjack(long uid, int wager) {
 		BlackJackGame game = getBlackjackGame(uid);
-		if (game == null || game.getWager() != -1) {
+		if (game == null) {
+			return "Unable to fetch game from the database. Did you `+claim`?";
+		} else if (game.getWager() != -1) {
 			return "You have a currently active game:\n" + displayGame(game.getHand(), game.getDealerHand(), "[?]")
 			    + "\nUse `+hit` or `+stand` to play it out";
 		}
