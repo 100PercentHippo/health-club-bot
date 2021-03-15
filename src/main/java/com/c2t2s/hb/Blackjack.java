@@ -187,12 +187,12 @@ public class Blackjack {
 	public static void newBlackjackGame(long uid, String hand, int sum, boolean hasAce, int dealerHand, int wager) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (hands, spent, hand, sum, ace, dealer_hand, wager) = (hands + 1, spent + "
 	        + wager + ", '" + hand + "', " + sum + ", " + hasAce + ", " + dealerHand + ", "
-			+ wager + ") WHERE uid = " + uid + ";")
+			+ wager + ") WHERE uid = " + uid + ";");
 	}
 	
 	public static void updateBlackjackGame(long uid, String hand, int sum, boolean contains_ace) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace) = ('" + hand
-			+ "', " + sum + ", " + contains_ace + ") WHERE uid = " + uid + ";")
+			+ "', " + sum + ", " + contains_ace + ") WHERE uid = " + uid + ";");
 	}
 	
 	public static long blackjackBust(long uid) {
