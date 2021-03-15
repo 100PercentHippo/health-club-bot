@@ -125,6 +125,7 @@ public class Blackjack {
 			response += "\nDealer bust! You win " + (2 * game.getWager())
 					+ "! Your new balance is " + blackjackWin(uid, 2 * game.getWager(), true);
 		} else if (dealerTotal > playerTotal) {
+			blackjackLoss(uid);
 			response += "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
 		} else if (dealerTotal < playerTotal) {
 			response += "\nYou win " + (2 * game.getWager())
