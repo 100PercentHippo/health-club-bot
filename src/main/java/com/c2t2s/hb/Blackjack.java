@@ -159,7 +159,7 @@ public class Blackjack {
 		} else {
 			value += cardValues[card];
 		}
-		if ((game.hasAce() && value > 31) || (!game.hasAce() && value > 21)) {
+		if ((hasAce && value > 31) || (!hasAce && value > 21)) {
 			return displayGame(hand, game.getDealerHand(), cardLetters[random.nextInt(13) + 1])
 				+ "\nBust! Your new balance is " + blackjackBust(uid);
 		} else {
