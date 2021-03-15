@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.3.2"; //Update this in pom.xml too
+    private static final String version = "1.4.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -54,6 +54,10 @@ public class HBMain {
         commands.put("over", HBMain::handleOver);
         commands.put("under", HBMain::handleUnder);
         commands.put("same", HBMain::handleSame);
+        commands.put("blackjack", HBMain::handleBlackjack);
+        commands.put("hit", HBMain::handleHit);
+        commands.put("stay", HBMain::handleStand);
+        commands.put("stand", HBMain::handleStand);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -101,7 +105,8 @@ public class HBMain {
     	        + "\n\t+moneymachine <amount> Feed the money machine"
     	        + "\n\t+pot Check the current money machine pot"
     	        + "\n\t+overunder Multiple rounds of predicting if the next number is over or under"
-    	        + "\n\t\tPlace predictions with +over, +under, or +same");
+    	        + "\n\t\tPlace predictions with +over, +under, or +same"
+    	        + "\n\t+blackjack <amount> Start a new game of blackjack, played with +hit or +stand");
     }
 
     private static void handleVersion(MessageCreateEvent event, String args) {
@@ -394,7 +399,7 @@ public class HBMain {
     		try {
         		int bid = Integer.parseInt(args.trim());
         		if (bid < 5) {
-        			response = "Minimum bid for overunder is 10 coins";
+        			response = "Minimum bid for overunder is 5 coins";
         		} else {
             	    response = Casino.handleOverUnderInitial(event.getMessageAuthor().getId(), bid);
         		}
@@ -418,5 +423,32 @@ public class HBMain {
     public static void handleSame(MessageCreateEvent event, String args) {
     	event.getChannel().sendMessage(
     			Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_SAME));
+    }
+    
+    public static void handleBlackjack(MessageCreateEvent event, String args) {
+    	String response = "";
+    	if (args.trim().isEmpty()) {
+    		response = Blackjack.handleBlackjack(event.getMessageAuthor().getId(), 10);
+    	} else {
+    		try {
+        		int bid = Integer.parseInt(args.trim());
+        		if (bid < 10) {
+        			response = "Minimum bid for blackjack is 10 coins";
+        		} else {
+            	    response = Blackjack.handleBlackjack(event.getMessageAuthor().getId(), bid);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+blackjack` or `+blackjack 10`";
+        	}
+    	}
+		event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleHit(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(Blackjack.handleHit(event.getMessageAuthor().getId()));
+    }
+    
+    public static void handleStand(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(Blackjack.handleStand(event.getMessageAuthor().getId()));
     }
 }

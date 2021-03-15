@@ -806,11 +806,11 @@ public class Casino {
         return time;
 	}
 	
-	private static long checkBalance(long uid) {
+	public static long checkBalance(long uid) {
 		return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
 	}
 	
-	private static long addMoney(long uid, long amount) {
+	public static long addMoney(long uid, long amount) {
 		return executeBalanceQuery("UPDATE money_user SET balance = balance + "
 	        + amount + " WHERE uid = " + uid + " RETURNING balance;");
 	}
@@ -840,6 +840,7 @@ public class Casino {
 		String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
@@ -1138,7 +1139,7 @@ public class Casino {
         return game;
 	}
 	
-	private static void executeUpdate(String query) {
+	public static void executeUpdate(String query) {
         Connection connection = null;
         Statement statement = null;
         try {
