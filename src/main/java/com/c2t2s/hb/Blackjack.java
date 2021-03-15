@@ -17,7 +17,7 @@ public class Blackjack {
 		private int sum;
 		private boolean contains_ace;
 		private int dealer_hand;
-		private long wager;
+		private int wager;
 		
 		public BlackJackGame(String hand, int sum, boolean ace, int dealer, int wager) {
 			this.hand = hand;
@@ -157,7 +157,7 @@ public class Blackjack {
 			value += cardValues[card];
 		}
 		if ((game.hasAce() && value > 31) || (!game.hasAce() && value > 21)) {
-			return displayGame(hand, game.getDealerHand(), charLetters[random.nextInt(13) + 1])
+			return displayGame(hand, game.getDealerHand(), cardLetters[random.nextInt(13) + 1])
 				+ "\nBust! Your new balance is " + blackjackBust(uid);
 		} else {
 			updateBlackjackGame(uid, hand, value, hasAce);
@@ -226,7 +226,7 @@ public class Blackjack {
         Statement statement = null;
         BlackJackGame game = null;
         try {
-            connection = getConnection();
+            connection = Casino.getConnection();
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             if (results.next()) {

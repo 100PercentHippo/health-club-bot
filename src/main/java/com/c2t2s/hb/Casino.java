@@ -687,7 +687,7 @@ public class Casino {
 	
 	//////////////////////////////////////////////////////////
 	
-    private static Connection getConnection() throws URISyntaxException, SQLException {
+    public static Connection getConnection() throws URISyntaxException, SQLException {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"));
     }
 	
