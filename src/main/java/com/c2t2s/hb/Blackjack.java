@@ -49,7 +49,7 @@ public class Blackjack {
 	}
 	
 	private static String displayGame(String hand, int dealer, String dealerCardTwo) {
-		return "Dealer's hand: " + cardLetters[dealer] + dealerCardTwo + "\nYour hand:    " + hand;
+		return "Your hand:    " + hand + "\nDealer's hand: " + cardLetters[dealer] + dealerCardTwo;
 	}
 	
 	public static String handleBlackjack(long uid, int wager) {

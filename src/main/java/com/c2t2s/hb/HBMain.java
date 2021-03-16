@@ -376,7 +376,7 @@ public class HBMain {
     		try {
         		int bid = Integer.parseInt(args.trim());
         		if (bid < 1) {
-        			response = "The money machine requires real sustenence of 1 or more coins";
+        			response = "The money machine requires real sustenance of 1 or more coins";
         		} else {
             		response = Casino.handleFeed(event.getMessageAuthor().getId(), bid);
         		}
