@@ -856,6 +856,7 @@ public class Casino {
                 statement.executeUpdate(hugeguess);
                 statement.executeUpdate(monemachine);
                 statement.executeUpdate(overunder);
+                statement.executeUpdate(blackjac);
             }
             statement.close();
             connection.close();
