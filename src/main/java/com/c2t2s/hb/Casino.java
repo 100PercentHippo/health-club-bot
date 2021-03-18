@@ -825,7 +825,7 @@ public class Casino {
 		long balance = executeBalanceQuery("UPDATE money_user SET balance = balance - "
 		        + amount + " WHERE uid = " + uid + " RETURNING balance;");
 		if (!mmExempt && amount > 19) {
-			executeBalanceQuery("UPDATE money_user SET balance = balance + "
+			executeUpdate("UPDATE money_user SET balance = balance + "
 			        + (int)(amount/20) + " WHERE uid = " + MONEY_MACHINE_UID + ";");
 		}
 		return balance;
