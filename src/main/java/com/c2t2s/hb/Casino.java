@@ -409,7 +409,7 @@ public class Casino {
 			return "A database error occurred. The money machine is nowhere to be found.";
 		}
 		Random random = new Random();
-		long pot = moneyMachine.getBalance() + amount;
+		long pot = moneyMachine.getBalance() + amount + getPot();
 		double winChance = 0.25;
 		if (pot < 20000) {
 			winChance = 0.05 + (0.2 * (pot / 20000));
@@ -424,7 +424,7 @@ public class Casino {
 	}
 	
 	public static String handlePot() {
-		return "The current pot is " + checkBalance(MONEY_MACHINE_UID);
+		return "The current pot is " + (checkBalance(MONEY_MACHINE_UID) + getPot());
 	}
 	
 // Slots Payout:
@@ -1085,6 +1085,11 @@ public class Casino {
 		    + bet + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
+	
+	private static long getPot() {
+		long balance = executeBalanceQuery("SELECT winnings FROM overunder_user WHERE uid = " + MONEY_MACHINE_UID + ";");
+		return balance > 0 ? balance : 0;
+	}
     
     //CREATE TABLE IF NOT EXISTS overunder_user (
     //  uid bigint PRIMARY KEY,
@@ -1111,11 +1116,10 @@ public class Casino {
 	}
 	
 	public static void logOverUnderLoss(long uid, long bet) {
-		if (bet > 20) {
-			addMoney(MONEY_MACHINE_UID, (int)bet/20);
-		}
 		executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
 	        + uid + ";");
+		executeUpdate("UPDATE overunder_user SET (winnings) = (winnings + "
+			    + bet + ") WHERE uid = " + MONEY_MACHINE_UID + ";");
 	}
 	
 	public static long logOverUnderWin(long uid, int winnings, boolean thirdRound) {
@@ -1123,6 +1127,8 @@ public class Casino {
 		executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
 		    + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
 		    + winnings + ") WHERE uid = " + uid + ";");
+		executeUpdate("UPDATE overunder_user SET (winnings) = (winnings - "
+		    + winnings + ") WHERE uid = " + MONEY_MACHINE_UID + ";");
 		return balance;
 	}
 	
