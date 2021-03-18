@@ -127,7 +127,7 @@ public class Blackjack {
 			response += "\nDealer bust! You win " + (2 * game.getWager())
 					+ "! Your new balance is " + blackjackWin(uid, 2 * game.getWager(), true);
 		} else if (dealerTotal > playerTotal) {
-			blackjackLoss(uid);
+			blackjackLoss(uid, game.getWager());
 			response += "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
 		} else if (dealerTotal < playerTotal) {
 			response += "\nYou win " + (2 * game.getWager())
@@ -161,7 +161,7 @@ public class Blackjack {
 		}
 		if ((hasAce && value > 31) || (!hasAce && value > 21)) {
 			return displayGame(hand, game.getDealerHand(), cardLetters[random.nextInt(13) + 1])
-				+ "\nBust! Your new balance is " + blackjackBust(uid);
+				+ "\nBust! Your new balance is " + blackjackBust(uid, game.getWager());
 		} else {
 			updateBlackjackGame(uid, hand, value, hasAce);
 			return displayGame(hand, game.getDealerHand(), "[?]");
@@ -198,15 +198,17 @@ public class Blackjack {
 			+ "', " + sum + ", " + contains_ace + ") WHERE uid = " + uid + ";");
 	}
 	
-	public static long blackjackBust(long uid) {
+	public static long blackjackBust(long uid, long amount) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
 		    + uid + ";");
+		Casino.addMoney(Casino.MONEY_MACHINE_UID, (int)amount/20);
 		return Casino.checkBalance(uid);
 	}
 	
-	public static long blackjackLoss(long uid) {
+	public static long blackjackLoss(long uid, long amount) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
 	        + uid +";");
+		Casino.addMoney(Casino.MONEY_MACHINE_UID, (int)amount/20);
 		return Casino.checkBalance(uid);
 	}
 	

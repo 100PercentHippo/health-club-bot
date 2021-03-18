@@ -75,7 +75,7 @@ public class Casino {
 		}
 	}
 	
-	private static final long MONEY_MACHINE_UID = -1;
+	public static final long MONEY_MACHINE_UID = -1;
 	public static final int PREDICTION_OVER = 0;
 	public static final int PREDICTION_UNDER = 1;
 	public static final int PREDICTION_SAME = 2;
@@ -346,7 +346,7 @@ public class Casino {
 				return "The correct value was " + (random.nextInt(5) + 11) + ". Wait, that isn't right. Here, take " + ((int)2.5 * amount) + " to pretend that never happened. New balance is " + addMoney(uid, ((int)2.5 * amount));
 			}
 			guessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
+		    return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
 		}
 	}
 	
@@ -367,7 +367,7 @@ public class Casino {
 			return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 9 * amount);
 		} else {
 			guessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
+		    return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
 		}
 	}
 	
@@ -388,7 +388,7 @@ public class Casino {
 			return "Correct! You win " + (100 * amount) + "! New balance is " + addMoney(uid, 99 * amount);
 		} else {
 			hugeGuessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + addMoney(uid, -1 * amount);
+		    return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
 		}
 	}
 	
@@ -416,8 +416,7 @@ public class Casino {
 		}
 		if (random.nextDouble() < winChance && (amount >= 100 || random.nextInt(100) < amount)) { // Win
 			return "The money machine is satisfied! :dollar: You win "
-				+ pot + "! Your new balance is " + moneyMachineWin(uid, pot - amount)
-				+ "\nThe money machine creates more money, and the pot is now 100";
+				+ pot + "! Your new balance is " + moneyMachineWin(uid, pot - amount);
 		} else { // Lose
 			return "Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
 				+ moneyMachineLoss(uid, amount);
@@ -503,7 +502,11 @@ public class Casino {
 			if (diamonds > 3) { output += "Jackpot!!! "; }
 			winnings += amount * (int)Math.pow(10, diamonds - 1);
 		}
-		balance = addMoney(uid, winnings - amount);
+		if (amount > winnings) {
+			balance = takeMoney(uid, amount - winnings);
+		} else {
+			balance = addMoney(uid, winnings - amount);
+		}
 		if (winnings > 0) {
 			output += "Total winnings: " + (winnings) + " ";
 		}
@@ -574,7 +577,11 @@ public class Casino {
 			output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: Jackpot!!! ";
 			winnings += amount * (int)Math.pow(10, diamonds - 1);
 		}
-		balance = addMoney(uid, winnings - amount);
+		if (amount > winnings) {
+			balance = takeMoney(uid, amount - winnings);
+		} else {
+			balance = addMoney(uid, winnings - amount);
+		}
 		if (winnings > 0) {
 			output += "Total winnings: " + (winnings) + " ";
 		}
@@ -638,7 +645,7 @@ public class Casino {
 				return response + " With 2 correct you win " + (2 * game.getWager())
 					+ " coins. Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false);
 			} else {
-				logOverUnderLoss(uid);
+				logOverUnderLoss(uid, game.getWager());
 				return response + " Your current balance is " + checkBalance(uid);
 			}
 		}
@@ -808,6 +815,20 @@ public class Casino {
 	
 	public static long checkBalance(long uid) {
 		return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
+	}
+	
+	public static long takeMoney(long uid, long amount) {
+		takeMoney(uid, amount, false);
+	}
+	
+	public static long takeMoney(long uid, long amount, boolean mmExempt) {
+		long balance = executeBalanceQuery("UPDATE money_user SET balance = balance - "
+		        + amount + " WHERE uid = " + uid + " RETURNING balance;");
+		if (!mmExempt && amount > 19) {
+			executeBalanceQuery("UPDATE money_user SET balance = balance + "
+			        + (int)(amount/20) + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+		}
+		return balance;
 	}
 	
 	public static long addMoney(long uid, long amount) {
@@ -1049,7 +1070,7 @@ public class Casino {
 	
 	private static long moneyMachineWin(long uid, long winnings) {
 		long balance = addMoney(uid, winnings);
-		executeUpdate("UPDATE money_user SET balance = 100 WHERE uid = " + MONEY_MACHINE_UID + ";");
+		executeUpdate("UPDATE money_user SET balance = 0 WHERE uid = " + MONEY_MACHINE_UID + ";");
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
 		    + winnings + ") WHERE uid = " + uid + ";");
@@ -1057,7 +1078,7 @@ public class Casino {
 	}
 	
 	private static long moneyMachineLoss(long uid, int bet) {
-		long balance = addMoney(uid, -1 * bet);
+		long balance = takeMoney(uid, bet, true);
 		addMoney(MONEY_MACHINE_UID, bet);
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
@@ -1089,7 +1110,10 @@ public class Casino {
 	        + round + ", " + target + ") WHERE uid = " + uid + ";");
 	}
 	
-	public static void logOverUnderLoss(long uid) {
+	public static void logOverUnderLoss(long uid, long bet) {
+		if (bet > 20) {
+			addMoney(MONEY_MACHINE_UID, (int)bet/20);
+		}
 		executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
 	        + uid + ";");
 	}
