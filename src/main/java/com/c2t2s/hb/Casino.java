@@ -818,7 +818,7 @@ public class Casino {
 	}
 	
 	public static long takeMoney(long uid, long amount) {
-		takeMoney(uid, amount, false);
+		return takeMoney(uid, amount, false);
 	}
 	
 	public static long takeMoney(long uid, long amount, boolean mmExempt) {
