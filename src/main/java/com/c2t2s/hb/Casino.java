@@ -1074,7 +1074,7 @@ public class Casino {
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
 		    + winnings + ") WHERE uid = " + uid + ";");
-		executeUpdate("UPDATE overunder_user SET winnings = 0 WHERE uid = " + MONEY_MACHINE_UID + ";");
+		executeUpdate("UPDATE overunder_user SET winnings = 0 WHERE uid = " + MONEY_MACHINE_UID + " AND winnings > 0;");
 		return balance;
 	}
 	
