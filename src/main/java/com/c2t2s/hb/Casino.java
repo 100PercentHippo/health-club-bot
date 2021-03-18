@@ -1074,6 +1074,7 @@ public class Casino {
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
 		    + winnings + ") WHERE uid = " + uid + ";");
+		executeUpdate("UPDATE overunder_user SET winnings = 0 WHERE uid = " + MONEY_MACHINE_UID + ";");
 		return balance;
 	}
 	
@@ -1087,8 +1088,11 @@ public class Casino {
 	}
 	
 	private static long getPot() {
-		long balance = executeBalanceQuery("SELECT winnings FROM overunder_user WHERE uid = " + MONEY_MACHINE_UID + ";");
-		return balance > 0 ? balance : 0;
+		long balance = 0;
+		long overunderBalance = executeBalanceQuery("SELECT winnings FROM overunder_user WHERE uid = " + MONEY_MACHINE_UID + ";");
+		overunderBalance /= 20;
+		balance += (overunderBalance > 0 ? overunderBalance : 0);
+		return balance;
 	}
     
     //CREATE TABLE IF NOT EXISTS overunder_user (
