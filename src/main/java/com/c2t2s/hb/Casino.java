@@ -598,8 +598,8 @@ public class Casino {
 	}
 	
 // OverUnder Payout:
-//  2 correct then 1 wrong: ~12% 2:1
-//  3 correct:              ~25% 3:1
+//  2 correct then 1 wrong: ~2/11 1:1
+//  3 correct:              ~3/11 3:1
 	
 	public static String handleOverUnderInitial(long uid, int amount) {
 		OverUnderGame game = getOverUnderRound(uid);
@@ -649,8 +649,8 @@ public class Casino {
 			}
 			String response = "The answer was " + correct + ": " + target + ".";
 			if (game.getRound() == 3) {
-				return response + " With 2 correct you win " + (2 * game.getWager())
-					+ " coins. Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false, game.getWager());
+				return response + " With 2 correct your " + game.getWager()
+					+ " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager());
 			} else {
 				logOverUnderLoss(uid, game.getWager());
 				return response + " Your current balance is " + checkBalance(uid);
