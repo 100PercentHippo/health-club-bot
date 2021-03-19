@@ -333,20 +333,27 @@ public class Casino {
 		if (guess == correct) {
 			if (guess == 1 || guess == 10) {
 				guessWin(uid, amount, 6 * amount);
-				return "Correct!! Big win of " + (6 * amount) + "! New balance is " + addMoney(uid, 6 * amount);
+				return "Correct!! Big win of " + (6 * amount) + "! New balance is "
+					+ addWinnings(uid, 6 * amount);
 			}
 			guessWin(uid, amount, 5 * amount);
-			return "Correct! You win " + (5 * amount) + "! New balance is " + addMoney(uid, 5 * amount);
+			return "Correct! You win " + (5 * amount) + "! New balance is "
+			    + addWinnings(uid, 5 * amount);
 		} else if (guess + 1 == correct || guess - 1 == correct) {
 			guessClose(uid, amount, 1 * amount);
-			return "Very close. The value was " + correct + ". You get " + (1 * amount) + " as a consolation prize. New balance is " + addMoney(uid, 1 * amount);
+			return "Very close. The value was " + correct + ". You get " + (amount)
+				+ " as a consolation prize. New balance is " + addWinnings(uid, amount);
 		} else {
 			if (random.nextInt(140) == 0) {
 				guessMistake(uid, amount, ((int)2.5 * amount));
-				return "The correct value was " + (random.nextInt(5) + 11) + ". Wait, that isn't right. Here, take " + ((int)2.5 * amount) + " to pretend that never happened. New balance is " + addMoney(uid, ((int)2.5 * amount));
+				return "The correct value was " + (random.nextInt(5) + 11)
+					+ ". Wait, that isn't right. Here, take " + ((int)2.5 * amount)
+					+ " to pretend that never happened. New balance is "
+					+ addWinnings(uid, ((int)2.5 * amount));
 			}
 			guessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
+		    return "The correct value was " + correct + ". Your new balance is "
+			    + takeLosses(uid, amount);
 		}
 	}
 	
@@ -364,10 +371,10 @@ public class Casino {
 		int correct = random.nextInt(10) + 1;
 		if (guess == correct) {
 			guessWin(uid, amount, 9 * amount);
-			return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 9 * amount);
+			return "Correct! You win " + (10 * amount) + "! New balance is " + addWinnings(uid, 9 * amount);
 		} else {
 			guessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
+		    return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
 		}
 	}
 	
@@ -385,10 +392,10 @@ public class Casino {
 		int correct = random.nextInt(100) + 1;
 		if (guess == correct) {
 			hugeGuessWin(uid, amount, 99 * amount);
-			return "Correct! You win " + (100 * amount) + "! New balance is " + addMoney(uid, 99 * amount);
+			return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
 		} else {
 			hugeGuessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
+		    return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
 		}
 	}
 	
@@ -503,9 +510,9 @@ public class Casino {
 			winnings += amount * (int)Math.pow(10, diamonds - 1);
 		}
 		if (amount > winnings) {
-			balance = takeMoney(uid, amount - winnings);
+			balance = takeLosses(uid, amount - winnings);
 		} else {
-			balance = addMoney(uid, winnings - amount);
+			balance = addWinnings(uid, winnings - amount);
 		}
 		if (winnings > 0) {
 			output += "Total winnings: " + (winnings) + " ";
@@ -578,9 +585,9 @@ public class Casino {
 			winnings += amount * (int)Math.pow(10, diamonds - 1);
 		}
 		if (amount > winnings) {
-			balance = takeMoney(uid, amount - winnings);
+			balance = takeLosses(uid, amount - winnings);
 		} else {
-			balance = addMoney(uid, winnings - amount);
+			balance = addWinnings(uid, winnings - amount);
 		}
 		if (winnings > 0) {
 			output += "Total winnings: " + (winnings) + " ";
@@ -625,7 +632,7 @@ public class Casino {
 				|| (prediction == PREDICTION_SAME && target == game.getTarget())) { // Correct
 			if (game.getRound() == 3) {
 				return "Correct! The value was " + target + ". You win " + (3 * game.getWager())
-				    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true);
+				    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true, game.getWager());
 			} else {
 				logOverUnderProgress(uid, game.getRound() + 1, target);
 				return "Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
@@ -643,7 +650,7 @@ public class Casino {
 			String response = "The answer was " + correct + ": " + target + ".";
 			if (game.getRound() == 3) {
 				return response + " With 2 correct you win " + (2 * game.getWager())
-					+ " coins. Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false);
+					+ " coins. Your new balance is " + logOverUnderWin(uid, 2 * game.getWager(), false, game.getWager());
 			} else {
 				logOverUnderLoss(uid, game.getWager());
 				return response + " Your current balance is " + checkBalance(uid);
@@ -677,8 +684,8 @@ public class Casino {
 		if (recipientBalance == -1) {
 			return "Unable to give money. Has that user run `+claim`?";
 		}
-		donorBalance = addMoney(donorUid, -1 * amount);
-		addMoney(recipientUid, amount);
+		donorBalance = takeMoneyDirect(donorUid, amount);
+		addMoneyDirect(recipientUid, amount);
         if (donorBalance < 0) {
         	return "Unable to process transaction";
         } else {
@@ -817,23 +824,37 @@ public class Casino {
 		return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
 	}
 	
-	public static long takeMoney(long uid, long amount) {
-		return takeMoney(uid, amount, false);
+	public static long takeMoneyDirect(long uid, long amount) {
+		return executeBalanceQuery("UPDATE money_user SET balance = balance - "
+		    + amount + " WHERE uid = " + uid + " RETURNING balance;");
 	}
 	
-	public static long takeMoney(long uid, long amount, boolean mmExempt) {
-		long balance = executeBalanceQuery("UPDATE money_user SET balance = balance - "
-		        + amount + " WHERE uid = " + uid + " RETURNING balance;");
-		if (!mmExempt && amount > 19) {
-			executeUpdate("UPDATE money_user SET balance = balance + "
-			        + (int)(amount/20) + " WHERE uid = " + MONEY_MACHINE_UID + ";");
-		}
-		return balance;
+	public static long takeLosses(long uid, long amount) {
+		executeUpdate("UPDATE overunder_user SET winnings = winnings + "
+			    + amount + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+		return executeBalanceQuery("UPDATE money_user SET balance = balance - "
+		    + amount + " WHERE uid = " + uid + " RETURNING balance;");
 	}
 	
-	public static long addMoney(long uid, long amount) {
+	public static void reportLosses(long amount) {
+		executeUpdate("UPDATE overunder_user SET winnings = winnings + "
+			    + amount + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+	}
+	
+	public static long addMoneyDirect(long uid, long amount) {
 		return executeBalanceQuery("UPDATE money_user SET balance = balance + "
 	        + amount + " WHERE uid = " + uid + " RETURNING balance;");
+	}
+	
+	public static long addWinnings(long uid, long amount) {
+		return addWinnings(uid, amount, amount);
+	}
+	
+	public static long addWinnings(long uid, long amount, long profit) {
+		executeUpdate("UPDATE overunder_user SET winnings = winnings - "
+		    + profit + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+		return executeBalanceQuery("UPDATE money_user SET balance = balance + "
+		    + amount + " WHERE uid = " + uid + " RETURNING balance;");
 	}
 	
 	private static long addWorkMoney(long uid, int amount, String delay) {
@@ -1049,7 +1070,7 @@ public class Casino {
 	}
 	
 	private static long logPick(long uid, boolean rare, int income) {
-		long balance = addMoney(uid, income);
+		long balance = addMoneyDirect(uid, income);
 		executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
 	        + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid + ";");
 		return balance;
@@ -1062,14 +1083,14 @@ public class Casino {
 	}
 	
 	private static long logRob(long uid, boolean rare, int income) {
-		long balance = addMoney(uid, income);
+		long balance = addMoneyDirect(uid, income);
 		executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
 	        + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
 	
 	private static long moneyMachineWin(long uid, long winnings) {
-		long balance = addMoney(uid, winnings);
+		long balance = addMoneyDirect(uid, winnings);
 		executeUpdate("UPDATE money_user SET balance = 0 WHERE uid = " + MONEY_MACHINE_UID + ";");
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
@@ -1079,8 +1100,8 @@ public class Casino {
 	}
 	
 	private static long moneyMachineLoss(long uid, int bet) {
-		long balance = takeMoney(uid, bet, true);
-		addMoney(MONEY_MACHINE_UID, bet);
+		long balance = takeMoneyDirect(uid, bet);
+		addMoneyDirect(MONEY_MACHINE_UID, bet);
 		setTimer2Time(uid, "1 minute");
 		executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
 		    + bet + ") WHERE uid = " + uid + ";");
@@ -1109,7 +1130,7 @@ public class Casino {
     //);
 	
 	public static void logInitialOverUnder(long uid, int bet, int target) {
-		addMoney(uid, -1 * bet);
+		takeMoneyDirect(uid, bet);
 		executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
 		    + bet + ", " + bet + ", " + target + ") WHERE uid = " + uid + ";");
 	}
@@ -1122,17 +1143,14 @@ public class Casino {
 	public static void logOverUnderLoss(long uid, long bet) {
 		executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
 	        + uid + ";");
-		executeUpdate("UPDATE overunder_user SET winnings = winnings + "
-			    + bet + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+		reportLosses(bet);
 	}
 	
-	public static long logOverUnderWin(long uid, int winnings, boolean thirdRound) {
-		long balance = addMoney(uid, winnings);
+	public static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
+		long balance = addWinnings(uid, winnings, winnings - wager);
 		executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
 		    + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
-		    + winnings + ") WHERE uid = " + uid + ";");
-		executeUpdate("UPDATE overunder_user SET winnings = winnings - "
-		    + winnings + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+		    + (winnings - wager) + ") WHERE uid = " + uid + ";");
 		return balance;
 	}
 	

@@ -85,7 +85,7 @@ public class Blackjack {
 				value += cardValues[card];
 			}
 		}
-		Casino.addMoney(uid, -1 * wager);
+		Casino.takeMoneyDirect(uid, wager);
 		newBlackjackGame(uid, hand, value, hasAce, dealerCard, wager);
 		return "Bid " + wager + " on Blackjack\n" + displayGame(hand, dealerCard, "[?]");
 	}
@@ -125,13 +125,13 @@ public class Blackjack {
 		}
 		if (dealerTotal > 21) {
 			response += "\nDealer bust! You win " + (2 * game.getWager())
-					+ "! Your new balance is " + blackjackWin(uid, 2 * game.getWager(), true);
+					+ "! Your new balance is " + blackjackWin(uid, game.getWager(), true);
 		} else if (dealerTotal > playerTotal) {
 			blackjackLoss(uid, game.getWager());
 			response += "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
 		} else if (dealerTotal < playerTotal) {
 			response += "\nYou win " + (2 * game.getWager())
-					+ "! Your new balance is " + blackjackWin(uid, 2 * game.getWager(), false);
+					+ "! Your new balance is " + blackjackWin(uid, game.getWager(), false);
 		} else { // Tie
 			response += "\nTie. You get " + game.getWager() + " back. Your new balance is "
 					+ blackjackTie(uid, game.getWager());
@@ -201,28 +201,28 @@ public class Blackjack {
 	public static long blackjackBust(long uid, long amount) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
 		    + uid + ";");
-		Casino.addMoney(Casino.MONEY_MACHINE_UID, (int)amount/20);
+		Casino.reportLosses(amount);
 		return Casino.checkBalance(uid);
 	}
 	
 	public static long blackjackLoss(long uid, long amount) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
 	        + uid +";");
-		Casino.addMoney(Casino.MONEY_MACHINE_UID, (int)amount/20);
+		Casino.reportLosses(amount);
 		return Casino.checkBalance(uid);
 	}
 	
 	public static long blackjackTie(long uid, long winnings) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (ties, winnings, hand, sum, ace, dealer_hand, wager) = (ties + 1, winnings + "
 	        + winnings + ",'', -1, false, -1, -1) WHERE uid = " + uid +";");
-		return Casino.addMoney(uid, winnings);
+		return Casino.addMoneyDirect(uid, winnings);
 	}
 	
 	public static long blackjackWin(long uid, int winnings, boolean dealerBust) {
 		Casino.executeUpdate("UPDATE blackjack_user SET (dealer_busts, wins, winnings, hand, sum, ace, dealer_hand, wager) = (dealer_busts + "
 	        + (dealerBust ? 1 : 0) + ", wins + " + (dealerBust ? 0 : 1) + ", winnings + "
 			+ winnings + ", '', -1, false, -1, -1) WHERE uid = " + uid + ";");
-		return Casino.addMoney(uid, winnings);
+		return Casino.addWinnings(uid, 2 * winnings, winnings);
 	}
 	
 	public static BlackJackGame getBlackjackGame(long uid) {
