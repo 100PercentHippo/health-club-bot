@@ -17,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.5.0"; //Update this in pom.xml too
+    private static final String version = "1.5.1"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -497,7 +497,7 @@ public class HBMain {
         	    response = Wagers.setClosed(event.getMessageAuthor().getId(), id, isClosed);
     		}
     	} catch (NumberFormatException e) {
-    		response = "Unable to parse argument \"" + args + "\". Sample usage: `+closewager 5` or `+openwager 1`";
+    		response = "Unable to parse argument \"" + args + "\". Sample usage: `+closewager 22` or `+openwager 22`";
     	}
     	event.getChannel().sendMessage(response);
     }
@@ -506,7 +506,7 @@ public class HBMain {
     	String[] splitArgs = args.trim().split(" ");
     	String response = "";
     	if (splitArgs.length < 2) {
-    		response = "Not enough arguments provided. Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 5 2`";
+    		response = "Not enough arguments provided. Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 22 3`";
     	} else {
     		boolean secondArg = false;
         	try {
@@ -523,7 +523,7 @@ public class HBMain {
         	} catch (NumberFormatException e) {
         		response = "Unable to parse argument " + (secondArg ? "2" : "1")
         			+ " \"" + splitArgs[(secondArg ? 1 : 0)]
-        			+ "\". Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 5 2`";
+        			+ "\". Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 22 3`";
         	}
     	}
     	event.getChannel().sendMessage(response);
@@ -533,7 +533,7 @@ public class HBMain {
     	String[] splitArgs = args.trim().split(" ");
     	String response = "";
     	if (splitArgs.length < 3) {
-    		response = "Not enough arguments provided. Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 5 3`";
+    		response = "Not enough arguments provided. Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 22 3`";
     	} else {
     		int current = 0;
         	try {
@@ -548,7 +548,7 @@ public class HBMain {
         			response = Wagers.placeBet(event.getMessageAuthor().getId(), id, option, amount);
         		}
         	} catch (NumberFormatException e) {
-        		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 5 3`";
+        		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 22 3`";
         	}
     	}
     	event.getChannel().sendMessage(response);
@@ -557,7 +557,7 @@ public class HBMain {
     public static void handleWagerInfo(MessageCreateEvent event, String args) {
     	String response = "";
     	if (args.trim().isEmpty()) {
-    		response = "Not enough arguments provided. Sample usage `+wagerinfo <id>` `+wagerinfo 5`";
+    		response = "Not enough arguments provided. Sample usage `+wagerinfo <id>` `+wagerinfo 22`";
     	} else {
     		try {
         		int id = Integer.parseInt(args.trim());
@@ -567,7 +567,7 @@ public class HBMain {
             	    response = Wagers.getWagerInfo(id);
         		}
         	} catch (NumberFormatException e) {
-        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+wagerinfo <id>` `+wagerinfo 5`";
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+wagerinfo <id>` `+wagerinfo 22`";
         	}
     	}
 		event.getChannel().sendMessage(response);

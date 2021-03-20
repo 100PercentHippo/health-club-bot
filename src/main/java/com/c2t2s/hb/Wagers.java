@@ -311,7 +311,7 @@ public class Wagers {
                 		statement.executeUpdate("UPDATE wager_user SET (correct, winnings) = (correct + 1, winnings + "
                 		    + payout + ") WHERE uid = " + uid + ";");
                 		totalPaid += payout;
-                		output += "\n\t" + name + " won " + payout;
+                		output += "\n\t" + name + " won " + payout + " coins";
                 	}
                 	results2.close();
                 	if (totalPaid < pot) {
