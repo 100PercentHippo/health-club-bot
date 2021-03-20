@@ -282,7 +282,7 @@ public class Wagers {
             if (pot < 0) {
             	output = "";
             } else if (pot == 0) {
-            	output = "No bets were placed.";
+            	output = "Paid out wager: No bets were placed.";
             } else {
                 output += "Paying out pot of " + pot + " coins:";
                 winnerContribution = statement.executeQuery(winnersContributionQuery).getLong(1);
@@ -346,11 +346,7 @@ public class Wagers {
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            if (results.next()) {
-            	count = results.getInt(1);
-            }
-            results.close();
+            count = statement.executeUpdate(query);
             statement.executeUpdate(trackingQuery);
             statement.close();
             connection.close();
@@ -378,6 +374,8 @@ public class Wagers {
     private static long increaseBet(long uid, int id, int option, long bet) {
     	String query = "UPDATE bets SET bet = bet + " + bet + " WHERE (uid, id, option) = ("
             + uid + ", " + id + ", " + option + ") RETURNING bet;";
+    	String trackingQuery = "UPDATE wager_user SET (spent) = (spent + " + bet
+    		+ ") WHERE uid = " + uid + ";";
     	Connection connection = null;
         Statement statement = null;
         long total = -1;
@@ -388,6 +386,7 @@ public class Wagers {
             if (results.next()) {
             	total = results.getInt(1);
             }
+            statement.executeUpdate(trackingQuery);
             results.close();
             statement.close();
             connection.close();
