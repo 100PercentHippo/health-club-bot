@@ -330,7 +330,7 @@ public class Wagers {
     
     private static int createBet(long uid, int wagerId, int option, long bet) {
     	String query = "INSERT INTO bets (uid, id, option, bet) VALUES (" + uid + ", " + wagerId
-            + ", " + wagerId + ", " + option + ", " + bet + ") ON CONFLICT (uid, id, option) DO NOTHING;";
+            + ", " + option + ", " + bet + ") ON CONFLICT (uid, id, option) DO NOTHING;";
         String trackingQuery = "UPDATE wager_user SET (bets, spent) = (bets + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";";
         Connection connection = null;
