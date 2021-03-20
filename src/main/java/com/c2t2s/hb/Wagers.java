@@ -339,7 +339,7 @@ public class Wagers {
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            count = statement.executeUpdate(query);
+            count = statement.executeQuery(query);
             statement.executeUpdate(trackingQuery);
             statement.close();
             connection.close();
@@ -373,7 +373,7 @@ public class Wagers {
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            total = statement.executeUpdate(query);
+            total = statement.executeQuery(query);
             statement.close();
             connection.close();
         } catch (URISyntaxException | SQLException e) {
