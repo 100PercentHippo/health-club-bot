@@ -165,7 +165,7 @@ public class Casino {
 			return ":satellite_orbital: You fish up a satellite??? You're not sure how it got there, but you turn it into The Lab, and they pay you 75 coins. Your new balance is "
 		        + logFish(uid, false, 75);
 		} else if (roll < 90) {
-			return ":octopus: You fish up a octopus, and cook it into delicious sushi worth 75 coins. Your new balance is "
+			return ":octopus: You fish up an octopus, and cook it into delicious sushi worth 75 coins. Your new balance is "
 		        + logFish(uid, false, 75);
 		} else if (roll < 95) {
 			return ":crab: You fish up crab. It pays you 100 coins to let it return to its dance party. Your new balance is "
@@ -883,6 +883,7 @@ public class Casino {
 		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
@@ -899,6 +900,7 @@ public class Casino {
                 statement.executeUpdate(monemachine);
                 statement.executeUpdate(overunder);
                 statement.executeUpdate(blackjac);
+                statement.executeUpdate(wagers);
             }
             statement.close();
             connection.close();

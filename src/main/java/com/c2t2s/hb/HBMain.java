@@ -8,7 +8,7 @@ import org.javacord.api.entity.user.User;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Set;
 import java.util.NoSuchElementException;
@@ -16,7 +16,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.4.8"; //Update this in pom.xml too
+    private static final String version = "1.5.0"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 
@@ -58,6 +58,16 @@ public class HBMain {
         commands.put("hit", HBMain::handleHit);
         commands.put("stay", HBMain::handleStand);
         commands.put("stand", HBMain::handleStand);
+        commands.put("createwager", HBMain::handleCreateWager);
+        commands.put("closewager", HBMain::handleCloseWager);
+        commands.put("openwager", HBMain::handleOpenWager);
+        commands.put("closebet", HBMain::handleCloseWager);
+        commands.put("openbet", HBMain::handleOpenWager);
+        commands.put("payoutwager", HBMain::handlePayoutWager);
+        commands.put("payoutbet", HBMain::handlePayoutWager);
+        commands.put("bet", HBMain::handlePlaceBet);
+        commands.put("wagerinfo", HBMain::handleWagerInfo);
+        commands.put("openwagers", HBMain::handleOpenWagers);
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.addMessageCreateListener(HBMain::handleMessage);
     }
@@ -450,5 +460,118 @@ public class HBMain {
     
     public static void handleStand(MessageCreateEvent event, String args) {
     	event.getChannel().sendMessage(Blackjack.handleStand(event.getMessageAuthor().getId()));
+    }
+    
+    public static void handleCreateWager(MessageCreateEvent event, String args) {
+    	String[] splitArgs = args.split("|");
+    	String response = "";
+    	if (splitArgs.length < 3) {
+    		response = "Not enough arguments provided. Sample usage `+createwager Title|Option A|Option B|...`";
+    	} else if (splitArgs.length > 11) {
+    		response = "Too many options provided. Wagers can have a maximum of 10 options";
+    	} else {
+    		List<String> options = new ArrayList(splitArgs);
+    		options.remove(0);
+    		response = Wagers.createWager(event.getMessageAuthor().getId(), splitArgs[0], options);
+    	}
+    	event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleCloseWager(MessageCreateEvent event, String args) {
+    	handleSetWagerClosed(event, args, true);
+    }
+    
+    public static void handleOpenWager(MessageCreateEvent event, String args) {
+    	handleSetWagerClosed(event, args, false);
+    }
+    
+    private static void handleSetWagerClosed(MessageCreateEvent event, String args, boolean isClosed) {
+    	String response = "";
+    	try {
+    		int id = Integer.parseInt(args.trim());
+    		if (id < 0) {
+    			response = "Wager id must not be negative";
+    		} else {
+        	    response = Wagers.setClosed(event.getMessageAuthor().getId(), id, isClosed);
+    		}
+    	} catch (NumberFormatException e) {
+    		response = "Unable to parse argument \"" + args + "\". Sample usage: `+closewager 5` or `+openwager 1`";
+    	}
+    	event.getChannel().sendMessage(response);
+    }
+    
+    public static void handlePayoutWager(MessageCreateEvent event, String args) {
+    	String[] splitArgs = args.trim().split(" ");
+    	String response = "";
+    	if (splitArgs.length < 2) {
+    		response = "Not enough arguments provided. Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 5 2`";
+    	} else {
+    		boolean secondArg = false;
+        	try {
+        		int id = Integer.parseInt(splitArgs[0]);
+        		secondArg = true;
+        		int correct = Integer.parseInt(splitArgs[1]);
+        		if (id < 0) {
+        			response = "Wager id must not be negative";
+        		} else if (correct < 0 || correct > 10) {
+        			response = "Correct response must be between 1 and 10";
+        		} else {
+        			response = Wagers.payoutWager(event.getMessageAuthor().getId(), id, correct);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument " + (secondArg ? "2" : "1")
+        			+ " \"" + splitArgs[(secondArg ? 1 : 0)]
+        			+ "\". Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 5 2`";
+        	}
+    	}
+    	event.getChannel().sendMessage(response);
+    }
+    
+    public static void handlePlaceBet(MessageCreateEvent event, String args) {
+    	String[] splitArgs = args.trim().split(" ");
+    	String response = "";
+    	if (splitArgs.length < 3) {
+    		response = "Not enough arguments provided. Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 5 3`";
+    	} else {
+    		int current = 0;
+        	try {
+        		long amount = Long.parseLong(splitArgs[current++]);
+        		int id = Integer.parseInt(splitArgs[current++]);
+        		int option = Integer.parseInt(splitArgs[current++]);
+        		if (id < 0) {
+        			response = "Wager id must not be negative";
+        		} else if (option < 0 || option > 10) {
+        			response = "Correct response must be between 1 and 10";
+        		} else {
+        			response = Wagers.placeBet(event.getMessageAuthor().getId(), id, option, amount);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 5 3`";
+        	}
+    	}
+    	event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleWagerInfo(MessageCreateEvent event, String args) {
+    	String response = "";
+    	if (args.trim().isEmpty()) {
+    		response = "Not enough arguments provided. Sample usage `+wagerinfo <id>` `+wagerinfo 5`";
+    	} else {
+    		try {
+        		int id = Integer.parseInt(args.trim());
+        		if (id < 0) {
+        			response = "Wager id must not be negative";
+        		} else {
+            	    response = Wagers.getWagerInfo(id);
+        		}
+        	} catch (NumberFormatException e) {
+        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+wagerinfo <id>` `+wagerinfo 5`";
+        	}
+    	}
+		event.getChannel().sendMessage(response);
+    }
+    
+    public static void handleOpenWagers(MessageCreateEvent event, String args) {
+    	event.getChannel().sendMessage(Wagers.openWagers());
     }
 }
