@@ -107,8 +107,10 @@ public class Wagers {
 		String output = payoutWager(id, correct);
 		if (!output.isEmpty()) {
 			deleteWager(id);
+			return output;
+		} else {
+			return "Unable to payout wager";
 		}
-		return output;
 	}
 	
 	public static String placeBet(long uid, int id, int option, long bet) {
@@ -268,13 +270,18 @@ public class Wagers {
         String fetchWinners = "SELECT uid, bet, name FROM bets NATURAL JOIN money_user WHERE id = " + id + " AND option = " + correct + ";";
         Connection connection = null;
         Statement statement = null;
-        long pot, winnerContribution, payout, totalPaid = 0, uid;
+        long pot = -1, winnerContribution, payout, totalPaid = 0, uid;
         String output = "";
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            pot = statement.executeQuery(potQuery).getLong(1);
-            if (pot == 0) {
+            ResultSet results = statement.executeQuery(potQuery);
+            if (results.next()) {
+            	pot = results.getLong(1);
+            }
+            if (pot < 0) {
+            	output = "";
+            } else if (pot == 0) {
             	output = "No bets were placed.";
             } else {
                 output += "Paying out pot of " + pot + " coins:";
