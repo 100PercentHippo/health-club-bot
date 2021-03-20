@@ -78,10 +78,11 @@ public class HBMain {
     }
 
     private static void handleMessage(MessageCreateEvent event) {
-    	String content = event.getMessageContent().toLowerCase();
+    	String content = event.getMessageContent();
     	if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
             content = content.substring(1); //Remove the prefix character
             String[] args = content.split(" ", 2);
+            args[0] = args[0].toLowerCase();
             if (commands.containsKey(args[0])) {
                 commands.get(args[0]).execute(event, args.length > 1 ? args[1] : "");
             } else { //Received command not present in command map

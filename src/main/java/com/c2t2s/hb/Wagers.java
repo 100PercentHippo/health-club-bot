@@ -225,7 +225,7 @@ public class Wagers {
             if (results.next()) {
             	id = results.getInt(1);
             }
-            statement.executeUpdate(updateQuery);
+            statement.executeUpdate();
             statement.close();
             Statement updateStatement = connection.createStatement();
             updateStatement.executeUpdate(updateQuery);
