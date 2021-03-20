@@ -374,8 +374,8 @@ public class Wagers {
     private static long increaseBet(long uid, int id, int option, long bet) {
     	String query = "UPDATE bets SET bet = bet + " + bet + " WHERE (uid, id, option) = ("
             + uid + ", " + id + ", " + option + ") RETURNING bet;";
-    	String trackingQuery = "UPDATE wager_user SET (spent) = (spent + " + bet
-    		+ ") WHERE uid = " + uid + ";";
+    	String trackingQuery = "UPDATE wager_user SET spent = spent + " + bet
+    		+ " WHERE uid = " + uid + ";";
     	Connection connection = null;
         Statement statement = null;
         long total = -1;
