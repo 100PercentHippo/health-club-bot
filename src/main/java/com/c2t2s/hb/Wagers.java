@@ -298,20 +298,22 @@ public class Wagers {
                 } else {
                 	double payoutRatio = pot / winnerContribution;
                 	int option;
-                	output += "\nPaying out at ratio " + payoutRatio;
-                	results = statement.executeQuery(fetchWinners);
-                	while (results.next()) {
-                		uid = results.getLong(1);
-                		payout = (long)(results.getLong(2) * payoutRatio);
-                		String name = results.getString(3);
+                	ResultSet results2 = statement.executeQuery(fetchWinners);
+                	while (results2.next()) {
+                		uid = results2.getLong(1);
+                		payout = (long)(results2.getLong(2) * payoutRatio);
+                		String name = results2.getString(3);
+                		if (name.contains("#")) {
+                    		name = name.substring(0, name.indexOf('#'));
+                    	}
                 		statement.executeUpdate("UPDATE money_user SET balance = balance + "
                 		    + payout + " WHERE uid = " + uid + ";");
                 		statement.executeUpdate("UPDATE wager_user SET (correct, winnings) = (correct + 1, winnings + "
                 		    + payout + ") WHERE uid = " + uid + ";");
                 		totalPaid += payout;
-                		output += "\n" + name + " won " + payout;
+                		output += "\n\t" + name + " won " + payout;
                 	}
-                	results.close();
+                	results2.close();
                 	if (totalPaid < pot) {
                 		statement.executeUpdate("UPDATE money_user SET balance = balance + "
                     		    + (pot - totalPaid) + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
