@@ -470,7 +470,7 @@ public class HBMain {
     	} else if (splitArgs.length > 11) {
     		response = "Too many options provided. Wagers can have a maximum of 10 options";
     	} else {
-    		List<String> options = new ArrayList(splitArgs);
+    		List<String> options = new ArrayList(Arrays.asList(splitArgs));
     		options.remove(0);
     		response = Wagers.createWager(event.getMessageAuthor().getId(), splitArgs[0], options);
     	}
