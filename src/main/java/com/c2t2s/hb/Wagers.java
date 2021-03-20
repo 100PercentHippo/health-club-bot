@@ -75,7 +75,7 @@ public class Wagers {
 		} else {
 			String output = "Created new wager #" + wagerId + ": " + title;
 			for (int i = 0; i < optionsCount; ++i) {
-				output += "\n\tOption " + (i - 1) + ": " + options.get(i);
+				output += "\n\tOption " + (i + 1) + ": " + options.get(i);
 			}
 			return output;
 		}
@@ -88,7 +88,7 @@ public class Wagers {
 		}
 		if (wager.getUid() != uid) {
 			return "Unable to " + (isClosed ? "close" : "open") + " wager #"
-		        + id + ": you are not the creator of that wager";
+		        + id + ": You are not the creator of that wager";
 		}
 		setWagerClosed(id, isClosed);
 		return (isClosed ? "Closed" : "Opened") + " wager #" + id;
@@ -329,7 +329,7 @@ public class Wagers {
     }
     
     private static int createBet(long uid, int wagerId, int option, long bet) {
-    	String query = "INSERT INTO bets (uid, id, option, bet) VALUES (" + uid + ", "
+    	String query = "INSERT INTO bets (uid, id, option, bet) VALUES (" + uid + ", " + wagerId
             + ", " + wagerId + ", " + option + ", " + bet + ") ON CONFLICT (uid, id, option) DO NOTHING;";
         String trackingQuery = "UPDATE wager_user SET (bets, spent) = (bets + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";";
