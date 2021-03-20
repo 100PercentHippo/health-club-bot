@@ -270,7 +270,7 @@ public class Wagers {
         String fetchWinners = "SELECT uid, bet, name FROM bets NATURAL JOIN money_user WHERE id = " + id + " AND option = " + correct + ";";
         Connection connection = null;
         Statement statement = null;
-        long pot = -1, winnerContribution, payout, totalPaid = 0, uid;
+        long pot = -1, winnerContribution = -1, payout, totalPaid = 0, uid;
         String output = "";
         try {
             connection = getConnection();
@@ -285,8 +285,13 @@ public class Wagers {
             	output = "Paid out wager: No bets were placed.";
             } else {
                 output += "Paying out pot of " + pot + " coins:";
-                winnerContribution = statement.executeQuery(winnersContributionQuery).getLong(1);
-                if (winnerContribution == 0) {
+                results = statement.executeQuery(winnersContributionQuery);
+                if (results.next()) {
+                	winnerContribution = results.getLong(1);
+                }
+                if (winnerContribution < 0) {
+                	output += "\nError paying out: Unable to calculate winner contribution";
+                } else if (winnerContribution == 0) {
             	    output += "\nNo correct bets were placed, feeding the pot to the money machine";
             	    statement.executeUpdate("UPDATE money_user SET balance = balance + "
                 		    + pot + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
