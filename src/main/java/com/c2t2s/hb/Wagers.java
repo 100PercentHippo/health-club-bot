@@ -293,7 +293,7 @@ public class Wagers {
                 } else {
                 	double payoutRatio = pot / winnerContribution;
                 	int option;
-                	ResultSet results = statement.executeQuery(fetchWinners);
+                	results = statement.executeQuery(fetchWinners);
                 	while (results.next()) {
                 		uid = results.getLong(1);
                 		payout = (long)(results.getLong(2) * payoutRatio);
