@@ -287,12 +287,13 @@ public class Wagers {
                 output += "Paying out pot of " + pot + " coins:";
                 winnerContribution = statement.executeQuery(winnersContributionQuery).getLong(1);
                 if (winnerContribution == 0) {
-            	    output = "\nNo correct bets were placed, feeding the pot to the money machine";
+            	    output += "\nNo correct bets were placed, feeding the pot to the money machine";
             	    statement.executeUpdate("UPDATE money_user SET balance = balance + "
                 		    + pot + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
                 } else {
                 	double payoutRatio = pot / winnerContribution;
                 	int option;
+                	output += "\nPaying out at ratio " + payoutRatio;
                 	results = statement.executeQuery(fetchWinners);
                 	while (results.next()) {
                 		uid = results.getLong(1);
