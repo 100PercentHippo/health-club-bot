@@ -464,7 +464,7 @@ public class HBMain {
     }
     
     public static void handleCreateWager(MessageCreateEvent event, String args) {
-    	String[] splitArgs = args.split("\|");
+    	String[] splitArgs = args.split(\|+);
     	String response = "";
     	if (splitArgs.length < 3) {
     		response = "Not enough arguments provided. Sample usage `+createwager Title|Option A|Option B|...`";
