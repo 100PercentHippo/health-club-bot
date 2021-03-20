@@ -209,7 +209,7 @@ public class Wagers {
     		return -1;
     	}
 		String query = "INSERT INTO wagers (uid, title, option1, option2, option3, option4, option5, option6, option7, option8, option9, option10) VALUES ("
-    	    + uid + ", '?' , '?', '?', '?', '?', '?', '?', '?', '?', '?', '?') RETURNING id;";
+    	    + uid + ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;";
 		String updateQuery = "UPDATE wager_user SET hosted = hosted + 1 WHERE uid = " + uid;
         Connection connection = null;
         PreparedStatement statement = null;
