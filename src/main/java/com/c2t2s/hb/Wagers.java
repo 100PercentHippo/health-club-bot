@@ -74,8 +74,8 @@ public class Wagers {
 			return "Unable to create new wager due to a database error";
 		} else {
 			String output = "Created new wager #" + wagerId + ": " + title;
-			for (int i = 1; i <= optionsCount; ++i) {
-				output += "\n\tOption " + i + ": " + options.get(i);
+			for (int i = 0; i < optionsCount; ++i) {
+				output += "\n\tOption " + (i - 1) + ": " + options.get(i);
 			}
 			return output;
 		}
@@ -225,7 +225,6 @@ public class Wagers {
             if (results.next()) {
             	id = results.getInt(1);
             }
-            statement.executeUpdate();
             statement.close();
             Statement updateStatement = connection.createStatement();
             updateStatement.executeUpdate(updateQuery);
