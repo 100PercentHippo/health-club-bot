@@ -242,7 +242,7 @@ public class Casino {
 //  :paperclip:         10% 0
 //  :satellite_orbital:  5% 0
 //  :lungs:              5% 0 (150 if low morality)
-//  :moneybag:         50% 50/70/90
+//  :moneybag:          50% 50/70/90
 //  :computer:          15% 100
 //  :medal:             10% 125
 //  :gem:                5% 250

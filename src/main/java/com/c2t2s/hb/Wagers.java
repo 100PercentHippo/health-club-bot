@@ -148,8 +148,9 @@ public class Wagers {
 			return "No wager found with id " + id;
 		}
 		String output = "Wager #" + id + ": " + wager.getTitle();
+		List<long> sums = getWagerSums(id, wager.getOptionsCount());
 		for (int i = 1; i <= wager.getOptionsCount(); ++i) {
-			output += "\n\t" + i + ": " + wager.getOptions().get(i - 1);
+			output += "\n\t" + i + ": (" + sums.get(i - 1) + ") " + wager.getOptions().get(i - 1);
 		}
 		return output;
 	}
@@ -543,6 +544,46 @@ public class Wagers {
             }
         }
         return output;
+    }
+    
+    private static List<long> getWagerSums(int id, int options) {
+    	String query = "SELECT SUM(bet) FROM bets WHERE id = " + id + " AND option = ?;";
+		Connection connection = null;
+        PreparedStatement statement = null;
+        List<long> sums = new ArrayList<long>();
+        try {
+            connection = getConnection();
+            statement = connection.prepareStatement(query);
+            for (int i = 0; i < options; ++i) {
+            	long sum = 0;
+            	statement.setInt(1, i);
+            	ResultSet results = statement.executeQuery();
+            	if (results.next()) {
+            		sum = results.getLong(1);
+            	}
+            	sums.add(sum);
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return sums;
     }
 
     private static boolean executeUpdate(String query) {
