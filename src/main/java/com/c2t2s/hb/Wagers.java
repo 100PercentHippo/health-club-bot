@@ -148,7 +148,7 @@ public class Wagers {
 			return "No wager found with id " + id;
 		}
 		String output = "Wager #" + id + ": " + wager.getTitle();
-		List<long> sums = getWagerSums(id, wager.getOptionsCount());
+		List<Long> sums = getWagerSums(id, wager.getOptionsCount());
 		for (int i = 1; i <= wager.getOptionsCount(); ++i) {
 			output += "\n\t" + i + ": (" + sums.get(i - 1) + ") " + wager.getOptions().get(i - 1);
 		}
@@ -546,11 +546,11 @@ public class Wagers {
         return output;
     }
     
-    private static List<long> getWagerSums(int id, int options) {
+    private static List<Long> getWagerSums(int id, int options) {
     	String query = "SELECT SUM(bet) FROM bets WHERE id = " + id + " AND option = ?;";
 		Connection connection = null;
         PreparedStatement statement = null;
-        List<long> sums = new ArrayList<long>();
+        List<Long> sums = new ArrayList<Long>();
         try {
             connection = getConnection();
             statement = connection.prepareStatement(query);
