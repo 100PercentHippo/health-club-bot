@@ -49,6 +49,18 @@ public class Wagers {
 		}
 	}
 	
+	public static class Winner {
+		public long uid;
+		public long winnings;
+		public String name;
+		
+		public Winner(long uid, long winnings, String name) {
+			this.uid = uid;
+			this.winnings = winnings;
+			this.name = name;
+		}
+	}
+	
 	public static String createWager(long uid, String title, List<String> options) {
 		if (title == null || title.equals("")) {
 			return "Unable to create new wager: Title is required";
@@ -298,7 +310,7 @@ public class Wagers {
                 		    + pot + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
                 } else {
                 	double payoutRatio = pot / winnerContribution;
-                	int option;
+                	List<Winner> winners = new ArrayList<Winner>();
                 	ResultSet results2 = statement.executeQuery(fetchWinners);
                 	while (results2.next()) {
                 		uid = results2.getLong(1);
@@ -307,14 +319,16 @@ public class Wagers {
                 		if (name.contains("#")) {
                     		name = name.substring(0, name.indexOf('#'));
                     	}
-                		statement.executeUpdate("UPDATE money_user SET balance = balance + "
-                		    + payout + " WHERE uid = " + uid + ";");
-                		statement.executeUpdate("UPDATE wager_user SET (correct, winnings) = (correct + 1, winnings + "
-                		    + payout + ") WHERE uid = " + uid + ";");
-                		totalPaid += payout;
-                		output += "\n\t" + name + " won " + payout + " coins";
+                    	winners.add(new Winner(uid, payout, name));
                 	}
-                	results2.close();
+                	for (Winner winner : winners) {
+                		statement.executeUpdate("UPDATE money_user SET balance = balance + "
+                		    + winner.winnings + " WHERE uid = " + winner.uid + ";");
+                		statement.executeUpdate("UPDATE wager_user SET (correct, winnings) = (correct + 1, winnings + "
+                		    + winner.winnings + ") WHERE uid = " + winner.uid + ";");
+                		totalPaid += winner.winnings;
+                		output += "\n\t" + winner.name + " won " + winner.winnings + " coins";
+                	}
                 	if (totalPaid < pot) {
                 		statement.executeUpdate("UPDATE money_user SET balance = balance + "
                     		    + (pot - totalPaid) + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
