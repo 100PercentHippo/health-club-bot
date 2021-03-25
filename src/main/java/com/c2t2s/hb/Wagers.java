@@ -120,7 +120,7 @@ public class Wagers {
 		if (!output.isEmpty()) {
 			deleteWager(id);
 			return "Wager #" + wager.getId() + " \"" + wager.getTitle() + "\" was \""
-				+ wager.getOptions().get(id - 1) + "\n" + output;
+				+ wager.getOptions().get(correct - 1) + "\n" + output;
 		} else {
 			return "Unable to payout wager";
 		}
