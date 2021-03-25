@@ -17,7 +17,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.5.3"; //Update this in pom.xml too
+    private static final String version = "1.5.4"; //Update this in pom.xml too
     private static final char commandPrefix = '+';
     private static HashMap<String, Command> commands = new HashMap<>();
 

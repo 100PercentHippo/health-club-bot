@@ -309,7 +309,7 @@ public class Wagers {
             	    statement.executeUpdate("UPDATE money_user SET balance = balance + "
                 		    + pot + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
                 } else {
-                	double payoutRatio = pot / winnerContribution;
+                	double payoutRatio = (double)pot / winnerContribution;
                 	List<Winner> winners = new ArrayList<Winner>();
                 	ResultSet results2 = statement.executeQuery(fetchWinners);
                 	while (results2.next()) {
