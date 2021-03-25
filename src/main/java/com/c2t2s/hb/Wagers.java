@@ -568,7 +568,7 @@ public class Wagers {
         try {
             connection = getConnection();
             statement = connection.prepareStatement(query);
-            for (int i = 0; i < options; ++i) {
+            for (int i = 1; i <= options; ++i) {
             	long sum = 0;
             	statement.setInt(1, i);
             	ResultSet results = statement.executeQuery();
