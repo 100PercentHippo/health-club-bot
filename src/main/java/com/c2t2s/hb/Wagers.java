@@ -119,7 +119,8 @@ public class Wagers {
 		String output = payoutWager(id, correct);
 		if (!output.isEmpty()) {
 			deleteWager(id);
-			return output;
+			return "Wager #" + wager.getId() + " \"" + wager.getTitle() + "\" was \""
+				+ wager.getOptions().get(id - 1) + "\n" + output;
 		} else {
 			return "Unable to payout wager";
 		}
@@ -533,7 +534,7 @@ public class Wagers {
             while (results.next()) {
             	int id = results.getInt(1);
             	String title = results.getString(2);
-            	output += "\n\t" + id + ": " + title;
+            	output += "\n\t#" + id + ": " + title;
             	
             }
             results.close();
