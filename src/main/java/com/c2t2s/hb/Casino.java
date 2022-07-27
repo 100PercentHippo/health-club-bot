@@ -85,7 +85,7 @@ public class Casino {
 		long hours = TimeUnit.MILLISECONDS.toHours(time) - (24 * days);
 		long minutes = TimeUnit.MILLISECONDS.toMinutes(time) - (1440 * days) - (60 * hours);
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(time) - (86400 * days) - (3600 * hours) - (60 * minutes);
-		return ((days > 0) ? (days + " day" + (day == 1 ? "" : "s") + ", ") : "")
+		return ((days > 0) ? (days + " day" + (days == 1 ? "" : "s") + ", ") : "")
 		    + ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
 		    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
 		    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
