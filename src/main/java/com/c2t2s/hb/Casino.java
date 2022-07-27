@@ -80,11 +80,13 @@ public class Casino {
 	public static final int PREDICTION_UNDER = 1;
 	public static final int PREDICTION_SAME = 2;
 	
-	private static String formatTime(long time) {
-		long hours = TimeUnit.MILLISECONDS.toHours(time);
-		long minutes = TimeUnit.MILLISECONDS.toMinutes(time) - (60 * hours);
-		long seconds = TimeUnit.MILLISECONDS.toSeconds(time) - (3600 * hours) - (60 * minutes);
-		return ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
+	public static String formatTime(long time) {
+		long days = TimeUnit.MILLISECONDS.toDays(time);
+		long hours = TimeUnit.MILLISECONDS.toHours(time) - (24 * days);
+		long minutes = TimeUnit.MILLISECONDS.toMinutes(time) - (1440 * days) - (60 * hours);
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(time) - (86400 * days) - (3600 * hours) - (60 * minutes);
+		return ((days > 0) ? (days + " day" + (day == 1 ? "" : "s") + ", ") : "")
+		    + ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
 		    + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
 		    + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
 	}
@@ -129,6 +131,8 @@ public class Casino {
 			return ":cook: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
 		} else if (roll < 75) {
 			return ":detective: You work as a detective trying to find a missing satellite. You're unable to find it after 2 hours, but are still paid 200 coins. Your new balance is " + logWork(uid, 200);
+		} else if (roll < 80) {
+			return ":drum: You play your drum in the local park. People smile as they pass by, and you make a total of 250 coins in tips! Your new balance is " + logWork(uid, 250);
 		} else {
 			return ":artist: You make an artistic masterpiece and sell it for 250 coins! Your new balance is " + logWork(uid, 250);
 		}
@@ -165,11 +169,13 @@ public class Casino {
 			return ":satellite_orbital: You fish up a satellite??? You're not sure how it got there, but you turn it into The Lab, and they pay you 75 coins. Your new balance is "
 		        + logFish(uid, false, 75);
 		} else if (roll < 90) {
-			return ":octopus: You fish up an octopus, and cook it into delicious sushi worth 75 coins. Your new balance is "
+			return ":blowfish: You fish up a pufferfish! You feed it a carrot and it thanks you with 75 coins. Your new balance is "
+//			return ":octopus: You fish up an octopus, and cook it into delicious sushi worth 75 coins. Your new balance is "
 		        + logFish(uid, false, 75);
 		} else if (roll < 95) {
-			return ":crab: You fish up crab. It pays you 100 coins to let it return to its dance party. Your new balance is "
-		        + logFish(uid, false, 100);
+			return ":crocodile: You fish up a baby crocodile! You take it back to someone who may know about it and they exchange it for 100 coins of grey items and some fishing hooks. Your new balance is "
+//			return ":crab: You fish up crab. It pays you 100 coins to let it return to its dance party. Your new balance is "
+	            + logFish(uid, false, 100);
 		} else {
 			if (user.getMorality() > 5) {
 				return ":ring: You fish up a ring. Since you're a good person you return it to its rightful owner and are rewarded with 400 coins! Your new balance is "
@@ -224,7 +230,7 @@ public class Casino {
 			logRob(uid, false, 0);
 			return ":motorway: You attempt a highway robbery, but your horse and six shooter are no match for modern automobiles.";
 		} else if (roll < 25) {
-			return ":house_abandoned: You rob a house, but find it empty and abandoned. You pick up 5 coins off the ground and leave. Your new balance is "
+			return ":house_abandoned: You rob a house, but find it empty and abandoned. Except for 5 coins and a dead rat. Though is it still a rat if it is dead? You pick up the 5 coins and leave pondering the question. Your new balance is "
 		        + logRob(uid, false, 5);
 		} else if (roll < 50) {
 			return ":house: You rob a rich looking house and get away with 200 coins. Your new balance is "
@@ -232,6 +238,9 @@ public class Casino {
 		} else if (roll < 75) {
 			return ":convenience_store: You rob a convenience store and grab 300 coins from the register! Your new balance is "
 				+ logRob(uid, true, 300);
+		} else if (roll < 80) {
+			return ":full_moon: With the help of some funny friends in overalls you steal THE MOON. The UN pays you 350 coins in ransom. Your new balance is "
+				+ logRob(uid, true, 350);
 		} else {
 			return ":bank: You rob The Bank and grab 350 coins worth of diamonds! Your new balance is "
 		        + logRob(uid, true, 350);
@@ -288,7 +297,8 @@ public class Casino {
 			return ":computer: You pickpocket a laptop computer! You sell it for 100 coins, and your new balance is "
 		        + logPick(uid, false, 100);
 		} else if (roll < 95) {
-			return ":medal: You pickpocket a medal of pure gold! You sell it for 125 coins, and your new balance is "
+//			return ":medal: You pickpocket a medal of pure gold! You sell it for 125 coins, and your new balance is "
+			return ":credit_card: You pickpocket mom's credit card! You note down the 3 wacky numbers on the back and purchase 125 coins. Your new balance is "
 		        + logPick(uid, false, 125);
 		} else {
 			return ":gem: You grab a large diamond worth 250 coins!! Your new balance is "
