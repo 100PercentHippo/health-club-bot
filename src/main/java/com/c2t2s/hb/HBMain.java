@@ -100,7 +100,7 @@ public class HBMain {
                 + "\n\t+version Display the bot's current version"
                 + "\n\t+claim Register with the casino if you're new or get a refresher of main commands"
                 + "\n\t+balance Check your balance"
-                + "\n\t+leaderboard Check who's the richest"
+                + "\n\t+leaderboard [entries to show] Check who's the richest"
                 + "\n\t+roll [number] Roll a number up to the inputted max"
                 + "\nIncome commands:"
                 + "\n\t+work Work for 2 hours to earn some coins"
@@ -266,7 +266,24 @@ public class HBMain {
     }
     
     private static void handleLeaderboard(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(Casino.handleLeaderboard());
+    	String response = "";
+    	try {
+    		if (!args.contains(" ")) {
+    	    	response = Casino.handleLeaderboard(3);
+    		} else {
+    			int entries = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
+    			if (entries < 1) {
+    				response = "Minimum entries to show must be 1 or greater";
+    			} else if (entries > 10) {
+    				response = "Maximum leaderboard entries is 10.";
+    			} else {
+    				response = Casino.handleLeaderboard(entries);
+    			}
+    		}
+    	} catch (NumberFormatException e) {
+    		response = "Unable to parse argument \"" + args + "\". Sample usage: `+leaderboard [entries]` `+leaderboard` `+leaderboard 3`";
+    	}
+    	event.getChannel().sendMessage(response);
     }
     
     public static void handleGuess(MessageCreateEvent event, String args) {

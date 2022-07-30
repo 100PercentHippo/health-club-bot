@@ -703,8 +703,8 @@ public class Casino {
         }
 	}
 	
-	public static String handleLeaderboard() {
-		return parseLeaderboard();
+	public static String handleLeaderboard(int entries) {
+		return parseLeaderboard(entries);
 	}
 	
 	
@@ -935,8 +935,8 @@ public class Casino {
         return error;
 	}
 	
-	private static String parseLeaderboard() {
-		String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT 3;";
+	private static String parseLeaderboard(int entries) {
+		String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
         Connection connection = null;
         Statement statement = null;
         String leaderboard = "";
