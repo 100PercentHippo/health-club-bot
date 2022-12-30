@@ -1,9 +1,7 @@
 package com.c2t2s.hb;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
-import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
@@ -894,7 +892,6 @@ public class Casino {
 		String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-		int inserted = 0;
         Connection connection = null;
         Statement statement = null;
         try {

@@ -1,10 +1,7 @@
 package com.c2t2s.hb;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
 public class Blackjack {
