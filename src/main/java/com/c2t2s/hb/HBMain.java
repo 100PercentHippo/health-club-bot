@@ -3,6 +3,8 @@ package com.c2t2s.hb;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
+import org.javacord.api.interaction.SlashCommand;
+import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.entity.user.User;
 
 import java.text.ParseException;
@@ -17,81 +19,44 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "1.5.5"; //Update this in pom.xml too
-    private static final char commandPrefix = '+';
-    private static HashMap<String, Command> commands = new HashMap<>();
+    private static final String version = "2.0.0"; //Update this in pom.xml too
 
     public static void main(String[] args) {
-        commands.put("help", HBMain::handleHelp);
-        commands.put("test", HBMain::handleTest);
-        commands.put("roll", HBMain::handleRoll);
-        commands.put("r", HBMain::handleRoll);
-        commands.put("ver", HBMain::handleVersion);
-        commands.put("version", HBMain::handleVersion);
-        commands.put("claim", HBMain::handleClaim);
-        commands.put("balance", HBMain::handleBalance);
-        commands.put("bal", HBMain::handleBalance);
-        commands.put("pay", HBMain::handleGive);
-        commands.put("give", HBMain::handleGive);
-        commands.put("rob", HBMain::handleRob);
-        commands.put("robert", HBMain::handleRob);
-        commands.put("workout", HBMain::handleWorkout);
-        commands.put("leaderboard", HBMain::handleLeaderboard);
-        commands.put("leaderboards", HBMain::handleLeaderboard);
-        commands.put("guess", HBMain::handleGuess);
-        commands.put("bigguess", HBMain::handleBigGuess);
-        commands.put("hugeguess", HBMain::handleHugeGuess);
-        commands.put("slots", HBMain::handleSlots);
-        commands.put("pickpocket", HBMain::handlePickpocket);
-        commands.put("pick", HBMain::handlePickpocket);
-        commands.put("work", HBMain::handleWork);
-        commands.put("fish", HBMain::handleFish);
-        commands.put("minislots", HBMain::handleMinislots);
-        commands.put("pot", HBMain::handlePot);
-        commands.put("feed", HBMain::handleFeed);
-        commands.put("moneymachine", HBMain::handleFeed);
-        commands.put("amogus", HBMain::handleAmogus);
-        commands.put("overunder", HBMain::handleOverUnder);
-        commands.put("over", HBMain::handleOver);
-        commands.put("under", HBMain::handleUnder);
-        commands.put("same", HBMain::handleSame);
-        commands.put("blackjack", HBMain::handleBlackjack);
-        commands.put("hit", HBMain::handleHit);
-        commands.put("stay", HBMain::handleStand);
-        commands.put("stand", HBMain::handleStand);
-        commands.put("createwager", HBMain::handleCreateWager);
-        commands.put("closewager", HBMain::handleCloseWager);
-        commands.put("openwager", HBMain::handleOpenWager);
-        commands.put("closebet", HBMain::handleCloseWager);
-        commands.put("openbet", HBMain::handleOpenWager);
-        commands.put("payoutwager", HBMain::handlePayoutWager);
-        commands.put("payoutbet", HBMain::handlePayoutWager);
-        commands.put("bet", HBMain::handlePlaceBet);
-        commands.put("wagerinfo", HBMain::handleWagerInfo);
-        commands.put("openwagers", HBMain::handleOpenWagers);
+    	if (args.length < 1) {
+    		System.out.println("API key is required as first argument");
+    		return;
+    	}
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
-        api.addMessageCreateListener(HBMain::handleMessage);
-    }
-
-    interface Command {
-        void execute(MessageCreateEvent event, String args);
-    }
-
-    private static void handleMessage(MessageCreateEvent event) {
-    	String content = event.getMessageContent();
-    	if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
-            content = content.substring(1); //Remove the prefix character
-            String[] args = content.split(" ", 2);
-            args[0] = args[0].toLowerCase();
-            if (commands.containsKey(args[0])) {
-                commands.get(args[0]).execute(event, args.length > 1 ? args[1] : "");
-            } else { //Received command not present in command map
-            	event.getChannel().sendMessage("Unrecognized command, try `+help`");
-            }
-        } else if (content.contains("i love health bot")) {
-        	event.getChannel().sendMessage(":heart:");
+        if (args.length > 1 && args[1].equalsIgnoreCase("init")) {
+        	initCommands(api);
         }
+		api.addSlashCommandCreateListener(event -> {
+			SlashCommandInteraction interaction = event.getSlashCommandInteraction();
+			if (interaction.getCommandName().equals("version")) {
+				interaction.createImmediateResponder().setContent(version).respond();
+			}
+		});
     }
+    
+    private static void initCommands(DiscordApi api) {
+        SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
+    }
+
+    //  private static void handleMessage(MessageCreateEvent event) {
+    // 	String content = event.getMessageContent();
+    // 	if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
+    //         content = content.substring(1); //Remove the prefix character
+    //         String[] args = content.split(" ", 2);
+    //         args[0] = args[0].toLowerCase();
+    //         if (commands.containsKey(args[0])) {
+    //             commands.get(args[0]).execute(event, args.length > 1 ? args[1] : "");
+    //         } else { //Received command not present in command map
+    //         	event.getChannel().sendMessage("Unrecognized command, try `+help`");
+    //         }
+    //     } else if (content.contains("i love health bot")) {
+    //     	event.getChannel().sendMessage(":heart:");
+    //     }
+    // }
 
     private static void handleHelp(MessageCreateEvent event, String args) {
     	event.getChannel().sendMessage("Health Bot Version " + version

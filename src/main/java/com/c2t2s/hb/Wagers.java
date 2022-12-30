@@ -1,11 +1,8 @@
 package com.c2t2s.hb;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.Random;
 
 public class Wagers {
 	
@@ -449,7 +446,7 @@ public class Wagers {
             	long uid = results.getLong(2);
             	boolean closed = results.getBoolean(3);
             	String title = results.getString(4);
-            	List<String> options = new ArrayList();
+            	List<String> options = new ArrayList<String>();
             	String option;
             	boolean lastOption = false;
             	for (int i = 5; i < 15 && !lastOption; ++i) {
