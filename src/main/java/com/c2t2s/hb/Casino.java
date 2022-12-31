@@ -329,41 +329,41 @@ public class Casino {
 //  Close:          1/5   2:1
 //  Dealer mistake: 1/200 2.5:1
 
-	public static String handleGuess(long uid, int guess, int amount) {
-		long balance = checkBalance(uid);
-		if (balance < 0) {
-			return "Unable to guess. Balance check failed or was negative (" + balance +")";
-		} else if (balance < amount) {
-			return "Your balance of " + balance + " is not enough to cover that!";
-		}
-		Random random = new Random();
-		int correct = random.nextInt(10) + 1;
-		if (guess == correct) {
-			if (guess == 1 || guess == 10) {
-				guessWin(uid, amount, 6 * amount);
-				return "Correct!! Big win of " + (6 * amount) + "! New balance is "
-					+ addWinnings(uid, 6 * amount);
-			}
-			guessWin(uid, amount, 5 * amount);
-			return "Correct! You win " + (5 * amount) + "! New balance is "
-			    + addWinnings(uid, 5 * amount);
-		} else if (guess + 1 == correct || guess - 1 == correct) {
-			guessClose(uid, amount, 1 * amount);
-			return "Very close. The value was " + correct + ". You get " + (amount)
-				+ " as a consolation prize. New balance is " + addWinnings(uid, amount);
-		} else {
-			if (random.nextInt(140) == 0) {
-				guessMistake(uid, amount, ((int)2.5 * amount));
-				return "The correct value was " + (random.nextInt(5) + 11)
-					+ ". Wait, that isn't right. Here, take " + ((int)2.5 * amount)
-					+ " to pretend that never happened. New balance is "
-					+ addWinnings(uid, ((int)2.5 * amount));
-			}
-			guessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is "
-			    + takeLosses(uid, amount);
-		}
-	}
+	// public static String handleGuess(long uid, int guess, int amount) {
+	// 	long balance = checkBalance(uid);
+	// 	if (balance < 0) {
+	// 		return "Unable to guess. Balance check failed or was negative (" + balance +")";
+	// 	} else if (balance < amount) {
+	// 		return "Your balance of " + balance + " is not enough to cover that!";
+	// 	}
+	// 	Random random = new Random();
+	// 	int correct = random.nextInt(10) + 1;
+	// 	if (guess == correct) {
+	// 		if (guess == 1 || guess == 10) {
+	// 			guessWin(uid, amount, 6 * amount);
+	// 			return "Correct!! Big win of " + (6 * amount) + "! New balance is "
+	// 				+ addWinnings(uid, 6 * amount);
+	// 		}
+	// 		guessWin(uid, amount, 5 * amount);
+	// 		return "Correct! You win " + (5 * amount) + "! New balance is "
+	// 		    + addWinnings(uid, 5 * amount);
+	// 	} else if (guess + 1 == correct || guess - 1 == correct) {
+	// 		guessClose(uid, amount, 1 * amount);
+	// 		return "Very close. The value was " + correct + ". You get " + (amount)
+	// 			+ " as a consolation prize. New balance is " + addWinnings(uid, amount);
+	// 	} else {
+	// 		if (random.nextInt(140) == 0) {
+	// 			guessMistake(uid, amount, ((int)2.5 * amount));
+	// 			return "The correct value was " + (random.nextInt(5) + 11)
+	// 				+ ". Wait, that isn't right. Here, take " + ((int)2.5 * amount)
+	// 				+ " to pretend that never happened. New balance is "
+	// 				+ addWinnings(uid, ((int)2.5 * amount));
+	// 		}
+	// 		guessLoss(uid, amount);
+	// 	    return "The correct value was " + correct + ". Your new balance is "
+	// 		    + takeLosses(uid, amount);
+	// 	}
+	// }
 
 // Big Guess Payout:
 //  Correct:        1/10  10:1
@@ -411,31 +411,31 @@ public class Casino {
         int correct = random.nextInt(100) + 1;
         if (guess == correct) {
             // TODO: Update DB
-            response += "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
+            response += "Correct! You win " + (100 * amount) + "!";
         } else {
             // TODO: Update DB
-            response += "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
+            response += "The correct value was " + correct + ".";
         }
         return response;
     }
 	
-	public static String handleHugeGuess(long uid, int guess, int amount) {
-		long balance = checkBalance(uid);
-		if (balance < 0) {
-			return "Unable to guess. Balance check failed or was negative (" + balance +")";
-		} else if (balance < amount) {
-			return "Your balance of " + balance + " is not enough to cover that!";
-		}
-		Random random = new Random();
-		int correct = random.nextInt(100) + 1;
-		if (guess == correct) {
-			hugeGuessWin(uid, amount, 99 * amount);
-			return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
-		} else {
-			hugeGuessLoss(uid, amount);
-		    return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
-		}
-	}
+	// public static String handleHugeGuess(long uid, int guess, int amount) {
+	// 	long balance = checkBalance(uid);
+	// 	if (balance < 0) {
+	// 		return "Unable to guess. Balance check failed or was negative (" + balance +")";
+	// 	} else if (balance < amount) {
+	// 		return "Your balance of " + balance + " is not enough to cover that!";
+	// 	}
+	// 	Random random = new Random();
+	// 	int correct = random.nextInt(100) + 1;
+	// 	if (guess == correct) {
+	// 		hugeGuessWin(uid, amount, 99 * amount);
+	// 		return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
+	// 	} else {
+	// 		hugeGuessLoss(uid, amount);
+	// 	    return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
+	// 	}
+	// }
 	
 	public static String handleFeed(long uid, int amount) {
 		User user = getUser(uid);

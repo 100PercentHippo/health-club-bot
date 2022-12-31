@@ -40,6 +40,7 @@ public class HBMain {
                     break;
                 case "roll":
                     interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
+                    break;
                 case "guess":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGuess(interaction.getUser().getId(),
@@ -51,6 +52,7 @@ public class HBMain {
                         Casino.handleHugeGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
                             interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
+                    break;
             }
         });
     }
