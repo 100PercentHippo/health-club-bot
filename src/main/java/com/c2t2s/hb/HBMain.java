@@ -20,7 +20,7 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "2.0.1"; //Update this in pom.xml too
+    private static final String version = "2.0.2"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -41,7 +41,7 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
-                            interaction.getArgumentLongValueByIndex(1).get())).respond();
+                            interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
                     break;
             }
         });
