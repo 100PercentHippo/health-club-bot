@@ -56,20 +56,22 @@ public class HBMain {
     }
     
     private static void initCommands(DiscordApi api) {
-        SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
+        System.out.println("Registering commands with discord");
+        //SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
         SlashCommand.with("help", "Print available Casino Bot commands").createGlobal(api).join();
         SlashCommand.with("changelog", "Print recent Casino Bot changelog").createGlobal(api).join();
         SlashCommand.with("roll", "Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)",
             Arrays.asList(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true)))
             .createGlobal(api).join();
-        SlashCommand.with("guess", "Guess a number from 1 to 10!",
-            Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10),
-                SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-            .createGlobal(api).join();
+        //SlashCommand.with("guess", "Guess a number from 1 to 10!",
+        //    Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10),
+        //        SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+        //    .createGlobal(api).join();
         SlashCommand.with("hugeguess", "Guess a number from 1 to 100!",
             Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100),
                 SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
             .createGlobal(api).join();
+        System.out.println("Command registration complete");
     }
 
     private static String getHelpText() {
