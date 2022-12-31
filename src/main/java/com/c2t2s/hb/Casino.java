@@ -367,6 +367,19 @@ public class Casino {
 	
 // Big Guess Payout:
 //  Correct:        1/10  10:1
+
+    public static String handleGuess(long uid, long guess, long amount) {
+        // TODO: Check balance
+        Random random = new Random();
+        int correct = random.nextInt(10) + 1;
+        if (guess == correct) {
+			// TODO: Update DB
+			return "Correct! You win " + (10 * amount) + "!";
+        } else {
+			// TODO: Update DB
+		    return "The correct value was " + correct + ".";
+        }
+    }
 	
 	public static String handleBigGuess(long uid, int guess, int amount) {
 		long balance = checkBalance(uid);

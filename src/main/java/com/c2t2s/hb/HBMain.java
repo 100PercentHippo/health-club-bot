@@ -5,6 +5,7 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.entity.user.User;
 
 import java.text.ParseException;
@@ -19,27 +20,39 @@ import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "2.0.0"; //Update this in pom.xml too
+    private static final String version = "2.0.1"; //Update this in pom.xml too
 
     public static void main(String[] args) {
-    	if (args.length < 1) {
-    		System.out.println("API key is required as first argument");
-    		return;
-    	}
+        if (args.length < 1) {
+            System.out.println("API key is required as first argument");
+            return;
+        }
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
         if (args.length > 1 && args[1].equalsIgnoreCase("init")) {
         	initCommands(api);
         }
-		api.addSlashCommandCreateListener(event -> {
-			SlashCommandInteraction interaction = event.getSlashCommandInteraction();
-			if (interaction.getCommandName().equals("version")) {
-				interaction.createImmediateResponder().setContent(version).respond();
-			}
-		});
+        api.addSlashCommandCreateListener(event -> {
+            SlashCommandInteraction interaction = event.getSlashCommandInteraction();
+            switch (interaction.getCommandName()) {
+                case "version":
+                    interaction.createImmediateResponder().setContent(version).respond();
+                    break;
+                case "guess":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleGuess(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get(),
+                            interaction.getArgumentLongValueByIndex(1).get())).respond();
+                    break;
+            }
+        });
     }
     
     private static void initCommands(DiscordApi api) {
         SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
+        SlashCommand.with("guess", "Guess a number from 1-10!",
+            Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10),
+                SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+            .createGlobal(api).join();
     }
 
     //  private static void handleMessage(MessageCreateEvent event) {
@@ -251,27 +264,27 @@ public class HBMain {
     	event.getChannel().sendMessage(response);
     }
     
-    public static void handleGuess(MessageCreateEvent event, String args) {
-    	String response = "";
-    	try {
-    		if (!args.contains(" ")) {
-    			response = "Not enough arguments to guess. Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
-    	   	} else {
-    	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
-    	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
-    	     	if (guess < 1 || guess > 10) {
-    		    	response = "Instead of " + guess + ", guess a number from 1 to 10";
-    	    	} else if (amount < 1) {
-    			    response = "Minimum bid for guessing is 1 coin";
-    	    	} else {
-    	    		response = Casino.handleGuess(event.getMessageAuthor().getId(), guess, amount);
-    		    }
-    		}
-    	} catch (NumberFormatException e) {
-    		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
-    	}
-    	event.getChannel().sendMessage(response);
-    }
+    // public static void handleGuess(MessageCreateEvent event, String args) {
+    // 	String response = "";
+    // 	try {
+    // 		if (!args.contains(" ")) {
+    // 			response = "Not enough arguments to guess. Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
+    // 	   	} else {
+    // 	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
+    // 	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
+    // 	     	if (guess < 1 || guess > 10) {
+    // 		    	response = "Instead of " + guess + ", guess a number from 1 to 10";
+    // 	    	} else if (amount < 1) {
+    // 			    response = "Minimum bid for guessing is 1 coin";
+    // 	    	} else {
+    // 	    		response = Casino.handleGuess(event.getMessageAuthor().getId(), guess, amount);
+    // 		    }
+    // 		}
+    // 	} catch (NumberFormatException e) {
+    // 		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
+    // 	}
+    // 	event.getChannel().sendMessage(response);
+    // }
     
     public static void handleBigGuess(MessageCreateEvent event, String args) {
     	String response = "";
