@@ -8,19 +8,14 @@ import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.entity.user.User;
 
-import java.text.ParseException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.Set;
-import java.util.NoSuchElementException;
-import java.lang.Thread;
 
 public class HBMain {
 
-    private static final String version = "2.0.2"; //Update this in pom.xml too
+    private static final String version = "2.0.3"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -37,23 +32,128 @@ public class HBMain {
                 case "version":
                     interaction.createImmediateResponder().setContent(version).respond();
                     break;
+                case "help":
+                    interaction.createImmediateResponder().setContent(getHelpText()).respond();
+                    break;
+                case "changelog":
+                    interaction.createImmediateResponder().setContent(getChangelog()).respond();
+                    break;
+                case "roll":
+                    interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
                 case "guess":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
                             interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
                     break;
+                case "hugeguess":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleHugeGuess(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get(),
+                            interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
             }
         });
     }
     
     private static void initCommands(DiscordApi api) {
         SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
-        SlashCommand.with("guess", "Guess a number from 1-10!",
+        SlashCommand.with("help", "Print available Casino Bot commands").createGlobal(api).join();
+        SlashCommand.with("changelog", "Print recent Casino Bot changelog").createGlobal(api).join();
+        SlashCommand.with("roll", "Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)",
+            Arrays.asList(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true)))
+            .createGlobal(api).join();
+        SlashCommand.with("guess", "Guess a number from 1 to 10!",
             Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10),
                 SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
             .createGlobal(api).join();
+        SlashCommand.with("hugeguess", "Guess a number from 1 to 100!",
+            Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100),
+                SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+            .createGlobal(api).join();
     }
+
+    private static String getHelpText() {
+        return "Casino Bot Verstion " + version
+            + "\nCommands:"
+            + "\n\t`/help` Displays this help text"
+            + "\n\t`/changelog` View recent changes to the bot"
+            + "\n\t`/roll` Roll a random number."
+            + "\n\t\tEither deathrolling (e.g. `100`) or RPG style dice (e.g. `1d20`)"
+            + "\n\t`/guess` Guess a number from 1 to 10"
+            + "\n\t`/hugeguess` Guess a number from 1 to 100";
+    }
+
+    private static String getChangelog() {
+        return "2.0.3"
+            + "\n\t- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
+            + "\n2.0.2"
+            + "\n\t- Fixed bot not responding to guesses with default wagers"
+            + "\n2.0.1"
+            + "\n\t- Readded `/guess`"
+            + "\n2.0.0"
+            + "\n\t- Bot is back! Added one sample command";
+    }
+
+    //TODO: Handle negative modifiers in dice rolls
+    private static String handleRoll(String args) {
+        int max = 0;
+        Random random = new Random();
+        try {
+            if (args.contains("d")) {
+                //Dice rolling
+                //args.replace("-\\s*-", "");
+                args.replace("-", "+-");
+                args.replace("\\s", "");
+                String[] pieces = args.split("\\+");
+                String message = "";
+                int total = 0;
+                for (int i = 0; i < pieces.length; ++i) {
+                    boolean negative = false;
+                    if (pieces[i].startsWith("-")) {
+                        pieces[i] = pieces[i].substring(1);
+                        negative = true;
+                    }
+                    if (!pieces[i].contains("d")) {
+                        int roll = Integer.parseInt(pieces[i]);
+                        message += ((negative ? " - " : " + ") + roll);
+                        total += (negative ? -1 : 1) * roll;
+                        continue;
+                    }
+                    String[] splitArgs = pieces[i].split("d");
+                    // If a NumberFormatException occurs, pass it up, don't catch
+                    int numDice = Integer.parseInt(splitArgs[0]);
+                    int diceSize = Integer.parseInt(splitArgs[1]);
+                    String text = "";
+                    for (int j = 0; j < numDice; ++j) {
+                        int roll = random.nextInt(diceSize) + 1;
+                        total += (roll * (negative ? -1 : 1));
+                        text += (negative ? " - " : " + ") + "`" + roll + "`";
+                    }
+                    text = text.substring(2, text.length());
+                    if (message.length() != 0) {
+                        message += (negative ? " - " : " + ");
+                    }
+                    message += text;
+                }
+                return message + "\n`" + total + "`";
+            } else {
+                // Deathrolling
+                max = Integer.parseInt(args);
+                if (max < 1) {
+                	return "Negative numbers make me sad :slight_frown:";
+                }
+                int roll = random.nextInt(max) + 1;
+                return "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
+            }
+        } catch (NumberFormatException e) {
+            // Unrecognized syntax
+        	return "Unrecognized roll syntax. Try `/roll 3` or `/roll 2d6`";
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Old code before slash commands
+    ///////////////////////////////////////////////////////////////////////////
 
     //  private static void handleMessage(MessageCreateEvent event) {
     // 	String content = event.getMessageContent();
@@ -97,103 +197,6 @@ public class HBMain {
     	        + "\n\t+overunder Multiple rounds of predicting if the next number is over or under"
     	        + "\n\t\tPlace predictions with +over, +under, or +same"
     	        + "\n\t+blackjack <amount> Start a new game of blackjack, played with +hit or +stand");
-    }
-
-    private static void handleVersion(MessageCreateEvent event, String args) {
-    	event.getChannel().sendMessage(version);
-    }
-
-    private static void handleTest(MessageCreateEvent event, String args) {
-    	if (!event.getMessageAuthor().getDiscriminatedName().contains("Hippo")) {
-        	event.getChannel().sendMessage("Hi! I'm Health Bot");
-        	return;
-    	}
-    	Random random = new Random();
-    	int zero = 0, one = 0, two = 0, three = 0;
-    	for (int i = 0; i < 100; ++i) {
-    	int target = random.nextInt(10) + 1;
-    	if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
-    		if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
-    			if ((target < 6 && (target = random.nextInt() + 1) > 5) || (target = random.nextInt() + 1) < 6) {
-    				three++;
-    			} else {
-    				two++;
-    			}
-    		} else {
-    			one++;
-    		}
-    	} else {
-    		zero++;
-    	}
-    	}
-    	event.getChannel().sendMessage("0:" + zero + " 1:" + one + " 2:" + two + " 3:" + three);
-    }
-
-    private static void handleWorkout(MessageCreateEvent event, String args) {
-        //event.getMember().ifPresent(member -> {
-        //    String response = Casino.handleWorkout(member);
-        //    event.getMessage().getChannel().block().createMessage(response).block();
-        //});
-    	event.getChannel().sendMessage("Nice job! I'll start tracking this again soon (tm). Running a casino is just more profitable");
-    }
-
-    //TODO: Handle negative modifiers in dice rolls
-    private static void handleRoll(MessageCreateEvent event, String args) {
-        int max = 0;
-        Random random = new Random();
-        String finalMessage = "";
-        try {
-            if (args.contains("d")) {
-                //Dice rolling
-                //args.replace("-\\s*-", "");
-                args.replace("-", "+-");
-                args.replace("\\s", "");
-                String[] pieces = args.split("\\+");
-                String message = "";
-                int total = 0;
-                for (int i = 0; i < pieces.length; ++i) {
-                    boolean negative = false;
-                    if (pieces[i].startsWith("-")) {
-                        pieces[i] = pieces[i].substring(1);
-                        negative = true;
-                    }
-                    if (!pieces[i].contains("d")) {
-                        int roll = Integer.parseInt(pieces[i]);
-                        message += ((negative ? " - " : " + ") + roll);
-                        total += (negative ? -1 : 1) * roll;
-                        continue;
-                    }
-                    String[] splitArgs = pieces[i].split("d");
-                    // If a NumberFormatException occurs, pass it up, don't catch
-                    int numDice = Integer.parseInt(splitArgs[0]);
-                    int diceSize = Integer.parseInt(splitArgs[1]);
-                    String text = "";
-                    for (int j = 0; i < numDice; ++i) {
-                        int roll = random.nextInt(diceSize) + 1;
-                        total += (roll * (negative ? -1 : 1));
-                        text += (negative ? " - " : " + ") + "`" + roll + "`";
-                    }
-                    text = text.substring(2, text.length());
-                    if (message.length() != 0) {
-                        message += (negative ? " - " : " + ");
-                    }
-                    message += text;
-                }
-                finalMessage = message + "\n`" + total + "`";
-            } else {
-                // Deathrolling
-                max = Integer.parseInt(args);
-                if (max < 0) {
-                	finalMessage = "Negative numbers make me sad :slight_frown:";
-                }
-                int roll = random.nextInt(max) + 1;
-                finalMessage = "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
-            }
-        } catch (NumberFormatException e) {
-            // Unrecognized syntax
-        	finalMessage = "Unrecognized roll syntax. Try `+roll 3` or `+roll 2d6`";
-        }
-        event.getChannel().sendMessage(finalMessage);
     }
     
     private static void handleClaim(MessageCreateEvent event, String args) {
@@ -263,28 +266,6 @@ public class HBMain {
     	}
     	event.getChannel().sendMessage(response);
     }
-    
-    // public static void handleGuess(MessageCreateEvent event, String args) {
-    // 	String response = "";
-    // 	try {
-    // 		if (!args.contains(" ")) {
-    // 			response = "Not enough arguments to guess. Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
-    // 	   	} else {
-    // 	    	int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
-    // 	    	int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
-    // 	     	if (guess < 1 || guess > 10) {
-    // 		    	response = "Instead of " + guess + ", guess a number from 1 to 10";
-    // 	    	} else if (amount < 1) {
-    // 			    response = "Minimum bid for guessing is 1 coin";
-    // 	    	} else {
-    // 	    		response = Casino.handleGuess(event.getMessageAuthor().getId(), guess, amount);
-    // 		    }
-    // 		}
-    // 	} catch (NumberFormatException e) {
-    // 		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+guess <guess> <amount>` `+guess 5 10`";
-    // 	}
-    // 	event.getChannel().sendMessage(response);
-    // }
     
     public static void handleBigGuess(MessageCreateEvent event, String args) {
     	String response = "";
@@ -467,7 +448,7 @@ public class HBMain {
     	} else if (splitArgs.length > 11) {
     		response = "Too many options provided. Wagers can have a maximum of 10 options";
     	} else {
-    		List<String> options = new ArrayList(Arrays.asList(splitArgs));
+    		List<String> options = new ArrayList<String>(Arrays.asList(splitArgs));
     		options.remove(0);
     		response = Wagers.createWager(event.getMessageAuthor().getId(), splitArgs[0], options);
     	}

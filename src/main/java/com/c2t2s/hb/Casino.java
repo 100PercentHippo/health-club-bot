@@ -328,7 +328,7 @@ public class Casino {
 //  Correct:        1/10  6:1
 //  Close:          1/5   2:1
 //  Dealer mistake: 1/200 2.5:1
-	
+
 	public static String handleGuess(long uid, int guess, int amount) {
 		long balance = checkBalance(uid);
 		if (balance < 0) {
@@ -364,23 +364,25 @@ public class Casino {
 			    + takeLosses(uid, amount);
 		}
 	}
-	
+
 // Big Guess Payout:
 //  Correct:        1/10  10:1
 
     public static String handleGuess(long uid, long guess, long amount) {
         // TODO: Check balance
+        String response = "You guessed " + guess + "\n";
         Random random = new Random();
         int correct = random.nextInt(10) + 1;
         if (guess == correct) {
-			// TODO: Update DB
-			return "Correct! You win " + (10 * amount) + "!";
+            // TODO: Update DB
+            response += "Correct! You win " + (10 * amount) + "!";
         } else {
-			// TODO: Update DB
-		    return "The correct value was " + correct + ".";
+            // TODO: Update DB
+            response += "The correct value was " + correct + ".";
         }
+        return response;
     }
-	
+
 	public static String handleBigGuess(long uid, int guess, int amount) {
 		long balance = checkBalance(uid);
 		if (balance < 0) {
@@ -398,9 +400,24 @@ public class Casino {
 		    return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
 		}
 	}
-	
+
 // Huge Guess Payout:
 //  Correct:    1/100  100:1
+
+    public static String handleHugeGuess(long uid, long guess, long amount) {
+        // TODO: Check balance
+        String response = "You guessed " + guess + "\n";
+        Random random = new Random();
+        int correct = random.nextInt(100) + 1;
+        if (guess == correct) {
+            // TODO: Update DB
+            response += "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
+        } else {
+            // TODO: Update DB
+            response += "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
+        }
+        return response;
+    }
 	
 	public static String handleHugeGuess(long uid, int guess, int amount) {
 		long balance = checkBalance(uid);
