@@ -6,6 +6,7 @@ import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.javacord.api.entity.user.User;
 
 import java.util.List;
@@ -14,10 +15,12 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.4"; //Update this in pom.xml too
+    private static final String version = "2.0.5"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -108,7 +111,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.4"
+        return "2.0.5"
+            + "\n\t- Update slots to update existing messages" 
+            + "2.0.4"
             + "\n\t- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
             + "2.0.3"
             + "\n\t- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
@@ -178,13 +183,19 @@ public class HBMain {
     }
 
     private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, SlashCommandInteraction interaction) {
-        interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
+        CompletableFuture<InteractionOriginalResponseUpdater> updater
+            =  interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
         if (responseSteps.size() > 0) {
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    interaction.createFollowupMessageBuilder().setContent(responseSteps.remove(0)).send();
+                    try {
+                        updater.get().setContent(responseSteps.remove(0)).update();
+                    } catch (ExecutionException | InterruptedException e) {
+                        System.out.println("Exception while updating delayed message:");
+                        e.printStackTrace();
+                    }
                     if (responseSteps.size() == 0) {
                         timer.cancel();
                     }

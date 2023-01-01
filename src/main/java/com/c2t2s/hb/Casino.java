@@ -521,9 +521,7 @@ public class Casino {
                     }
                     break;
             }
-            if (i < 4) {
-                responseSteps.add(new String(output + placeholder.repeat(4 - i)));
-            }
+            responseSteps.add(new String(output + placeholder.repeat(4 - i)));
         }
         output += "\n";
 		int win_condition = 0;
