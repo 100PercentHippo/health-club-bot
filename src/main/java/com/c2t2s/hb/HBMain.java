@@ -107,7 +107,7 @@ public class HBMain {
             + "\n\t`/guess` Guess a number from 1 to 10"
             + "\n\t`/hugeguess` Guess a number from 1 to 100"
             + "\n\t`/slots` Spin the slots!"
-            + "\n\t`/minislots` Spin the little slots!`";
+            + "\n\t`/minislots` Spin the little slots!";
     }
 
     private static String getChangelog() {

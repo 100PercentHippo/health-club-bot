@@ -133,7 +133,9 @@ public class Casino {
 			return ":detective: You work as a detective trying to find a missing satellite. You're unable to find it after 2 hours, but are still paid 200 coins. Your new balance is " + logWork(uid, 200);
 		} else if (roll < 80) {
 			return ":drum: You play your drum in the local park. People smile as they pass by, and you make a total of 250 coins in tips! Your new balance is " + logWork(uid, 250);
-		} else {
+        } else if (roll < 85) {
+            return ":potable_water: You win an internet contest and get to work a job job for 250 coins. `LET` `IT` `RIP` `!` `!` `!` Your new balance is " + logWork(uid, 250);
+        } else {
 			return ":artist: You make an artistic masterpiece and sell it for 250 coins! Your new balance is " + logWork(uid, 250);
 		}
 	}
@@ -370,22 +372,22 @@ public class Casino {
 // Big Guess Payout:
 //  Correct:        1/10  10:1
 
-    public static String handleGuess(long uid, long guess, long amount) {
-        // TODO: Check balance
-        String response = "You guessed " + guess + "\n";
-        Random random = new Random();
-        int correct = random.nextInt(10) + 1;
-        if (guess == correct) {
-            // TODO: Update DB
-            response += "Correct! You win " + (10 * amount) + "!";
-        } else {
-            // TODO: Update DB
-            response += "The correct value was " + correct + ".";
-        }
-        return response;
-    }
+    // public static String handleGuess(long uid, long guess, long amount) {
+    //     // TODO: Check balance
+    //     String response = "You guessed " + guess + "\n";
+    //     Random random = new Random();
+    //     int correct = random.nextInt(10) + 1;
+    //     if (guess == correct) {
+    //         // TODO: Update DB
+    //         response += "Correct! You win " + (10 * amount) + "!";
+    //     } else {
+    //         // TODO: Update DB
+    //         response += "The correct value was " + correct + ".";
+    //     }
+    //     return response;
+    // }
 
-	public static String handleBigGuess(long uid, int guess, int amount) {
+	public static String handleGuess(long uid, long guess, long amount) {
 		long balance = checkBalance(uid);
 		if (balance < 0) {
 			return "Unable to guess. Balance check failed or was negative (" + balance +")";
@@ -406,38 +408,38 @@ public class Casino {
 // Huge Guess Payout:
 //  Correct:    1/100  100:1
 
+    // public static String handleHugeGuess(long uid, long guess, long amount) {
+    //     // TODO: Check balance
+    //     String response = "You guessed " + guess + "\n";
+    //     Random random = new Random();
+    //     int correct = random.nextInt(100) + 1;
+    //     if (guess == correct) {
+    //         // TODO: Update DB
+    //         response += "Correct! You win " + (100 * amount) + "!";
+    //     } else {
+    //         // TODO: Update DB
+    //         response += "The correct value was " + correct + ".";
+    //     }
+    //     return response;
+    // }
+	
     public static String handleHugeGuess(long uid, long guess, long amount) {
-        // TODO: Check balance
-        String response = "You guessed " + guess + "\n";
+        long balance = checkBalance(uid);
+        if (balance < 0) {
+            return "Unable to guess. Balance check failed or was negative (" + balance +")";
+        } else if (balance < amount) {
+            return "Your balance of " + balance + " is not enough to cover that!";
+        }
         Random random = new Random();
         int correct = random.nextInt(100) + 1;
         if (guess == correct) {
-            // TODO: Update DB
-            response += "Correct! You win " + (100 * amount) + "!";
+            hugeGuessWin(uid, amount, 99 * amount);
+            return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
         } else {
-            // TODO: Update DB
-            response += "The correct value was " + correct + ".";
+            hugeGuessLoss(uid, amount);
+            return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
         }
-        return response;
     }
-	
-	// public static String handleHugeGuess(long uid, int guess, int amount) {
-	// 	long balance = checkBalance(uid);
-	// 	if (balance < 0) {
-	// 		return "Unable to guess. Balance check failed or was negative (" + balance +")";
-	// 	} else if (balance < amount) {
-	// 		return "Your balance of " + balance + " is not enough to cover that!";
-	// 	}
-	// 	Random random = new Random();
-	// 	int correct = random.nextInt(100) + 1;
-	// 	if (guess == correct) {
-	// 		hugeGuessWin(uid, amount, 99 * amount);
-	// 		return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
-	// 	} else {
-	// 		hugeGuessLoss(uid, amount);
-	// 	    return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
-	// 	}
-	// }
 	
 	public static String handleFeed(long uid, int amount) {
 		User user = getUser(uid);
@@ -473,21 +475,28 @@ public class Casino {
 	public static String handlePot() {
 		return "The current pot is " + (checkBalance(MONEY_MACHINE_UID) + getPot());
 	}
-	
+
 // Slots Payout:
-//	5 of a kind: 1/625              30:1
-//	4 of a kind: 4/125              10:1
-//	3 of a kind: 32/125             1.5:1
-//	Fruit Salad: 24/125             2:1
-//	1 diamond:   1/20               1:1
-//	2 diamonds:  1/1000             10:1
-//	3 diamonds:  1/100 000          100:1
-//	4 diamonds:  1/20 000 000       1000:1
-//	5 diamonds:  1/10 000 000 000   10000:1
+//  5 of a kind: 1/625              30:1
+//  4 of a kind: 4/125              10:1
+//  3 of a kind: 32/125             1.5:1
+//  Fruit Salad: 24/125             2:1
+//  1 diamond:   1/20               1:1
+//  2 diamonds:  1/1000             10:1
+//  3 diamonds:  1/100 000          100:1
+//  4 diamonds:  1/20 000 000       1000:1
+//  5 diamonds:  1/10 000 000 000   10000:1
 
     public static List<String> handleSlots(long uid, long amount) {
-        //  TODO: Check balance
         List<String> responseSteps = new ArrayList<String>();
+        long balance = checkBalance(uid);
+        if (balance < 0) {
+            responseSteps.add("Unable to guess. Balance check failed or was negative (" + balance +")");
+            return responseSteps;
+        } else if (balance < amount) {
+            responseSteps.add("Your balance of " + balance + " is not enough to cover that!");
+            return responseSteps;
+        }
         Random random = new Random();
         int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
         String output = "Bid " + amount + " on slots\n", placeholder = ":blue_square:";
@@ -524,115 +533,122 @@ public class Casino {
             responseSteps.add(new String(output + placeholder.repeat(4 - i)));
         }
         output += "\n";
-		int win_condition = 0;
-		if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
-			output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
-			winnings += 30 * amount;
-			win_condition = 5;
-		} else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
-			output += ":moneybag: 4 of a kind!! :moneybag: ";
-			winnings += 10 * amount;
-			win_condition = 4;
-		} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
-			output += "3 of a kind. ";
-			winnings += (int)(1.5 * amount);
-			win_condition = 3;
-		} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
-			output += "Fruit salad! ";
-			winnings += 2 * amount;
-			win_condition = 1;
-		}
-		if (diamonds > 0) {
-			output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
-			if (diamonds > 3) { output += "Jackpot!!! "; }
-			winnings += amount * (int)Math.pow(10, diamonds - 1);
-		}
-        // TODO: Give or take money
-		if (winnings > 0) {
-			output += "Total winnings: " + (winnings) + " ";
-		}
-        // TODO: Log slots
+        int win_condition = 0;
+        if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
+            output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
+            winnings += 30 * amount;
+            win_condition = 5;
+        } else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
+            output += ":moneybag: 4 of a kind!! :moneybag: ";
+            winnings += 10 * amount;
+            win_condition = 4;
+        } else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
+            output += "3 of a kind. ";
+            winnings += (int)(1.5 * amount);
+            win_condition = 3;
+        } else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
+            output += "Fruit salad! ";
+            winnings += 2 * amount;
+            win_condition = 1;
+        }
+        if (diamonds > 0) {
+            output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
+            if (diamonds > 3) { output += "Jackpot!!! "; }
+            winnings += amount * (int)Math.pow(10, diamonds - 1);
+        }
+        if (amount > winnings) {
+            balance = takeLosses(uid, amount - winnings);
+        } else {
+            balance = addWinnings(uid, winnings - amount);
+        }
+        if (winnings > 0) {
+            output += "Total winnings: " + (winnings) + " ";
+        } else  {
+            output += "Nothing :(";
+        }
+        output += "New balance: " + balance;
+        logSlots(uid, amount, winnings, diamonds, win_condition);
         responseSteps.add(new String(output));
         return responseSteps;
     }
-	
-	// public static String handleSlots(long uid, int amount) {
-	// 	long balance = checkBalance(uid);
-	// 	if (balance < 0) {
-	// 		return "Unable to guess. Balance check failed or was negative (" + balance +")";
-	// 	} else if (balance < amount) {
-	// 		return "Your balance of " + balance + " is not enough to cover that!";
-	// 	}
-	// 	Random random = new Random();
-	// 	int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-	// 	String output = "Bid " + amount + " on slots\n";
-	// 	int winnings = 0;
-	// 	for (int i = 0; i < 5; i++) {
-	// 		switch (random.nextInt(5)) {
-	// 		case 0:
-	// 			output += ":cherries:";
-	// 			cherries++;
-	// 			break;
-	// 		case 1:
-	// 			output += ":tangerine:";
-	// 			oranges++;
-	// 			break;
-	// 		case 2:
-	// 			output += ":lemon:";
-	// 			lemons++;
-	// 			break;
-	// 		case 3:
-	// 			output += ":blueberries:";
-	// 			blueberries++;
-	// 			break;
-	// 		case 4:
-	// 			if (random.nextInt(20) == 10) {
-	// 				output += ":gem:";
-	// 				diamonds++;
-	// 			} else {
-	// 				output += ":grapes:";
-	// 				grapes++;
-	// 			}
-	// 			break;
-	// 		}
-	// 	}
-	// 	output += "\n";
-	// 	int win_condition = 0;
-	// 	if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
-	// 		output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
-	// 		winnings += 30 * amount;
-	// 		win_condition = 5;
-	// 	} else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
-	// 		output += ":moneybag: 4 of a kind!! :moneybag: ";
-	// 		winnings += 10 * amount;
-	// 		win_condition = 4;
-	// 	} else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
-	// 		output += "3 of a kind. ";
-	// 		winnings += (int)(1.5 * amount);
-	// 		win_condition = 3;
-	// 	} else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
-	// 		output += "Fruit salad! ";
-	// 		winnings += 2 * amount;
-	// 		win_condition = 1;
-	// 	}
-	// 	if (diamonds > 0) {
-	// 		output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
-	// 		if (diamonds > 3) { output += "Jackpot!!! "; }
-	// 		winnings += amount * (int)Math.pow(10, diamonds - 1);
-	// 	}
-	// 	if (amount > winnings) {
-	// 		balance = takeLosses(uid, amount - winnings);
-	// 	} else {
-	// 		balance = addWinnings(uid, winnings - amount);
-	// 	}
-	// 	if (winnings > 0) {
-	// 		output += "Total winnings: " + (winnings) + " ";
-	// 	}
-	//     output += "New balance: " + balance;
-	//     logSlots(uid, amount, winnings, diamonds, win_condition);
-	// 	return output;
-	// }
-	
+    
+    // public static String handleSlots(long uid, int amount) {
+    //     long balance = checkBalance(uid);
+    //     if (balance < 0) {
+    //         return "Unable to guess. Balance check failed or was negative (" + balance +")";
+    //     } else if (balance < amount) {
+    //         return "Your balance of " + balance + " is not enough to cover that!";
+    //     }
+    //     Random random = new Random();
+    //     int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
+    //     String output = "Bid " + amount + " on slots\n";
+    //     int winnings = 0;
+    //     for (int i = 0; i < 5; i++) {
+    //         switch (random.nextInt(5)) {
+    //         case 0:
+    //             output += ":cherries:";
+    //             cherries++;
+    //             break;
+    //         case 1:
+    //             output += ":tangerine:";
+    //             oranges++;
+    //             break;
+    //         case 2:
+    //             output += ":lemon:";
+    //             lemons++;
+    //             break;
+    //         case 3:
+    //             output += ":blueberries:";
+    //             blueberries++;
+    //             break;
+    //         case 4:
+    //             if (random.nextInt(20) == 10) {
+    //                 output += ":gem:";
+    //                 diamonds++;
+    //             } else {
+    //                 output += ":grapes:";
+    //                 grapes++;
+    //             }
+    //             break;
+    //         }
+    //     }
+    //     output += "\n";
+    //     int win_condition = 0;
+    //     if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
+    //         output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
+    //         winnings += 30 * amount;
+    //         win_condition = 5;
+    //     } else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
+    //         output += ":moneybag: 4 of a kind!! :moneybag: ";
+    //         winnings += 10 * amount;
+    //         win_condition = 4;
+    //     } else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
+    //         output += "3 of a kind. ";
+    //         winnings += (int)(1.5 * amount);
+    //         win_condition = 3;
+    //     } else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
+    //         output += "Fruit salad! ";
+    //         winnings += 2 * amount;
+    //         win_condition = 1;
+    //     }
+    //     if (diamonds > 0) {
+    //         output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
+    //         if (diamonds > 3) { output += "Jackpot!!! "; }
+    //         winnings += amount * (int)Math.pow(10, diamonds - 1);
+    //     }
+    //     if (amount > winnings) {
+    //         balance = takeLosses(uid, amount - winnings);
+    //     } else {
+    //         balance = addWinnings(uid, winnings - amount);
+    //     }
+    //     if (winnings > 0) {
+    //         output += "Total winnings: " + (winnings) + " ";
+    //     }
+    //     output += "New balance: " + balance;
+    //     logSlots(uid, amount, winnings, diamonds, win_condition);
+    //     return output;
+    // }
+
 // Minislots Payout
 //  3 of a kind: 1/25      5:1
 //  2 of a kind: 12/25     1.6:1
@@ -816,16 +832,16 @@ public class Casino {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"));
     }
 	
-	//CREATE TABLE IF NOT EXISTS money_user (
-	//	uid bigint PRIMARY KEY,
+    //CREATE TABLE IF NOT EXISTS money_user (
+    //  uid bigint PRIMARY KEY,
     //  name varchar(40) DEFAULT '',
-	//	balance bigint DEFAULT 0,
+    //  balance bigint DEFAULT 0,
     //  in_jail boolean DEFAULT false,
-	//	last_claim timestamp DEFAULT '2021-01-01 00:00:00',
+    //  last_claim timestamp DEFAULT '2021-01-01 00:00:00',
     //  timestamp2 timestamp DEFAULT '2021-01-01 00:00:00'
-	//);
+    //);
     
-    //CREATE TABLE IF NOT EXISTS job_user (
+    // CREATE TABLE IF NOT EXISTS job_user (
     //  uid bigint PRIMARY KEY,
     //  work_count integer DEFAULT 0,
     //  work_profit bigint DEFAULT 0,
@@ -842,9 +858,9 @@ public class Casino {
     //  rob_profit bigint DEFAULT 0,
     //  jail_time bigint DEFAULT 0,
     //  CONSTRAINT jobs_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
+    // );
     
-    //CREATE TABLE IF NOT EXISTS slots_user (
+    // CREATE TABLE IF NOT EXISTS slots_user (
     //  uid bigint PRIMARY KEY,
     //  pulls integer DEFAULT 0,
     //  diamonds integer DEFAULT 0,
@@ -855,9 +871,9 @@ public class Casino {
     //  fives integer DEFAULT 0,
     //  fruitsalads integer DEFAULT 0,
     //  CONSTRAINT slots_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
+    // );
     
-    //CREATE TABLE IF NOT EXISTS guess_user (
+    // CREATE TABLE IF NOT EXISTS guess_user (
     //  uid bigint PRIMARY KEY,
     //  guesses integer DEFAULT 0,
     //  correct integer DEFAULT 0,
@@ -866,34 +882,47 @@ public class Casino {
     //  spent bigint DEFAULT 0,
     //  winnings bigint DEFAULT 0,
     //  CONSTRAINT guess_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
+    // );
     
-    //CREATE TABLE IF NOT EXISTS hugeguess_user (
+    // CREATE TABLE IF NOT EXISTS hugeguess_user (
     //  uid bigint PRIMARY KEY,
     //  guesses integer DEFAULT 0,
     //  correct integer DEFAULT 0,
     //  spent bigint DEFAULT 0,
     //  winnings bigint DEFAULT 0,
     //  CONSTRAINT hugeguess_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
+    // );
     
-    //CREATE TABLE IF NOT EXISTS minislots_user (
+    // CREATE TABLE IF NOT EXISTS minislots_user (
     //  uid bigint PRIMARY KEY,
     //  pulls integer DEFAULT 0,
     //  diamonds integer DEFAULT 0,
     //  spent integer DEFAULT 0,
     //  winnings integer DEFAULT 0,
     //  CONSTRAINT minislots_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
+    // );
     
-    //CREATE TABLE IF NOT EXISTS moneymachine_user (
+    // CREATE TABLE IF NOT EXISTS moneymachine_user (
     //  uid bigint PRIMARY KEY,
     //  feeds integer DEFAULT 0,
     //  wins integer DEFAULT 0,
     //  spent integer DEFAULT 0,
     //  winnings integer DEFAULT 0,
     //  CONSTRAINT moneymachine_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
+    // );
+    
+    // CREATE TABLE IF NOT EXISTS overunder_user (
+    //  uid bigint PRIMARY KEY,
+    //  played integer DEFAULT 0,
+    //  consolations integer DEFAULT 0,
+    //  wins integer DEFAULT 0,
+    //  spent bigint DEFAULT 0,
+    //  winnings bigint DEFAULT 0,
+    //  bet integer DEFAULT -1,
+    //  round integer DEFAULT -1,
+    //  target integer DEFAULT -1,
+    //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    // );
 	
 	private static Timestamp checkClaimTime(long uid) {
 		String query = "SELECT last_claim FROM money_user WHERE uid = " + uid + ";";
@@ -994,7 +1023,7 @@ public class Casino {
 		String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
 		String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-		String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+		//String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         Connection connection = null;
         Statement statement = null;
         try {
@@ -1010,7 +1039,7 @@ public class Casino {
                 statement.executeUpdate(monemachine);
                 statement.executeUpdate(overunder);
                 statement.executeUpdate(blackjac);
-                statement.executeUpdate(wagers);
+                //statement.executeUpdate(wagers);
             }
             statement.close();
             connection.close();
@@ -1076,44 +1105,44 @@ public class Casino {
         return leaderboard;
 	}
 	
-	private static void hugeGuessWin(long uid, int spent, int winnings) {
+	private static void hugeGuessWin(long uid, long spent, long winnings) {
 		executeUpdate("UPDATE hugeguess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
 	        + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
 	}
 	
-	private static void hugeGuessLoss(long uid, int spent) {
+	private static void hugeGuessLoss(long uid, long spent) {
 		executeUpdate("UPDATE hugeguess_user SET (guesses, spent) = (guesses + 1, spent + "
 		        + spent + ") WHERE uid = " + uid + ";");
 	}
 	
-	private static void guessWin(long uid, int spent, int winnings) {
+	private static void guessWin(long uid, long spent, long winnings) {
 		executeUpdate("UPDATE guess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
 	        + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
 	}
 	
-	private static void guessClose(long uid, int spent, int winnings) {
-		executeUpdate("UPDATE guess_user SET (guesses, close, spent, winnings) = (guesses + 1, close + 1, spent + "
-	        + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
-	}
+    // private static void guessClose(long uid, int spent, int winnings) {
+    //     executeUpdate("UPDATE guess_user SET (guesses, close, spent, winnings) = (guesses + 1, close + 1, spent + "
+    //         + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
+    // }
 	
-	private static void guessLoss(long uid, int spent) {
+	private static void guessLoss(long uid, long spent) {
 		executeUpdate("UPDATE guess_user SET (guesses, spent) = (guesses + 1, spent + "
 	        + spent + ") WHERE uid = " + uid + ";");
 	}
 	
-	private static void guessMistake(long uid, int spent, int winnings) {
-		executeUpdate("UPDATE guess_user SET (guesses, mistake, spent, winnings) = (guesses + 1, mistake + 1, spent + "
-	        + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
-	}
+    // private static void guessMistake(long uid, int spent, int winnings) {
+    //     executeUpdate("UPDATE guess_user SET (guesses, mistake, spent, winnings) = (guesses + 1, mistake + 1, spent + "
+    //         + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
+    // }
 	
-	private static void logSlots(long uid, int spent, int winnings, int diamonds, int winCondition) {
+	private static void logSlots(long uid, long spent, long winnings, int diamonds, int winCondition) {
 		executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
 	        + diamonds + ", spent + " + spent + ", winnings + " + winnings + ", threes + "
 			+ (winCondition == 3 ? 1 : 0) + ", fours + " + (winCondition == 4 ? 1 : 0) + ", fives + "
 	        + (winCondition == 5 ? 1 : 0) + ", fruitsalads + " + (winCondition == 1 ? 1 : 0) + ") WHERE uid = " + uid + ";");
 	}
 	
-	private static void logMinislots(long uid, int spent, int winnings, int diamonds) {
+	private static void logMinislots(long uid, long spent, long winnings, int diamonds) {
 		executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
 	        + diamonds + ", spent + " + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
 	}
@@ -1227,19 +1256,6 @@ public class Casino {
 		balance += (overunderBalance > 0 ? overunderBalance : 0);
 		return balance;
 	}
-    
-    //CREATE TABLE IF NOT EXISTS overunder_user (
-    //  uid bigint PRIMARY KEY,
-    //  played integer DEFAULT 0,
-    //  consolations integer DEFAULT 0,
-    //  wins integer DEFAULT 0,
-	//  spent bigint DEFAULT 0,
-    //  winnings bigint DEFAULT 0,
-    //  bet integer DEFAULT -1,
-    //  round integer DEFAULT -1,
-    //  target integer DEFAULT -1,
-    //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-    //);
 	
 	public static void logInitialOverUnder(long uid, int bet, int target) {
 		takeMoneyDirect(uid, bet);
