@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.6"; //Update this in pom.xml too
+    private static final String version = "2.0.7"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -49,6 +49,21 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Casino.handleClaim(interaction.getUser().getId(), interaction.getUser().getDiscriminatedName()))
                         .respond();
+                    break;
+                case "balance":
+                    interaction.createImmediateResponder().setContent(Casino.handleBalance(interaction.getUser().getId())).respond();
+                    break;
+                case "work":
+                    interaction.createImmediateResponder().setContent(Casino.handleWork(interaction.getUser().getId())).respond();
+                    break;
+                case "fish":
+                    interaction.createImmediateResponder().setContent(Casino.handleFish(interaction.getUser().getId())).respond();
+                    break;
+                case "rob":
+                    interaction.createImmediateResponder().setContent(Casino.handleRob(interaction.getUser().getId())).respond();
+                    break;
+                case "pickpocket":
+                    interaction.createImmediateResponder().setContent(Casino.handlePickpocket(interaction.getUser().getId())).respond();
                     break;
                 case "guess":
                     interaction.createImmediateResponder().setContent(
@@ -98,7 +113,13 @@ public class HBMain {
         // SlashCommand.with("minislots", "Spin the little slots!",
         //     Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
         //     .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("claim", "Initialize yourself as a casino user").setEnabledInDms(false).createGlobal(api).join();
+        //SlashCommand.with("claim", "Initialize yourself as a casino user").setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("balance", "Check your current balance").setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("work", "Work for 2 hours to earn some coins").setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("fish", "Fish for 30 minutes to earn some coins").setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("rob", "Attempt to rob The Bank to steal some of The Money. You might be caught!")
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
         System.out.println("Command registration complete");
     }
 
@@ -109,6 +130,14 @@ public class HBMain {
             + "\n\t`/changelog` View recent changes to the bot"
             + "\n\t`/roll` Roll a random number."
             + "\n\t\tEither deathrolling (e.g. `100`) or RPG style dice (e.g. `1d20`)"
+            + "\n\t`/claim` Initialize yourself with some starting money"
+            + "\n\t`/balance` Check your balance"
+            + "\nIncome Commands:"
+            + "\n\t`/work` Work for 2 hours to earn some coins"
+            + "\n\t`/fish` Fish for 30 minutes to earn some coins"
+            + "\n\t`/rob` Attempt to rob The Bank to steal some of The Money, you might be caught!"
+            + "\n\t`/pickpocket` Attempt a petty theft of pickpocketting"
+            + "\nGambling Commands:"
             + "\n\t`/guess` Guess a number from 1 to 10"
             + "\n\t`/hugeguess` Guess a number from 1 to 100"
             + "\n\t`/slots` Spin the slots!"
@@ -116,7 +145,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.6"
+        return "2.0.7"
+            + "\n\tReadd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
+            + "2.0.6"
             + "\n\t- Readd `/claim`"
             + "\n\t- Readd full implementation of `/minislots`"
             + "\n\t- Hook up DB to existing commands" 
@@ -217,22 +248,6 @@ public class HBMain {
     // Old code before slash commands
     ///////////////////////////////////////////////////////////////////////////
 
-    //  private static void handleMessage(MessageCreateEvent event) {
-    //  String content = event.getMessageContent();
-    //  if (!content.isEmpty() && content.charAt(0) == commandPrefix) {
-    //         content = content.substring(1); //Remove the prefix character
-    //         String[] args = content.split(" ", 2);
-    //         args[0] = args[0].toLowerCase();
-    //         if (commands.containsKey(args[0])) {
-    //             commands.get(args[0]).execute(event, args.length > 1 ? args[1] : "");
-    //         } else { //Received command not present in command map
-    //          event.getChannel().sendMessage("Unrecognized command, try `+help`");
-    //         }
-    //     } else if (content.contains("i love health bot")) {
-    //      event.getChannel().sendMessage(":heart:");
-    //     }
-    // }
-
     private static void handleHelp(MessageCreateEvent event, String args) {
         event.getChannel().sendMessage("Health Bot Version " + version
                 + "\nCommands:"
@@ -259,26 +274,6 @@ public class HBMain {
                 + "\n\t+overunder Multiple rounds of predicting if the next number is over or under"
                 + "\n\t\tPlace predictions with +over, +under, or +same"
                 + "\n\t+blackjack <amount> Start a new game of blackjack, played with +hit or +stand");
-    }
-    
-    private static void handleRob(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handleRob(event.getMessageAuthor().getId()));
-    }
-    
-    private static void handlePickpocket(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handlePickpocket(event.getMessageAuthor().getId()));
-    }
-    
-    private static void handleBalance(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handleBalance(event.getMessageAuthor().getId()));
-    }
-    
-    private static void handleWork(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handleWork(event.getMessageAuthor().getId()));
-    }
-    
-    private static void handleFish(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handleFish(event.getMessageAuthor().getId()));
     }
     
     private static void handleGive(MessageCreateEvent event, String args) {

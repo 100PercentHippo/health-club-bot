@@ -372,21 +372,6 @@ public class Casino {
 // Big Guess Payout:
 //  Correct:        1/10  10:1
 
-    // public static String handleGuess(long uid, long guess, long amount) {
-    //     // TODO: Check balance
-    //     String response = "You guessed " + guess + "\n";
-    //     Random random = new Random();
-    //     int correct = random.nextInt(10) + 1;
-    //     if (guess == correct) {
-    //         // TODO: Update DB
-    //         response += "Correct! You win " + (10 * amount) + "!";
-    //     } else {
-    //         // TODO: Update DB
-    //         response += "The correct value was " + correct + ".";
-    //     }
-    //     return response;
-    // }
-
     public static String handleGuess(long uid, long guess, long amount) {
         long balance = checkBalance(uid);
         if (balance < 0) {
@@ -408,21 +393,6 @@ public class Casino {
 
 // Huge Guess Payout:
 //  Correct:    1/100  100:1
-
-    // public static String handleHugeGuess(long uid, long guess, long amount) {
-    //     // TODO: Check balance
-    //     String response = "You guessed " + guess + "\n";
-    //     Random random = new Random();
-    //     int correct = random.nextInt(100) + 1;
-    //     if (guess == correct) {
-    //         // TODO: Update DB
-    //         response += "Correct! You win " + (100 * amount) + "!";
-    //     } else {
-    //         // TODO: Update DB
-    //         response += "The correct value was " + correct + ".";
-    //     }
-    //     return response;
-    // }
 
     public static String handleHugeGuess(long uid, long guess, long amount) {
         long balance = checkBalance(uid);
@@ -566,91 +536,12 @@ public class Casino {
         }
         if (winnings > 0) {
             output += "Winnings: " + (winnings) + " ";
-        } else  {
-            output += "Nothing :(";
         }
         output += "New balance: " + balance;
         logSlots(uid, amount, winnings, diamonds, win_condition);
         responseSteps.add(new String(output));
         return responseSteps;
     }
-    
-    // public static String handleSlots(long uid, int amount) {
-    //     long balance = checkBalance(uid);
-    //     if (balance < 0) {
-    //         return "Unable to guess. Balance check failed or was negative (" + balance +")";
-    //     } else if (balance < amount) {
-    //         return "Your balance of " + balance + " is not enough to cover that!";
-    //     }
-    //     Random random = new Random();
-    //     int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-    //     String output = "Bid " + amount + " on slots\n";
-    //     int winnings = 0;
-    //     for (int i = 0; i < 5; i++) {
-    //         switch (random.nextInt(5)) {
-    //         case 0:
-    //             output += ":cherries:";
-    //             cherries++;
-    //             break;
-    //         case 1:
-    //             output += ":tangerine:";
-    //             oranges++;
-    //             break;
-    //         case 2:
-    //             output += ":lemon:";
-    //             lemons++;
-    //             break;
-    //         case 3:
-    //             output += ":blueberries:";
-    //             blueberries++;
-    //             break;
-    //         case 4:
-    //             if (random.nextInt(20) == 10) {
-    //                 output += ":gem:";
-    //                 diamonds++;
-    //             } else {
-    //                 output += ":grapes:";
-    //                 grapes++;
-    //             }
-    //             break;
-    //         }
-    //     }
-    //     output += "\n";
-    //     int win_condition = 0;
-    //     if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
-    //         output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
-    //         winnings += 30 * amount;
-    //         win_condition = 5;
-    //     } else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
-    //         output += ":moneybag: 4 of a kind!! :moneybag: ";
-    //         winnings += 10 * amount;
-    //         win_condition = 4;
-    //     } else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
-    //         output += "3 of a kind. ";
-    //         winnings += (int)(1.5 * amount);
-    //         win_condition = 3;
-    //     } else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
-    //         output += "Fruit salad! ";
-    //         winnings += 2 * amount;
-    //         win_condition = 1;
-    //     }
-    //     if (diamonds > 0) {
-    //         output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
-    //         if (diamonds > 3) { output += "Jackpot!!! "; }
-    //         winnings += amount * (int)Math.pow(10, diamonds - 1);
-    //     }
-    //     if (amount > winnings) {
-    //         balance = takeLosses(uid, amount - winnings);
-    //     } else {
-    //         balance = addWinnings(uid, winnings - amount);
-    //     }
-    //     if (winnings > 0) {
-    //         output += "Total winnings: " + (winnings) + " ";
-    //     }
-    //     output += "New balance: " + balance;
-    //     logSlots(uid, amount, winnings, diamonds, win_condition);
-    //     return output;
-    // }
 
 // Minislots Payout
 //  3 of a kind: 1/25      5:1
@@ -727,8 +618,6 @@ public class Casino {
         }
         if (winnings > 0) {
             output += "Winnings: " + (winnings) + " ";
-        } else {
-            output += "Nothing :(";
         }
         output += "New balance: " + balance;
         logMinislots(uid, amount, winnings, diamonds);
