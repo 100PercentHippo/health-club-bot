@@ -390,7 +390,8 @@ public class Casino {
     public static String handleGuess(long uid, long guess, long amount) {
         long balance = checkBalance(uid);
         if (balance < 0) {
-            return "Unable to guess. Balance check failed or was negative (" + balance +")";
+            return "Unable to guess. Balance check failed or was negative (" + balance +")"
+                + "\nIf you're new, use `/claim` to get set up with an initial balance.";
         } else if (balance < amount) {
             return "Your balance of " + balance + " is not enough to cover that!";
         }
@@ -426,7 +427,8 @@ public class Casino {
     public static String handleHugeGuess(long uid, long guess, long amount) {
         long balance = checkBalance(uid);
         if (balance < 0) {
-            return "Unable to guess. Balance check failed or was negative (" + balance +")";
+            return "Unable to guess. Balance check failed or was negative (" + balance +")"
+                + "\nIf you're new, use `/claim` to get set up with an initial balance.";
         } else if (balance < amount) {
             return "Your balance of " + balance + " is not enough to cover that!";
         }
@@ -491,7 +493,8 @@ public class Casino {
         List<String> responseSteps = new ArrayList<String>();
         long balance = checkBalance(uid);
         if (balance < 0) {
-            responseSteps.add("Unable to guess. Balance check failed or was negative (" + balance +")");
+            responseSteps.add("Unable to guess. Balance check failed or was negative (" + balance +")"
+            + "\nIf you're new, use `/claim` to get set up with an initial balance.");
             return responseSteps;
         } else if (balance < amount) {
             responseSteps.add("Your balance of " + balance + " is not enough to cover that!");
@@ -562,7 +565,7 @@ public class Casino {
             balance = addWinnings(uid, winnings - amount);
         }
         if (winnings > 0) {
-            output += "Total winnings: " + (winnings) + " ";
+            output += "Winnings: " + (winnings) + " ";
         } else  {
             output += "Nothing :(";
         }
@@ -656,17 +659,22 @@ public class Casino {
 //  2 diamonds:  3/10000   10:1
 //  3 diamonds:  1/1000000 100:1
 
-    public static String handleMinislots(long uid, int amount) {
+    public static List<String> handleMinislots(long uid, long amount) {
+        List<String> responseSteps = new ArrayList<String>();
         long balance = checkBalance(uid);
         if (balance < 0) {
-            return "Unable to guess. Balance check failed or was negative (" + balance +")";
+            responseSteps.add("Unable to guess. Balance check failed or was negative (" + balance +")"
+            + "\nIf you're new, use `/claim` to get set up with an initial balance.");
+            return responseSteps;
         } else if (balance < amount) {
-            return "Your balance of " + balance + " is not enough to cover that!";
+            responseSteps.add("Your balance of " + balance + " is not enough to cover that!");
+            return responseSteps;
         }
         Random random = new Random();
         int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-        String output = "Bid " + amount + " on mini slots\n";
+        String output = "Bid " + amount + " on mini slots\n", placeholder = ":blue_square:";
         int winnings = 0;
+        responseSteps.add(new String(output + placeholder.repeat(3)));
         for (int i = 0; i < 3; i++) {
             switch (random.nextInt(5)) {
             case 0:
@@ -695,6 +703,7 @@ public class Casino {
                 }
                 break;
             }
+            responseSteps.add(new String(output + placeholder.repeat(2 - i)));
         }
         output += "\n";
         if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
@@ -717,11 +726,14 @@ public class Casino {
             balance = addWinnings(uid, winnings - amount);
         }
         if (winnings > 0) {
-            output += "Total winnings: " + (winnings) + " ";
+            output += "Winnings: " + (winnings) + " ";
+        } else {
+            output += "Nothing :(";
         }
         output += "New balance: " + balance;
         logMinislots(uid, amount, winnings, diamonds);
-        return output;
+        responseSteps.add(new String(output));
+        return responseSteps;
     }
 
 // OverUnder Payout:

@@ -5,7 +5,6 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.javacord.api.entity.user.User;
 
@@ -20,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.5"; //Update this in pom.xml too
+    private static final String version = "2.0.6"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -46,6 +45,11 @@ public class HBMain {
                 case "roll":
                     interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
                     break;
+                case "claim":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleClaim(interaction.getUser().getId(), interaction.getUser().getDiscriminatedName()))
+                        .respond();
+                    break;
                 case "guess":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGuess(interaction.getUser().getId(),
@@ -65,7 +69,7 @@ public class HBMain {
                     break;
                 case "minislots":
                     makeMultiStepResponse(
-                        Casino.handleSlots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                        Casino.handleMinislots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
                         1000, interaction);
                     break;
             }
@@ -88,12 +92,13 @@ public class HBMain {
         //    Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100),
         //        SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
         //    .createGlobal(api).join();
-        SlashCommand.with("slots", "Spin the slots!",
-            Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("minislots", "Spin the little slots!",
-            Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-            .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("slots", "Spin the slots!",
+        //     Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("minislots", "Spin the little slots!",
+        //     Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("claim", "Initialize yourself as a casino user").setEnabledInDms(false).createGlobal(api).join();
         System.out.println("Command registration complete");
     }
 
@@ -111,7 +116,11 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.5"
+        return "2.0.6"
+            + "\n\t- Readd `/claim`"
+            + "\n\t- Readd full implementation of `/minislots`"
+            + "\n\t- Hook up DB to existing commands" 
+            + "2.0.5"
             + "\n\t- Update slots to update existing messages" 
             + "2.0.4"
             + "\n\t- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
@@ -252,10 +261,6 @@ public class HBMain {
                 + "\n\t+blackjack <amount> Start a new game of blackjack, played with +hit or +stand");
     }
     
-    private static void handleClaim(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handleClaim(event.getMessageAuthor().getId(), event.getMessageAuthor().getDiscriminatedName()));
-    }
-    
     private static void handleRob(MessageCreateEvent event, String args) {
         event.getChannel().sendMessage(Casino.handleRob(event.getMessageAuthor().getId()));
     }
@@ -320,50 +325,6 @@ public class HBMain {
         event.getChannel().sendMessage(response);
     }
     
-    public static void handleBigGuess(MessageCreateEvent event, String args) {
-        String response = "";
-        try {
-            if (!args.contains(" ")) {
-                response = "Not enough arguments to guess. Sample usage: `+bigguess <guess> <amount>` `+bigguess 5 10`";
-            } else {
-                int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
-                int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
-                 if (guess < 1 || guess > 10) {
-                    response = "Instead of " + guess + ", guess a number from 1 to 10";
-                } else if (amount < 1) {
-                    response = "Minimum bid for guessing is 1 coin";
-                } else {
-                    response = Casino.handleBigGuess(event.getMessageAuthor().getId(), guess, amount);
-                }
-            }
-        } catch (NumberFormatException e) {
-            response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bigguess <guess> <amount>` `+bigguess 5 10`";
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleHugeGuess(MessageCreateEvent event, String args) {
-        String response = "";
-        try {
-            if (!args.contains(" ")) {
-                response = "Not enough arguments to guess. Sample usage: `+hugeguess <guess> <amount>` `+hugeguess 5 10`";
-            } else {
-                int guess = Integer.parseInt(args.substring(0, args.indexOf(' ')));
-                int amount = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
-                if (guess < 1 || guess > 100) {
-                    response = "Instead of " + guess + ", guess a number from 1 to 100";
-                } else if (amount < 1) {
-                    response = "Minimum bid for guessing is 1 coin";
-                } else {
-                    response = Casino.handleHugeGuess(event.getMessageAuthor().getId(), guess, amount);
-                }
-            }
-        } catch (NumberFormatException e) {
-            response = "Unable to parse arguments \"" + args + "\". Sample usage: `+hugeguess <guess> <amount>` `+hugeguess 5 10`";
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
     public static void handlePot(MessageCreateEvent event, String args) {
         event.getChannel().sendMessage(Casino.handlePot());
     }
@@ -385,10 +346,6 @@ public class HBMain {
             }
         }
         event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleAmogus(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage("Due to your overwhelming sus-ness, your criminal rating has been maxed, and you have been sent to jail for 12 hours");
     }
     
     public static void handleOverUnder(MessageCreateEvent event, String args) {
