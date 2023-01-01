@@ -841,7 +841,8 @@ public class Casino {
     //////////////////////////////////////////////////////////
 
     public static Connection getConnection() throws URISyntaxException, SQLException {
-        return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"));
+        return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
+            System.getenv("JDBC_USERNAME"), System.getenv("JDBC_PASSWORD"));
     }
 
     //CREATE TABLE IF NOT EXISTS money_user (
