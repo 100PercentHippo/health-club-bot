@@ -12,10 +12,12 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class HBMain {
 
-    private static final String version = "2.0.3"; //Update this in pom.xml too
+    private static final String version = "2.0.4"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -53,6 +55,16 @@ public class HBMain {
                             interaction.getArgumentLongValueByIndex(0).get(),
                             interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
                     break;
+                case "slots":
+                    makeMultiStepResponse(
+                        Casino.handleSlots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                        1000, interaction);
+                    break;
+                case "minislots":
+                    makeMultiStepResponse(
+                        Casino.handleSlots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                        1000, interaction);
+                    break;
             }
         });
     }
@@ -60,19 +72,25 @@ public class HBMain {
     private static void initCommands(DiscordApi api) {
         System.out.println("Registering commands with discord");
         //SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
-        SlashCommand.with("help", "Print available Casino Bot commands").createGlobal(api).join();
-        SlashCommand.with("changelog", "Print recent Casino Bot changelog").createGlobal(api).join();
-        SlashCommand.with("roll", "Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)",
-            Arrays.asList(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true)))
-            .createGlobal(api).join();
+        //SlashCommand.with("help", "Print available Casino Bot commands").createGlobal(api).join();
+        //SlashCommand.with("changelog", "Print recent Casino Bot changelog").createGlobal(api).join();
+        //SlashCommand.with("roll", "Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)",
+        //    Arrays.asList(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true)))
+        //    .createGlobal(api).join();
         //SlashCommand.with("guess", "Guess a number from 1 to 10!",
         //    Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10),
         //        SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
         //    .createGlobal(api).join();
-        SlashCommand.with("hugeguess", "Guess a number from 1 to 100!",
-            Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100),
-                SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-            .createGlobal(api).join();
+        //SlashCommand.with("hugeguess", "Guess a number from 1 to 100!",
+        //    Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100),
+        //        SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+        //    .createGlobal(api).join();
+        SlashCommand.with("slots", "Spin the slots!",
+            Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("minislots", "Spin the little slots!",
+            Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
+            .setEnabledInDms(false).createGlobal(api).join();
         System.out.println("Command registration complete");
     }
 
@@ -84,11 +102,15 @@ public class HBMain {
             + "\n\t`/roll` Roll a random number."
             + "\n\t\tEither deathrolling (e.g. `100`) or RPG style dice (e.g. `1d20`)"
             + "\n\t`/guess` Guess a number from 1 to 10"
-            + "\n\t`/hugeguess` Guess a number from 1 to 100";
+            + "\n\t`/hugeguess` Guess a number from 1 to 100"
+            + "\n\t`/slots` Spin the slots!"
+            + "\n\t`/minislots` Spin the little slots!`";
     }
 
     private static String getChangelog() {
-        return "2.0.3"
+        return "2.0.4"
+            + "\n\t- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
+            + "2.0.3"
             + "\n\t- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
             + "\n2.0.2"
             + "\n\t- Fixed bot not responding to guesses with default wagers"
@@ -152,6 +174,22 @@ public class HBMain {
         } catch (NumberFormatException e) {
             // Unrecognized syntax
         	return "Unrecognized roll syntax. Try `/roll 3` or `/roll 2d6`";
+        }
+    }
+
+    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, SlashCommandInteraction interaction) {
+        interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
+        if (responseSteps.size() > 0) {
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    interaction.createFollowupMessageBuilder().setContent(responseSteps.remove(0)).send();
+                    if (responseSteps.size() == 0) {
+                        timer.cancel();
+                    }
+                }
+            }, delay, delay);
         }
     }
 
@@ -313,47 +351,6 @@ public class HBMain {
     		response = "Unable to parse arguments \"" + args + "\". Sample usage: `+hugeguess <guess> <amount>` `+hugeguess 5 10`";
     	}
     	event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleSlots(MessageCreateEvent event, String args) {
-    	String response = "";
-    	if (args.trim().isEmpty()) {
-    		response = Casino.handleSlots(event.getMessageAuthor().getId(), 10);
-    		event.getChannel().sendMessage(response);
-    	} else {
-    		try {
-        		int bid = Integer.parseInt(args.trim());
-        		if (bid < 10) {
-        			response = "Minimum bid for slots is 10 coins";
-        	    	event.getChannel().sendMessage(response);
-        		} else {
-            	    response = Casino.handleSlots(event.getMessageAuthor().getId(), bid);
-            	    event.getChannel().sendMessage(response);
-        		}
-        	} catch (NumberFormatException e) {
-        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+slots` or `+slots 20`";
-            	event.getChannel().sendMessage(response);
-        	}
-    	}
-    }
-    
-    public static void handleMinislots(MessageCreateEvent event, String args) {
-    	String response = "";
-    	if (args.trim().isEmpty()) {
-    		response = Casino.handleMinislots(event.getMessageAuthor().getId(), 5);
-    	} else {
-    		try {
-        		int bid = Integer.parseInt(args.trim());
-        		if (bid < 5) {
-        			response = "Minimum bid for mini slots is 5 coins";
-        		} else {
-            	    response = Casino.handleMinislots(event.getMessageAuthor().getId(), bid);
-        		}
-        	} catch (NumberFormatException e) {
-        		response = "Unable to parse argument \"" + args + "\". Sample usage: `+minislots` or `+minislots 10`";
-        	}
-    	}
-		event.getChannel().sendMessage(response);
     }
     
     public static void handlePot(MessageCreateEvent event, String args) {
