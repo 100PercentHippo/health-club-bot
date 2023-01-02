@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.9"; //Update this in pom.xml too
+    private static final String version = "2.0.10"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -33,7 +33,7 @@ public class HBMain {
         }
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction interaction = event.getSlashCommandInteraction();
-            switch (interaction.getCommandName()) {
+            switch (interaction.getFullCommandName()) {
                 case "version":
                     interaction.createImmediateResponder().setContent(version).respond();
                     break;
@@ -62,7 +62,7 @@ public class HBMain {
                 case "give":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGive(interaction.getUser().getId(), interaction.getArgumentUserValueByIndex(0).get().getId(),
-                            interaction.getArgumentLongValueByIndex(1).get()));
+                            interaction.getArgumentLongValueByIndex(1).get())).respond();
                     break;
                 case "pot":
                     interaction.createImmediateResponder().setContent(Casino.handlePot()).respond();
@@ -70,6 +70,7 @@ public class HBMain {
                 case "feed":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleFeed(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).get()));
+                    break;
                 case "work":
                     interaction.createImmediateResponder().setContent(Casino.handleWork(interaction.getUser().getId())).respond();
                     break;
@@ -167,34 +168,35 @@ public class HBMain {
         // SlashCommand.with("rob", "Attempt to rob The Bank to steal some of The Money. You might be caught!")
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("leaderboard", "View the richest people in the casino",
-            Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("richest", "View the richest people in the casino",
-            Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("pot", "Check how much money is in the Money Machine")
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("feed", "Feed the Money Machine",
-            Arrays.asList(SlashCommandOption.createLongOption("amount", "How much to feed", true, 1, 100000)))
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("overunder", "Multiple rounds of predicting if the next number is over or under",
-            Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
-                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
-                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"),
-                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"),
-                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same")))
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("blackjack", "Play a game of blackjack",
-            Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
-                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
-                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"),
-                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have")))
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("give", "Give coins to another user",
-            Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
-                SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
-            .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("leaderboard", "View the richest people in the casino",
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("richest", "View the richest people in the casino",
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pot", "Check how much money is in the Money Machine")
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("feed", "Feed the Money Machine",
+        //     Arrays.asList(SlashCommandOption.createLongOption("amount", "How much to feed", true, 1, 100000)))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("overunder", "Multiple rounds of predicting if the next number is over or under",
+        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
+        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
+        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"),
+        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"),
+        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same")))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("blackjack", "Play a game of blackjack",
+        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
+        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
+        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"),
+        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have")))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("give", "Give coins to another user",
+        //     Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
+        //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // TODO: Update leaderboard/richest's argument to be optional
         System.out.println("Command registration complete");
     }
 
@@ -229,21 +231,23 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.9"
+        return "2.0.10"
+            + "\n\tFixes for `/blackjack`, `/overunder`, and `/feed`" 
+            + "\n2.0.9"
             + "\n\tReadd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
-            + "2.0.8"
+            + "\n2.0.8"
             + "\n\tUpdate income command help prompts to reference slash commands"
-            + "2.0.7"
+            + "\n2.0.7"
             + "\n\tReadd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
-            + "2.0.6"
+            + "\n2.0.6"
             + "\n\t- Readd `/claim`"
             + "\n\t- Readd full implementation of `/minislots`"
             + "\n\t- Hook up DB to existing commands" 
-            + "2.0.5"
+            + "\n2.0.5"
             + "\n\t- Update slots to update existing messages" 
-            + "2.0.4"
+            + "\n2.0.4"
             + "\n\t- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
-            + "2.0.3"
+            + "\n2.0.3"
             + "\n\t- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
             + "\n2.0.2"
             + "\n\t- Fixed bot not responding to guesses with default wagers"
