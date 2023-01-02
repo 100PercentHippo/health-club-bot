@@ -90,7 +90,7 @@ public class Blackjack {
     public static String handleStand(long uid) {
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
-            return "No active game found. Use `+blackjack <amount>` to start a new game";
+            return "No active game found. Use `/blackjack new` to start a new game";
         }
         String response = "Your hand:    " + game.getHand();
         String dealerHand = cardLetters[game.getDealerHand()];
@@ -138,8 +138,8 @@ public class Blackjack {
 
     public static String handleHit(long uid) {
         BlackJackGame game = getBlackjackGame(uid);
-        if (game == null) {
-            return "No active game found. Type `+blackjack <amount>` to start a new game";
+        if (game == null || game.getWager() == -1) {
+            return "No active game found. Type `/blackjack new` to start a new game";
         }
         Random random = new Random();
         boolean hasAce = game.hasAce();

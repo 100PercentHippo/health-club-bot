@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.12"; //Update this in pom.xml too
+    private static final String version = "2.0.13"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -248,6 +248,7 @@ public class HBMain {
         //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // TODO: Update leaderboard/richest's argument to be optional
+        // TODO: Create /blackjack and /overunder as aliases to start new games
         System.out.println("Command registration complete");
     }
 
@@ -282,7 +283,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.12"
+        return "2.0.13"
+            + "\n\t- Fix for `/blackjack hit` with no active game"
+            + "\n2.0.12"
             + "\n\t- Add buttons to `/blackjack new` and `/overunder new`"
             + "\n2.0.11"
             + "\n\t- Formating fixes for help text"
