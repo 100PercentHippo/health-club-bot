@@ -413,7 +413,7 @@ public class Casino {
         }
     }
 
-    public static String handleFeed(long uid, int amount) {
+    public static String handleFeed(long uid, Long amount) {
         User user = getUser(uid);
         if (user == null) {
             return "Unable to fetch user. If you are new run `/claim` to start";
@@ -629,7 +629,7 @@ public class Casino {
 //  2 correct then 1 wrong: ~2/11 1:1
 //  3 correct:              ~3/11 3:1
 
-    public static String handleOverUnderInitial(long uid, int amount) {
+    public static String handleOverUnderInitial(long uid, long amount) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game != null && game.getRound() != -1) {
             return "You already have an active game: Round " + game.getRound() + " with the current value "
@@ -695,7 +695,7 @@ public class Casino {
         }
     }
 
-    public static String handleGive(long donorUid, long recipientUid, int amount) {
+    public static String handleGive(long donorUid, long recipientUid, long amount) {
         if (amount <= 0) {
             return "Can't give someone a negative number of coins. Try asking them nicely if you want money.";
         }
@@ -721,7 +721,7 @@ public class Casino {
         }
     }
 
-    public static String handleLeaderboard(int entries) {
+    public static String handleLeaderboard(long entries) {
         return parseLeaderboard(entries);
     }
 
@@ -825,42 +825,6 @@ public class Casino {
     //  target integer DEFAULT -1,
     //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
-    
-    private static Timestamp checkClaimTime(long uid) {
-        String query = "SELECT last_claim FROM money_user WHERE uid = " + uid + ";";
-        Timestamp time = null;
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            if (results.next()) {
-                time = results.getTimestamp(1);
-            }
-            results.close();
-            statement.close();
-            connection.close();
-        } catch (URISyntaxException | SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return time;
-    }
 
     public static long checkBalance(long uid) {
         return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
@@ -966,7 +930,7 @@ public class Casino {
         return error;
     }
 
-    private static String parseLeaderboard(int entries) {
+    private static String parseLeaderboard(long entries) {
         String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
         Connection connection = null;
         Statement statement = null;
@@ -1142,7 +1106,7 @@ public class Casino {
         return balance;
     }
 
-    private static long moneyMachineLoss(long uid, int bet) {
+    private static long moneyMachineLoss(long uid, long bet) {
         long balance = takeMoneyDirect(uid, bet);
         addMoneyDirect(MONEY_MACHINE_UID, bet);
         setTimer2Time(uid, "1 minute");
@@ -1159,7 +1123,7 @@ public class Casino {
         return balance;
     }
 
-    public static void logInitialOverUnder(long uid, int bet, int target) {
+    public static void logInitialOverUnder(long uid, long bet, int target) {
         takeMoneyDirect(uid, bet);
         executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
             + bet + ", " + bet + ", " + target + ") WHERE uid = " + uid + ";");

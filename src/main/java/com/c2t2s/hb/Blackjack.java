@@ -49,7 +49,7 @@ public class Blackjack {
         return "Your hand:    " + hand + "\nDealer's hand: " + cardLetters[dealer] + dealerCardTwo;
     }
 
-    public static String handleBlackjack(long uid, int wager) {
+    public static String handleBlackjack(long uid, long wager) {
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null) {
             return "Unable to fetch game from the database. Did you `+claim`?";
@@ -184,7 +184,7 @@ public class Blackjack {
     //  CONSTRAINT blackjack_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
-    public static void newBlackjackGame(long uid, String hand, int sum, boolean hasAce, int dealerHand, int wager) {
+    public static void newBlackjackGame(long uid, String hand, int sum, boolean hasAce, int dealerHand, long wager) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hands, spent, hand, sum, ace, dealer_hand, wager) = (hands + 1, spent + "
             + wager + ", '" + hand + "', " + sum + ", " + hasAce + ", " + dealerHand + ", "
             + wager + ") WHERE uid = " + uid + ";");

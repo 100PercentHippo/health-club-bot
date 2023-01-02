@@ -5,8 +5,9 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
-import org.javacord.api.entity.user.User;
 
 import java.util.List;
 import java.util.Arrays;
@@ -19,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.8"; //Update this in pom.xml too
+    private static final String version = "2.0.9"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -53,6 +54,22 @@ public class HBMain {
                 case "balance":
                     interaction.createImmediateResponder().setContent(Casino.handleBalance(interaction.getUser().getId())).respond();
                     break;
+                case "leaderboard":
+                case "richest":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleLeaderboard(interaction.getArgumentLongValueByIndex(0).orElse(3L))).respond();
+                    break;
+                case "give":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleGive(interaction.getUser().getId(), interaction.getArgumentUserValueByIndex(0).get().getId(),
+                            interaction.getArgumentLongValueByIndex(1).get()));
+                    break;
+                case "pot":
+                    interaction.createImmediateResponder().setContent(Casino.handlePot()).respond();
+                    break;
+                case "feed":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleFeed(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).get()));
                 case "work":
                     interaction.createImmediateResponder().setContent(Casino.handleWork(interaction.getUser().getId())).respond();
                     break;
@@ -87,6 +104,36 @@ public class HBMain {
                         Casino.handleMinislots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
                         1000, interaction);
                     break;
+                case "overunder new":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        .respond();
+                    break;
+                case "overunder over":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_OVER)).respond();
+                    break;
+                case "overunder under":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_UNDER)).respond();
+                    break;
+                case "overunder same":
+                    interaction.createImmediateResponder().setContent(
+                        Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_SAME)).respond();
+                    break;
+                case "blackjack new":
+                    interaction.createImmediateResponder().setContent(
+                        Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        .respond();
+                    break;
+                case "blackjack hit":
+                    interaction.createImmediateResponder().setContent(
+                        Blackjack.handleHit(interaction.getUser().getId())).respond();
+                    break;
+                case "blackjack stand":
+                    interaction.createImmediateResponder().setContent(
+                        Blackjack.handleStand(interaction.getUser().getId())).respond();
+                    break;
             }
         });
     }
@@ -120,6 +167,34 @@ public class HBMain {
         // SlashCommand.with("rob", "Attempt to rob The Bank to steal some of The Money. You might be caught!")
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("leaderboard", "View the richest people in the casino",
+            Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("richest", "View the richest people in the casino",
+            Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("pot", "Check how much money is in the Money Machine")
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("feed", "Feed the Money Machine",
+            Arrays.asList(SlashCommandOption.createLongOption("amount", "How much to feed", true, 1, 100000)))
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("overunder", "Multiple rounds of predicting if the next number is over or under",
+            Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
+                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
+                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"),
+                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"),
+                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same")))
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("blackjack", "Play a game of blackjack",
+            Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
+                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
+                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"),
+                SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have")))
+            .setEnabledInDms(false).createGlobal(api).join();
+        SlashCommand.with("give", "Give coins to another user",
+            Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
+                SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
+            .setEnabledInDms(false).createGlobal(api).join();
         System.out.println("Command registration complete");
     }
 
@@ -132,6 +207,8 @@ public class HBMain {
             + "\n\t\tEither deathrolling (e.g. `100`) or RPG style dice (e.g. `1d20`)"
             + "\n\t`/claim` Initialize yourself with some starting money"
             + "\n\t`/balance` Check your balance"
+            + "\n\t`/richest` Check who's the richest"
+            + "\n\t`/give` Transfer money to someone else"
             + "\nIncome Commands:"
             + "\n\t`/work` Work for 2 hours to earn some coins"
             + "\n\t`/fish` Fish for 30 minutes to earn some coins"
@@ -141,11 +218,20 @@ public class HBMain {
             + "\n\t`/guess` Guess a number from 1 to 10"
             + "\n\t`/hugeguess` Guess a number from 1 to 100"
             + "\n\t`/slots` Spin the slots!"
-            + "\n\t`/minislots` Spin the little slots!";
+            + "\n\t`/minislots` Spin the little slots!"
+            + "\n\t`/pot` Check the Money Machine pot"
+            + "\n\t`/feed` Feed the Money Machine!"
+            + "\n\t`/overunder` Multiple rounds of predicting if the next number is over or under"
+            + "\n\t\tStart a new game with `new`"
+            + "\n\t\tPlace predictions with `over`, `under`, or `same`"
+            + "\n\t`blackjack` Play a hand of blackjack"
+            + "\n\t\tStart a game with `new`, play with `hit` and `stand`";
     }
 
     private static String getChangelog() {
-        return "2.0.8"
+        return "2.0.9"
+            + "\n\tReadd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
+            + "2.0.8"
             + "\n\tUpdate income command help prompts to reference slash commands"
             + "2.0.7"
             + "\n\tReadd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
@@ -249,162 +335,6 @@ public class HBMain {
     ///////////////////////////////////////////////////////////////////////////
     // Old code before slash commands
     ///////////////////////////////////////////////////////////////////////////
-
-    private static void handleHelp(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage("Health Bot Version " + version
-                + "\nCommands:"
-                + "\n\t+help Displays this help text"
-                + "\n\t+version Display the bot's current version"
-                + "\n\t+claim Register with the casino if you're new or get a refresher of main commands"
-                + "\n\t+balance Check your balance"
-                + "\n\t+leaderboard [entries to show] Check who's the richest"
-                + "\n\t+roll [number] Roll a number up to the inputted max"
-                + "\nIncome commands:"
-                + "\n\t+work Work for 2 hours to earn some coins"
-                + "\n\t+fish Fish for 30 minutes to earn some coins"
-                + "\n\t+rob Attempt to rob The Bank to steal some of The Money, you might be caught!"
-                + "\n\t+pickpocket Attempt a petty theft of pickpocketting"
-                + "\n\t+give <amount> <@User> Gives money to another person"
-                + "\nGambling commands:"
-                + "\n\t+guess <guess> <amount> Guess a number from 1 to 10, win coins if correct"
-                + "\n\t+bigguess <guess> <amount> Guess a number from 1 to 10, no consolation prizes"
-                + "\n\t+hugeguess <guess> <amount> Guess a number from 1 to 100!"
-                + "\n\t+slots <bid> Roll the slots with that much as wager. Default wager is 10"
-                + "\n\t+minislots <bid> Roll the minislots with that much as wager. Default 5"
-                + "\n\t+moneymachine <amount> Feed the money machine"
-                + "\n\t+pot Check the current money machine pot"
-                + "\n\t+overunder Multiple rounds of predicting if the next number is over or under"
-                + "\n\t\tPlace predictions with +over, +under, or +same"
-                + "\n\t+blackjack <amount> Start a new game of blackjack, played with +hit or +stand");
-    }
-    
-    private static void handleGive(MessageCreateEvent event, String args) {
-        String response = "";
-        int amount = 0;
-        if (!args.contains(" ")) {
-            response = "Unable to process transaction, not enough arguments. Sample usage:\n\t`+give 100 @100% Hippo` (you will need to ping the user)";
-        } else {
-            String firstArg = args.substring(0, args.indexOf(' '));
-            try {
-                amount = Integer.parseInt(firstArg);
-                List<User> mentions = event.getMessage().getMentionedUsers();
-                if (mentions.isEmpty()) {
-                    response = "Unable to process transaction, no users were mentioned! Sample usage:\n\t`+give 100 @100% Hippo` (you will need to ping the user)";
-                } else {
-                    long recepientUid = mentions.get(0).getId();
-                    response = Casino.handleGive(event.getMessageAuthor().getId(), recepientUid, amount);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse amount \"" + firstArg + "\". Sample usage:\n\t`+give 100 @100% Hippo` (you will need to ping the user)";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    private static void handleLeaderboard(MessageCreateEvent event, String args) {
-        String response = "";
-        try {
-            if (!args.contains(" ")) {
-                response = Casino.handleLeaderboard(3);
-            } else {
-                int entries = Integer.parseInt(args.substring(args.indexOf(' ')).trim());
-                if (entries < 1) {
-                    response = "Minimum entries to show must be 1 or greater";
-                } else if (entries > 10) {
-                    response = "Maximum leaderboard entries is 10.";
-                } else {
-                    response = Casino.handleLeaderboard(entries);
-                }
-            }
-        } catch (NumberFormatException e) {
-            response = "Unable to parse argument \"" + args + "\". Sample usage: `+leaderboard [entries]` `+leaderboard` `+leaderboard 3`";
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handlePot(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Casino.handlePot());
-    }
-    
-    public static void handleFeed(MessageCreateEvent event, String args) {
-        String response = "";
-        if (args.trim().isEmpty()) {
-            response = "Expected an amount. Sample usage: `+moneymachine 100`";
-        } else {
-            try {
-                int bid = Integer.parseInt(args.trim());
-                if (bid < 1) {
-                    response = "The money machine requires real sustenance of 1 or more coins";
-                } else {
-                    response = Casino.handleFeed(event.getMessageAuthor().getId(), bid);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse argument \"" + args + "\". Sample usage: `+moneymachine 100`";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleOverUnder(MessageCreateEvent event, String args) {
-        String response = "";
-        if (args.trim().isEmpty()) {
-            response = Casino.handleOverUnderInitial(event.getMessageAuthor().getId(), 10);
-        } else {
-            try {
-                int bid = Integer.parseInt(args.trim());
-                if (bid < 5) {
-                    response = "Minimum bid for overunder is 5 coins";
-                } else {
-                    response = Casino.handleOverUnderInitial(event.getMessageAuthor().getId(), bid);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse argument \"" + args + "\". Sample usage: `+overunder` or `+overunder 10`";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleOver(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(
-                Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_OVER));
-    }
-    
-    public static void handleUnder(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(
-                Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_UNDER));
-    }
-    
-    public static void handleSame(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(
-                Casino.handleOverUnderFollowup(event.getMessageAuthor().getId(), Casino.PREDICTION_SAME));
-    }
-    
-    public static void handleBlackjack(MessageCreateEvent event, String args) {
-        String response = "";
-        if (args.trim().isEmpty()) {
-            response = Blackjack.handleBlackjack(event.getMessageAuthor().getId(), 10);
-        } else {
-            try {
-                int bid = Integer.parseInt(args.trim());
-                if (bid < 10) {
-                    response = "Minimum bid for blackjack is 10 coins";
-                } else {
-                    response = Blackjack.handleBlackjack(event.getMessageAuthor().getId(), bid);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse argument \"" + args + "\". Sample usage: `+blackjack` or `+blackjack 10`";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleHit(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Blackjack.handleHit(event.getMessageAuthor().getId()));
-    }
-    
-    public static void handleStand(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Blackjack.handleStand(event.getMessageAuthor().getId()));
-    }
     
     public static void handleCreateWager(MessageCreateEvent event, String args) {
         String[] splitArgs = args.split("\\|+");
