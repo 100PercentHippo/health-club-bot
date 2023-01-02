@@ -103,7 +103,7 @@ public class Casino {
     public static String handleWork(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you're new type `+claim` to start";
+            return "Unable to fetch user. If you are new run `/claim` to start";
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
@@ -150,7 +150,7 @@ public class Casino {
     public static String handleFish(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you're new type `+claim` to start";
+            return "Unable to fetch user. If you are new run `/claim` to start";
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
@@ -201,7 +201,7 @@ public class Casino {
     public static String handleRob(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you're new type `+claim` to start";
+            return "Unable to fetch user. If you are new run `/claim` to start";
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
@@ -261,7 +261,7 @@ public class Casino {
     public static String handlePickpocket(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you're new type `+claim` to start";
+            return "Unable to fetch user. If you are new run `/claim` to start";
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
@@ -320,12 +320,12 @@ public class Casino {
             }
         }
         return response + "\nTo earn money, use one of the following commands:"
-            + "\n\t`+work` Work for 2 hours. This is a lawful pursuit"
-            + "\n\t`+fish` Fish for 30 minutes. This is a lawful pursuit"
-            + "\n\t`+pickpocket` Attempt to pickpocket. This is a criminal pursuit and risks 30 minutes in jail"
-            + "\n\t`+rob` Attempt a robbery. This is a crimal pursuit and risks 2 hours of jail time"
+            + "\n\t`/work` Work for 2 hours. This is a lawful pursuit"
+            + "\n\t`/fish` Fish for 30 minutes. This is a lawful pursuit"
+            + "\n\t`/pickpocket` Attempt to pickpocket. This is a criminal pursuit and risks 30 minutes in jail"
+            + "\n\t`/rob` Attempt a robbery. This is a crimal pursuit and risks 2 hours of jail time"
             + "\nIf you get a particularly lawful or particularly crimal record, you may get unique options."
-            + "You can also gamble with `+guess`, `+bigguess`, `+hugeguess`, `+slots`, `+minislots`, `+moneymachine`, `+overunder`, or `+blackjack`";
+            + "You can also gamble with `/guess`, `/bigguess`, `/hugeguess`, `/slots`, `/minislots`, `/moneymachine`, `/overunder`, or `/blackjack`";
     }
 
 // Guess Payout:
@@ -416,7 +416,7 @@ public class Casino {
     public static String handleFeed(long uid, int amount) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you're new type `+claim` to start";
+            return "Unable to fetch user. If you are new run `/claim` to start";
         }
         if (user.getBalance() < amount) {
             return "Your balance of " + user.getBalance() + " is not enough to cover that!";
@@ -710,7 +710,7 @@ public class Casino {
         }
         long recipientBalance = checkBalance(recipientUid);
         if (recipientBalance == -1) {
-            return "Unable to give money. Has that user run `+claim`?";
+            return "Unable to give money. Has that user run `/claim`?";
         }
         donorBalance = takeMoneyDirect(donorUid, amount);
         addMoneyDirect(recipientUid, amount);

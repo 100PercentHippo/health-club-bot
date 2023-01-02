@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.7"; //Update this in pom.xml too
+    private static final String version = "2.0.8"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -114,12 +114,12 @@ public class HBMain {
         //     Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         //SlashCommand.with("claim", "Initialize yourself as a casino user").setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("balance", "Check your current balance").setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("work", "Work for 2 hours to earn some coins").setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("fish", "Fish for 30 minutes to earn some coins").setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("rob", "Attempt to rob The Bank to steal some of The Money. You might be caught!")
-            .setEnabledInDms(false).createGlobal(api).join();
-        SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("balance", "Check your current balance").setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("work", "Work for 2 hours to earn some coins").setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("fish", "Fish for 30 minutes to earn some coins").setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("rob", "Attempt to rob The Bank to steal some of The Money. You might be caught!")
+        //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
         System.out.println("Command registration complete");
     }
 
@@ -145,7 +145,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.7"
+        return "2.0.8"
+            + "\n\tUpdate income command help prompts to reference slash commands"
+            + "2.0.7"
             + "\n\tReadd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
             + "2.0.6"
             + "\n\t- Readd `/claim`"
