@@ -6,6 +6,7 @@ import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.component.ButtonStyle;
 import org.javacord.api.event.message.MessageCreateEvent;
+import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -23,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.11"; //Update this in pom.xml too
+    private static final String version = "2.0.12"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -111,8 +112,9 @@ public class HBMain {
                 case "overunder new":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
-                        .addComponents(ActionRow.of(Button.secondary("overunder over", "over"),
-                            Button.secondary("overunder under", "under"), Button.secondary("overunder same", "same")))
+                        .addComponents(ActionRow.of(Button.secondary("overunder.over", "Over"),
+                            Button.secondary("overunder.under", "Under"),
+                            Button.secondary("overunder.same", "Same")))
                         .respond();
                     break;
                 case "overunder over":
@@ -130,6 +132,8 @@ public class HBMain {
                 case "blackjack new":
                     interaction.createImmediateResponder().setContent(
                         Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
+                            Button.secondary("blackjack.stand", "Stand")))
                         .respond();
                     break;
                 case "blackjack hit":
@@ -140,6 +144,48 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Blackjack.handleStand(interaction.getUser().getId())).respond();
                     break;
+            }
+        });
+        api.addMessageComponentCreateListener(event -> {
+            MessageComponentInteraction interaction = event.getMessageComponentInteraction();
+            String response = "";
+            int prediction = 0;
+            if (interaction.getCustomId().contains("overunder")) {
+                switch (interaction.getCustomId()) {
+                    case "overunder.over":
+                        prediction = Casino.PREDICTION_OVER;
+                        break;
+                    case "overunder.under":
+                        prediction = Casino.PREDICTION_UNDER;
+                        break;
+                    case "overunder.same":
+                        prediction = Casino.PREDICTION_SAME;
+                        break;
+                }
+                response = Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction);
+                if (response.contains("balance")) {
+                    interaction.createImmediateResponder().setContent(response).respond();
+                } else {
+                    interaction.createImmediateResponder().setContent(response)
+                    .addComponents(ActionRow.of(Button.secondary("overunder.over", "Over"),
+                        Button.secondary("overunder.under", "Under"),
+                        Button.secondary("overunder.same", "Same")))
+                    .respond();
+                }
+            } else if (interaction.getCustomId().contains("blackjack")) {
+                if (interaction.getCustomId().equals("blackjack.hit")) {
+                    response = Blackjack.handleHit(interaction.getUser().getId());
+                } else if (interaction.getCustomId().equals("blackjack.stand")) {
+                    response = Blackjack.handleStand(interaction.getUser().getId());
+                }
+                if (response.contains("balance")) {
+                    interaction.createImmediateResponder().setContent(response).respond();
+                } else {
+                    interaction.createImmediateResponder().setContent(response)
+                    .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
+                        Button.secondary("blackjack.stand", "Stand")))
+                    .respond();
+                }
             }
         });
     }
@@ -236,7 +282,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.11"
+        return "2.0.12"
+            + "\n\t- Add buttons to `/blackjack new` and `/overunder new`"
+            + "\n2.0.11"
             + "\n\t- Formating fixes for help text"
             + "\n2.0.10"
             + "\n\t- Fixes for `/blackjack`, `/overunder`, and `/feed`" 
