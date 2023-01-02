@@ -2,6 +2,9 @@ package com.c2t2s.hb;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.message.component.ButtonStyle;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
@@ -20,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.10"; //Update this in pom.xml too
+    private static final String version = "2.0.11"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -108,6 +111,8 @@ public class HBMain {
                 case "overunder new":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        .addComponents(ActionRow.of(Button.secondary("overunder over", "over"),
+                            Button.secondary("overunder under", "under"), Button.secondary("overunder same", "same")))
                         .respond();
                     break;
                 case "overunder over":
@@ -231,14 +236,16 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.10"
-            + "\n\tFixes for `/blackjack`, `/overunder`, and `/feed`" 
+        return "2.0.11"
+            + "\n\t- Formating fixes for help text"
+            + "\n2.0.10"
+            + "\n\t- Fixes for `/blackjack`, `/overunder`, and `/feed`" 
             + "\n2.0.9"
-            + "\n\tReadd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
+            + "\n\t- Readd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
             + "\n2.0.8"
-            + "\n\tUpdate income command help prompts to reference slash commands"
+            + "\n\t- Update income command help prompts to reference slash commands"
             + "\n2.0.7"
-            + "\n\tReadd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
+            + "\n\t- Readd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
             + "\n2.0.6"
             + "\n\t- Readd `/claim`"
             + "\n\t- Readd full implementation of `/minislots`"

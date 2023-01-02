@@ -633,7 +633,7 @@ public class Casino {
         OverUnderGame game = getOverUnderRound(uid);
         if (game != null && game.getRound() != -1) {
             return "You already have an active game: Round " + game.getRound() + " with the current value "
-                + game.getTarget() + ".\nUse `+over`, `+under`, or `+same` to predict which the next value will be";
+                + game.getTarget() + ".\nUse `over`, `under`, or `same` to predict which the next value will be";
         }
         long balance = checkBalance(uid);
         if (balance < 0) {
@@ -645,13 +645,13 @@ public class Casino {
         int target = random.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
         return "Bid " + amount + " on overunder.\nYour initial value is " + target
-            + ". Predict if the next value (1-10) will be `+over`, `+under`, or the `+same`";
+            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`";
     }
 
     public static String handleOverUnderFollowup(long uid, int prediction) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game == null || game.getRound() == -1) {
-            return "No active game found. Use `+overunder <amount>` to start a new game";
+            return "No active game found. Use `/overunder new` to start a new game";
         }
         Random random = new Random();
         int target = random.nextInt(10) + 1;
