@@ -219,10 +219,10 @@ public class HBMain {
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("leaderboard", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true, 1, 10)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("richest", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true)))
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true, 1, 10)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pot", "Check how much money is in the Money Machine")
         //     .setEnabledInDms(false).createGlobal(api).join();
@@ -231,14 +231,14 @@ public class HBMain {
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("overunder", "Multiple rounds of predicting if the next number is over or under",
         //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
-        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
+        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))),
         //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"),
         //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"),
         //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same")))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("blackjack", "Play a game of blackjack",
         //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
-        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false))),
+        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))),
         //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"),
         //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have")))
         //     .setEnabledInDms(false).createGlobal(api).join();
