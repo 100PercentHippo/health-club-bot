@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Collections;
 
 public class Casino {
 
@@ -474,7 +475,7 @@ public class Casino {
         int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
         String output = "Bid " + amount + " on slots\n", placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(new String(output + placeholder.repeat(5)));
+        responseSteps.add(new String(output + Collections.nCopies(5, placeholder)));
         for (int i = 0; i < 5; ++i) {
             switch (random.nextInt(5)) {
                 case 0:
@@ -503,7 +504,7 @@ public class Casino {
                     }
                     break;
             }
-            responseSteps.add(new String(output + placeholder.repeat(4 - i)));
+            responseSteps.add(new String(output + Collections.nCopies(4 - i, placeholder)));
         }
         output += "\n";
         int win_condition = 0;
@@ -565,7 +566,7 @@ public class Casino {
         int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
         String output = "Bid " + amount + " on mini slots\n", placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(new String(output + placeholder.repeat(3)));
+        responseSteps.add(new String(output + Collections.nCopies(3, placeholder)));
         for (int i = 0; i < 3; i++) {
             switch (random.nextInt(5)) {
             case 0:
@@ -594,7 +595,7 @@ public class Casino {
                 }
                 break;
             }
-            responseSteps.add(new String(output + placeholder.repeat(2 - i)));
+            responseSteps.add(new String(output + Collections.nCopies(2 - i, placeholder)));
         }
         output += "\n";
         if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
