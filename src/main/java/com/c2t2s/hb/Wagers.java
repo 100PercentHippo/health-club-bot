@@ -1,183 +1,180 @@
 package com.c2t2s.hb;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.Random;
 
 public class Wagers {
-	
-	public static class Wager {
-		private int id;
-		private long uid;
-		private boolean closed;
-		private String title;
-		private List<String> options;
-		
-		public Wager(int id, long uid, boolean closed, String title, List<String> options) {
-			this.id = id;
-			this.uid = uid;
-			this.closed = closed;
-			this.title = title;
-			this.options = options;
-		}
-		
-		public int getId() {
-			return id;
-		}
-		
-		public long getUid() { 
-			return uid;
-		}
-		
-		public List<String> getOptions() {
-			return options;
-		}
-		
-		public int getOptionsCount() {
-			return options.size();
-		}
-		
-		public boolean isClosed() {
-			return closed;
-		}
-		
-		public String getTitle() {
-			return title;
-		}
-	}
-	
-	public static class Winner {
-		public long uid;
-		public long winnings;
-		public String name;
-		
-		public Winner(long uid, long winnings, String name) {
-			this.uid = uid;
-			this.winnings = winnings;
-			this.name = name;
-		}
-	}
-	
-	public static String createWager(long uid, String title, List<String> options) {
-		if (title == null || title.equals("")) {
-			return "Unable to create new wager: Title is required";
-		} else if (title.length() > 100) {
-			return "Unable to create new wager: Titles can be no longer than 100 characters";
-		}
-		if (options.size() < 2) {
-			return "Unable to create new wager: Wagers require between 2 and 10 options";
-		} else if (options.size() > 10) {
-			return "Unable to create new wager: Maximum number of options is 10";
-		}
-		for (int i = 0; i < options.size(); ++i) {
-			if (options.get(i).length() > 100) {
-				return "Unable to create new wager: Option " + i + " is longer than the maximum 100 characters";
-			}
-		}
-		int optionsCount = options.size();
-		for (int i = 0; i < (10 - optionsCount); ++i) {
-			options.add("");
-		}
-		int wagerId = addWager(uid, title, options);
-		if (wagerId < 0) {
-			return "Unable to create new wager due to a database error";
-		} else {
-			String output = "Created new wager #" + wagerId + ": " + title;
-			for (int i = 0; i < optionsCount; ++i) {
-				output += "\n\tOption " + (i + 1) + ": " + options.get(i);
-			}
-			return output;
-		}
-	}
-	
-	public static String setClosed(long uid, int id, boolean isClosed) {
-		Wager wager = getWager(id);
-		if (wager == null || wager.getId() < 1) {
-			return "Unable to find a wager with id " + id;
-		}
-		if (wager.getUid() != uid) {
-			return "Unable to " + (isClosed ? "close" : "open") + " wager #"
-		        + id + ": You are not the creator of that wager";
-		}
-		setWagerClosed(id, isClosed);
-		return (isClosed ? "Closed" : "Opened") + " wager #" + id;
-	}
-	
-	public static String payoutWager(long uid, int id, int correct) {
-		Wager wager = getWager(id);
-		if (wager == null || wager.getId() < 1) {
-			return "Unable to find a wager with id " + id;
-		}
-		if (wager.getUid() != uid) {
-			return "Unable to payout wager #" + id + ": You are not the creator of that wager";
-		} else if (wager.getOptionsCount() < correct) {
-			return "Unable to payout wager #" + id + ": There are not " + correct + " options";
-		}
-		String output = payoutWager(id, correct);
-		if (!output.isEmpty()) {
-			deleteWager(id);
-			return "Wager #" + wager.getId() + " \"" + wager.getTitle() + "\" was \""
-				+ wager.getOptions().get(correct - 1) + "\"\n" + output;
-		} else {
-			return "Unable to payout wager";
-		}
-	}
-	
-	public static String placeBet(long uid, int id, int option, long bet) {
-		Wager wager = getWager(id);
-		if (wager == null || wager.getId() < 1) {
-			return "Unable to find a wager with id " + id;
-		} else if (wager.isClosed()) {
-			return "Unable to place a bet for wager #" + id + ": Wager is closed";
-		} else if (wager.getOptionsCount() < option) {
-			return "Unable to place bet for wager #" + id + ": There are not " + option + " options";
-		}
-		long balance = Casino.checkBalance(uid);
-		if (balance < 0) {
-			return "Unable to place bet: Balance check failed or was negative (" + balance +")";
-		} else if (balance < bet) {
-			return "Your current balance of " + balance + " is not enough to cover that";
-		}
-		long totalBet = getBet(uid, id, option);
-		if (totalBet > 0) {
-			Casino.takeMoneyDirect(uid, bet);
-			totalBet = increaseBet(uid, id, option, bet);
-			return "Increased bet on option " + option + " of wager #" + id + " to " + totalBet;
-		} else {
-			if (createBet(uid, id, option, bet) < 1) {
-				return "Unable to place bet due to a database error";
-			}
-			Casino.takeMoneyDirect(uid, bet);
-			return "Placed a bet of " + bet + " on \"" + wager.getOptions().get(option - 1) + "\"";
-		}
-	}
-	
-	public static String getWagerInfo(int id) {
-		Wager wager = getWager(id);
-		if (wager == null || wager.getId() < 1) {
-			return "No wager found with id " + id;
-		}
-		String output = "Wager #" + id + ": " + wager.getTitle();
-		List<Long> sums = getWagerSums(id, wager.getOptionsCount());
-		for (int i = 1; i <= wager.getOptionsCount(); ++i) {
-			output += "\n\t" + i + ": (" + sums.get(i - 1) + ") " + wager.getOptions().get(i - 1);
-		}
-		return output;
-	}
-	
-	public static String openWagers() {
-		String output = getOpenWagers();
-		if (output.isEmpty()) {
-			return "No open wagers found";
-		}
-		return "Open wagers:" + output;
-	}
-	
-	//////////////////////////////////////////////////////////
-	
+
+    public static class Wager {
+        private int id;
+        private long uid;
+        private boolean closed;
+        private String title;
+        private List<String> options;
+
+        public Wager(int id, long uid, boolean closed, String title, List<String> options) {
+            this.id = id;
+            this.uid = uid;
+            this.closed = closed;
+            this.title = title;
+            this.options = options;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public long getUid() { 
+            return uid;
+        }
+
+        public List<String> getOptions() {
+            return options;
+        }
+
+        public int getOptionsCount() {
+            return options.size();
+        }
+
+        public boolean isClosed() {
+            return closed;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+    }
+
+    public static class Winner {
+        public long uid;
+        public long winnings;
+        public String name;
+        
+        public Winner(long uid, long winnings, String name) {
+            this.uid = uid;
+            this.winnings = winnings;
+            this.name = name;
+        }
+    }
+
+    public static String createWager(long uid, String title, List<String> options) {
+        if (title == null || title.equals("")) {
+            return "Unable to create new wager: Title is required";
+        } else if (title.length() > 100) {
+            return "Unable to create new wager: Titles can be no longer than 100 characters";
+        }
+        if (options.size() < 2) {
+            return "Unable to create new wager: Wagers require between 2 and 10 options";
+        } else if (options.size() > 10) {
+            return "Unable to create new wager: Maximum number of options is 10";
+        }
+        for (int i = 0; i < options.size(); ++i) {
+            if (options.get(i).length() > 100) {
+                return "Unable to create new wager: Option " + i + " is longer than the maximum 100 characters";
+            }
+        }
+        int optionsCount = options.size();
+        for (int i = 0; i < (10 - optionsCount); ++i) {
+            options.add("");
+        }
+        int wagerId = addWager(uid, title, options);
+        if (wagerId < 0) {
+            return "Unable to create new wager due to a database error";
+        } else {
+            String output = "Created new wager #" + wagerId + ": " + title;
+            for (int i = 0; i < optionsCount; ++i) {
+                output += "\n\tOption " + (i + 1) + ": " + options.get(i);
+            }
+            return output;
+        }
+    }
+
+    public static String setClosed(long uid, int id, boolean isClosed) {
+        Wager wager = getWager(id);
+        if (wager == null || wager.getId() < 1) {
+            return "Unable to find a wager with id " + id;
+        }
+        if (wager.getUid() != uid) {
+            return "Unable to " + (isClosed ? "close" : "open") + " wager #"
+                + id + ": You are not the creator of that wager";
+        }
+        setWagerClosed(id, isClosed);
+        return (isClosed ? "Closed" : "Opened") + " wager #" + id;
+    }
+
+    public static String payoutWager(long uid, int id, int correct) {
+        Wager wager = getWager(id);
+        if (wager == null || wager.getId() < 1) {
+            return "Unable to find a wager with id " + id;
+        }
+        if (wager.getUid() != uid) {
+            return "Unable to payout wager #" + id + ": You are not the creator of that wager";
+        } else if (wager.getOptionsCount() < correct) {
+            return "Unable to payout wager #" + id + ": There are not " + correct + " options";
+        }
+        String output = payoutWager(id, correct);
+        if (!output.isEmpty()) {
+            deleteWager(id);
+            return "Wager #" + wager.getId() + " \"" + wager.getTitle() + "\" was \""
+                + wager.getOptions().get(correct - 1) + "\"\n" + output;
+        } else {
+            return "Unable to payout wager";
+        }
+    }
+
+    public static String placeBet(long uid, int id, int option, long bet) {
+        Wager wager = getWager(id);
+        if (wager == null || wager.getId() < 1) {
+            return "Unable to find a wager with id " + id;
+        } else if (wager.isClosed()) {
+            return "Unable to place a bet for wager #" + id + ": Wager is closed";
+        } else if (wager.getOptionsCount() < option) {
+            return "Unable to place bet for wager #" + id + ": There are not " + option + " options";
+        }
+        long balance = Casino.checkBalance(uid);
+        if (balance < 0) {
+            return "Unable to place bet: Balance check failed or was negative (" + balance +")";
+        } else if (balance < bet) {
+            return "Your current balance of " + balance + " is not enough to cover that";
+        }
+        long totalBet = getBet(uid, id, option);
+        if (totalBet > 0) {
+            Casino.takeMoneyDirect(uid, bet);
+            totalBet = increaseBet(uid, id, option, bet);
+            return "Increased bet on option " + option + " of wager #" + id + " to " + totalBet;
+        } else {
+            if (createBet(uid, id, option, bet) < 1) {
+                return "Unable to place bet due to a database error";
+            }
+            Casino.takeMoneyDirect(uid, bet);
+            return "Placed a bet of " + bet + " on \"" + wager.getOptions().get(option - 1) + "\"";
+        }
+    }
+
+    public static String getWagerInfo(int id) {
+        Wager wager = getWager(id);
+        if (wager == null || wager.getId() < 1) {
+            return "No wager found with id " + id;
+        }
+        String output = "Wager #" + id + ": " + wager.getTitle();
+        List<Long> sums = getWagerSums(id, wager.getOptionsCount());
+        for (int i = 1; i <= wager.getOptionsCount(); ++i) {
+            output += "\n\t" + i + ": (" + sums.get(i - 1) + ") " + wager.getOptions().get(i - 1);
+        }
+        return output;
+    }
+
+    public static String openWagers() {
+        String output = getOpenWagers();
+        if (output.isEmpty()) {
+            return "No open wagers found";
+        }
+        return "Open wagers:" + output;
+    }
+
+    //////////////////////////////////////////////////////////
+
     private static Connection getConnection() throws URISyntaxException, SQLException {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"));
     }
@@ -191,10 +188,10 @@ public class Wagers {
     //  winnings bigint DEFAULT 0,
     //  CONSTRAINT wageruser_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     //);
-	
-	//CREATE TABLE IF NOT EXISTS wagers (
+
+    //CREATE TABLE IF NOT EXISTS wagers (
     //  id SERIAL PRIMARY KEY,
-	//	uid bigint,
+    //  uid bigint,
     //  closed boolean DEFAULT false,
     //  title varchar(100),
     //  option1 varchar(100),
@@ -208,7 +205,7 @@ public class Wagers {
     //  option9 varchar(100) DEFAULT '',
     //  option10 varchar(100) DEFAULT '',
     //  CONSTRAINT wagers_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
-	//);
+    //);
     
     //CREATE TABLE IF NOT EXISTS bets (
     //  uid bigint,
@@ -221,12 +218,12 @@ public class Wagers {
     //);
     
     private static int addWager(long uid, String title, List<String> options) {
-    	if (options.size() < 10) {
-    		return -1;
-    	}
-		String query = "INSERT INTO wagers (uid, title, option1, option2, option3, option4, option5, option6, option7, option8, option9, option10) VALUES ("
-    	    + uid + ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;";
-		String updateQuery = "UPDATE wager_user SET hosted = hosted + 1 WHERE uid = " + uid;
+        if (options.size() < 10) {
+            return -1;
+        }
+        String query = "INSERT INTO wagers (uid, title, option1, option2, option3, option4, option5, option6, option7, option8, option9, option10) VALUES ("
+            + uid + ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;";
+        String updateQuery = "UPDATE wager_user SET hosted = hosted + 1 WHERE uid = " + uid;
         Connection connection = null;
         PreparedStatement statement = null;
         int id = -1;
@@ -235,11 +232,11 @@ public class Wagers {
             statement = connection.prepareStatement(query);
             statement.setString(1, title);
             for (int i = 2; i <= 11; i++) {
-            	statement.setString(i, options.get(i - 2));
+                statement.setString(i, options.get(i - 2));
             }
             ResultSet results = statement.executeQuery();
             if (results.next()) {
-            	id = results.getInt(1);
+                id = results.getInt(1);
             }
             statement.close();
             Statement updateStatement = connection.createStatement();
@@ -249,8 +246,8 @@ public class Wagers {
         } catch (URISyntaxException | SQLException e) {
             e.printStackTrace();
         } catch (IndexOutOfBoundsException e) {
-        	e.printStackTrace();
-        	System.out.println(options);
+            e.printStackTrace();
+            System.out.println(options);
         } finally {
             try {
                 if (statement != null) {
@@ -275,12 +272,12 @@ public class Wagers {
     }
     
     private static void deleteWager(int id) {
-    	executeUpdate("DELETE FROM wagers WHERE id = " + id + ";");
+        executeUpdate("DELETE FROM wagers WHERE id = " + id + ";");
     }
     
     private static String payoutWager(int id, int correct) {
-    	String potQuery = "SELECT SUM(bet) FROM bets WHERE id = " + id + ";";
-    	String winnersContributionQuery = "SELECT SUM(bet) FROM bets WHERE id = " + id + " AND option = " + correct + ";";
+        String potQuery = "SELECT SUM(bet) FROM bets WHERE id = " + id + ";";
+        String winnersContributionQuery = "SELECT SUM(bet) FROM bets WHERE id = " + id + " AND option = " + correct + ";";
         String fetchWinners = "SELECT uid, bet, name FROM bets NATURAL JOIN money_user WHERE id = " + id + " AND option = " + correct + ";";
         Connection connection = null;
         Statement statement = null;
@@ -291,49 +288,49 @@ public class Wagers {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(potQuery);
             if (results.next()) {
-            	pot = results.getLong(1);
+                pot = results.getLong(1);
             }
             if (pot < 0) {
-            	output = "";
+                output = "";
             } else if (pot == 0) {
-            	output = "Paid out wager: No bets were placed.";
+                output = "Paid out wager: No bets were placed.";
             } else {
                 output += "Paying out pot of " + pot + " coins:";
                 results = statement.executeQuery(winnersContributionQuery);
                 if (results.next()) {
-                	winnerContribution = results.getLong(1);
+                    winnerContribution = results.getLong(1);
                 }
                 if (winnerContribution < 0) {
-                	output += "\nError paying out: Unable to calculate winner contribution";
+                    output += "\nError paying out: Unable to calculate winner contribution";
                 } else if (winnerContribution == 0) {
-            	    output += "\nNo correct bets were placed, feeding the pot to the money machine";
-            	    statement.executeUpdate("UPDATE money_user SET balance = balance + "
-                		    + pot + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
+                    output += "\nNo correct bets were placed, feeding the pot to the money machine";
+                    statement.executeUpdate("UPDATE money_user SET balance = balance + "
+                            + pot + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
                 } else {
-                	double payoutRatio = (double)pot / winnerContribution;
-                	List<Winner> winners = new ArrayList<Winner>();
-                	ResultSet results2 = statement.executeQuery(fetchWinners);
-                	while (results2.next()) {
-                		uid = results2.getLong(1);
-                		payout = (long)(results2.getLong(2) * payoutRatio);
-                		String name = results2.getString(3);
-                		if (name.contains("#")) {
-                    		name = name.substring(0, name.indexOf('#'));
-                    	}
-                    	winners.add(new Winner(uid, payout, name));
-                	}
-                	for (Winner winner : winners) {
-                		statement.executeUpdate("UPDATE money_user SET balance = balance + "
-                		    + winner.winnings + " WHERE uid = " + winner.uid + ";");
-                		statement.executeUpdate("UPDATE wager_user SET (correct, winnings) = (correct + 1, winnings + "
-                		    + winner.winnings + ") WHERE uid = " + winner.uid + ";");
-                		totalPaid += winner.winnings;
-                		output += "\n\t" + winner.name + " won " + winner.winnings + " coins";
-                	}
-                	if (totalPaid < pot) {
-                		statement.executeUpdate("UPDATE money_user SET balance = balance + "
-                    		    + (pot - totalPaid) + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
-                	}
+                    double payoutRatio = (double)pot / winnerContribution;
+                    List<Winner> winners = new ArrayList<Winner>();
+                    ResultSet results2 = statement.executeQuery(fetchWinners);
+                    while (results2.next()) {
+                        uid = results2.getLong(1);
+                        payout = (long)(results2.getLong(2) * payoutRatio);
+                        String name = results2.getString(3);
+                        if (name.contains("#")) {
+                            name = name.substring(0, name.indexOf('#'));
+                        }
+                        winners.add(new Winner(uid, payout, name));
+                    }
+                    for (Winner winner : winners) {
+                        statement.executeUpdate("UPDATE money_user SET balance = balance + "
+                            + winner.winnings + " WHERE uid = " + winner.uid + ";");
+                        statement.executeUpdate("UPDATE wager_user SET (correct, winnings) = (correct + 1, winnings + "
+                            + winner.winnings + ") WHERE uid = " + winner.uid + ";");
+                        totalPaid += winner.winnings;
+                        output += "\n\t" + winner.name + " won " + winner.winnings + " coins";
+                    }
+                    if (totalPaid < pot) {
+                        statement.executeUpdate("UPDATE money_user SET balance = balance + "
+                                + (pot - totalPaid) + " WHERE uid = " + Casino.MONEY_MACHINE_UID + ";");
+                    }
                 }
             }
             statement.close();
@@ -360,7 +357,7 @@ public class Wagers {
     }
     
     private static int createBet(long uid, int wagerId, int option, long bet) {
-    	String query = "INSERT INTO bets (uid, id, option, bet) VALUES (" + uid + ", " + wagerId
+        String query = "INSERT INTO bets (uid, id, option, bet) VALUES (" + uid + ", " + wagerId
             + ", " + option + ", " + bet + ") ON CONFLICT (uid, id, option) DO NOTHING;";
         String trackingQuery = "UPDATE wager_user SET (bets, spent) = (bets + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";";
@@ -396,11 +393,11 @@ public class Wagers {
     }
     
     private static long increaseBet(long uid, int id, int option, long bet) {
-    	String query = "UPDATE bets SET bet = bet + " + bet + " WHERE (uid, id, option) = ("
+        String query = "UPDATE bets SET bet = bet + " + bet + " WHERE (uid, id, option) = ("
             + uid + ", " + id + ", " + option + ") RETURNING bet;";
-    	String trackingQuery = "UPDATE wager_user SET spent = spent + " + bet
-    		+ " WHERE uid = " + uid + ";";
-    	Connection connection = null;
+        String trackingQuery = "UPDATE wager_user SET spent = spent + " + bet
+            + " WHERE uid = " + uid + ";";
+        Connection connection = null;
         Statement statement = null;
         long total = -1;
         try {
@@ -408,7 +405,7 @@ public class Wagers {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             if (results.next()) {
-            	total = results.getInt(1);
+                total = results.getInt(1);
             }
             statement.executeUpdate(trackingQuery);
             results.close();
@@ -436,8 +433,8 @@ public class Wagers {
     }
     
     private static Wager getWager(int id) {
-    	String query = "SELECT id, uid, closed, title, option1, option2, option3, option4, option5, option6, option7, option8, option9, option10 FROM wagers WHERE id = " + id + ";";
-		Connection connection = null;
+        String query = "SELECT id, uid, closed, title, option1, option2, option3, option4, option5, option6, option7, option8, option9, option10 FROM wagers WHERE id = " + id + ";";
+        Connection connection = null;
         Statement statement = null;
         Wager wager = null;
         try {
@@ -445,22 +442,22 @@ public class Wagers {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             if (results.next()) {
-            	int rowId = results.getInt(1);
-            	long uid = results.getLong(2);
-            	boolean closed = results.getBoolean(3);
-            	String title = results.getString(4);
-            	List<String> options = new ArrayList();
-            	String option;
-            	boolean lastOption = false;
-            	for (int i = 5; i < 15 && !lastOption; ++i) {
-            		option = results.getString(i);
-            		if (option.equals("")) {
-            			lastOption = true;
-            		} else {
-            			options.add(option);
-            		}
-            	}
-            	wager = new Wager(rowId, uid, closed, title, options);
+                int rowId = results.getInt(1);
+                long uid = results.getLong(2);
+                boolean closed = results.getBoolean(3);
+                String title = results.getString(4);
+                List<String> options = new ArrayList<String>();
+                String option;
+                boolean lastOption = false;
+                for (int i = 5; i < 15 && !lastOption; ++i) {
+                    option = results.getString(i);
+                    if (option.equals("")) {
+                        lastOption = true;
+                    } else {
+                        options.add(option);
+                    }
+                }
+                wager = new Wager(rowId, uid, closed, title, options);
             }
             statement.close();
             connection.close();
@@ -486,8 +483,8 @@ public class Wagers {
     }
     
     private static long getBet(long uid, int id, int option) {
-    	String query = "SELECT bet FROM bets WHERE (uid, id, option) = (" + uid
-    		+ ", " + id + ", " + option + ");";
+        String query = "SELECT bet FROM bets WHERE (uid, id, option) = (" + uid
+            + ", " + id + ", " + option + ");";
         Connection connection = null;
         Statement statement = null;
         long wager = -1;
@@ -496,7 +493,7 @@ public class Wagers {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             if (results.next()) {
-            	wager = results.getLong(1);
+                wager = results.getLong(1);
             }
             results.close();
             statement.close();
@@ -523,8 +520,8 @@ public class Wagers {
     }
     
     private static String getOpenWagers() {
-    	String query = "SELECT id, title FROM wagers WHERE closed = false;";
-		Connection connection = null;
+        String query = "SELECT id, title FROM wagers WHERE closed = false;";
+        Connection connection = null;
         Statement statement = null;
         String output = "";
         try {
@@ -532,10 +529,10 @@ public class Wagers {
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             while (results.next()) {
-            	int id = results.getInt(1);
-            	String title = results.getString(2);
-            	output += "\n\t#" + id + ": " + title;
-            	
+                int id = results.getInt(1);
+                String title = results.getString(2);
+                output += "\n\t#" + id + ": " + title;
+                
             }
             results.close();
             statement.close();
@@ -562,21 +559,21 @@ public class Wagers {
     }
     
     private static List<Long> getWagerSums(int id, int options) {
-    	String query = "SELECT SUM(bet) FROM bets WHERE id = " + id + " AND option = ?;";
-		Connection connection = null;
+        String query = "SELECT SUM(bet) FROM bets WHERE id = " + id + " AND option = ?;";
+        Connection connection = null;
         PreparedStatement statement = null;
         List<Long> sums = new ArrayList<Long>();
         try {
             connection = getConnection();
             statement = connection.prepareStatement(query);
             for (int i = 1; i <= options; ++i) {
-            	long sum = 0;
-            	statement.setInt(1, i);
-            	ResultSet results = statement.executeQuery();
-            	if (results.next()) {
-            		sum = results.getLong(1);
-            	}
-            	sums.add(sum);
+                long sum = 0;
+                statement.setInt(1, i);
+                ResultSet results = statement.executeQuery();
+                if (results.next()) {
+                    sum = results.getLong(1);
+                }
+                sums.add(sum);
             }
             statement.close();
             connection.close();
