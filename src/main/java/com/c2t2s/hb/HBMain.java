@@ -286,9 +286,9 @@ public class HBMain {
         	+ "\n\tCorrects wager limits for blackjack and overunder"
         	+ "\n\tRemoves automatic contributions to the money machine from casino net profits"
         	+ "\n\tMoney machine now instead retains 25% of the pot when paying out"
-        	+ "3.0.1"
-        	+ "\n\t`\feed` is once again working"
-        	+ "3.0.0"
+        	+ "\n3.0.1"
+        	+ "\n\t`/feed` is once again working"
+        	+ "\n3.0.0"
         	+ "\n\tBot is back (again)!";
     }
 
