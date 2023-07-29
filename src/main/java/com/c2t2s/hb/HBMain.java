@@ -5,7 +5,6 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.component.ButtonStyle;
-import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
@@ -24,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "2.0.13"; //Update this in pom.xml too
+    private static final String version = "3.0.0"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -283,36 +282,8 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "2.0.13"
-            + "\n\t- Fix for `/blackjack hit` with no active game"
-            + "\n2.0.12"
-            + "\n\t- Add buttons to `/blackjack new` and `/overunder new`"
-            + "\n2.0.11"
-            + "\n\t- Formating fixes for help text"
-            + "\n2.0.10"
-            + "\n\t- Fixes for `/blackjack`, `/overunder`, and `/feed`" 
-            + "\n2.0.9"
-            + "\n\t- Readd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
-            + "\n2.0.8"
-            + "\n\t- Update income command help prompts to reference slash commands"
-            + "\n2.0.7"
-            + "\n\t- Readd `/balance`, `/work`, `/fish`, `/rob`, `/pickpocket`"
-            + "\n2.0.6"
-            + "\n\t- Readd `/claim`"
-            + "\n\t- Readd full implementation of `/minislots`"
-            + "\n\t- Hook up DB to existing commands" 
-            + "\n2.0.5"
-            + "\n\t- Update slots to update existing messages" 
-            + "\n2.0.4"
-            + "\n\t- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
-            + "\n2.0.3"
-            + "\n\t- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
-            + "\n2.0.2"
-            + "\n\t- Fixed bot not responding to guesses with default wagers"
-            + "\n2.0.1"
-            + "\n\t- Readded `/guess`"
-            + "\n2.0.0"
-            + "\n\t- Bot is back! Added one sample command";
+        return "3.0.0"
+        	+ "\n\t- Bot is back (again)!";
     }
 
     //TODO: Handle negative modifiers in dice rolls
@@ -392,122 +363,5 @@ public class HBMain {
                 }
             }, delay, delay);
         }
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Old code before slash commands
-    ///////////////////////////////////////////////////////////////////////////
-    
-    public static void handleCreateWager(MessageCreateEvent event, String args) {
-        String[] splitArgs = args.split("\\|+");
-        String response = "";
-        if (splitArgs.length < 3) {
-            response = "Not enough arguments provided. Sample usage `+createwager Title|Option A|Option B|...`";
-        } else if (splitArgs.length > 11) {
-            response = "Too many options provided. Wagers can have a maximum of 10 options";
-        } else {
-            List<String> options = new ArrayList<String>(Arrays.asList(splitArgs));
-            options.remove(0);
-            response = Wagers.createWager(event.getMessageAuthor().getId(), splitArgs[0], options);
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleCloseWager(MessageCreateEvent event, String args) {
-        handleSetWagerClosed(event, args, true);
-    }
-    
-    public static void handleOpenWager(MessageCreateEvent event, String args) {
-        handleSetWagerClosed(event, args, false);
-    }
-    
-    private static void handleSetWagerClosed(MessageCreateEvent event, String args, boolean isClosed) {
-        String response = "";
-        try {
-            int id = Integer.parseInt(args.trim());
-            if (id < 0) {
-                response = "Wager id must not be negative";
-            } else {
-                response = Wagers.setClosed(event.getMessageAuthor().getId(), id, isClosed);
-            }
-        } catch (NumberFormatException e) {
-            response = "Unable to parse argument \"" + args + "\". Sample usage: `+closewager 22` or `+openwager 22`";
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handlePayoutWager(MessageCreateEvent event, String args) {
-        String[] splitArgs = args.trim().split(" ");
-        String response = "";
-        if (splitArgs.length < 2) {
-            response = "Not enough arguments provided. Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 22 3`";
-        } else {
-            boolean secondArg = false;
-            try {
-                int id = Integer.parseInt(splitArgs[0]);
-                secondArg = true;
-                int correct = Integer.parseInt(splitArgs[1]);
-                if (id < 0) {
-                    response = "Wager id must not be negative";
-                } else if (correct < 0 || correct > 10) {
-                    response = "Correct response must be between 1 and 10";
-                } else {
-                    response = Wagers.payoutWager(event.getMessageAuthor().getId(), id, correct);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse argument " + (secondArg ? "2" : "1")
-                    + " \"" + splitArgs[(secondArg ? 1 : 0)]
-                    + "\". Sample usage: `+payoutwager <wager id> <correct option>` `+payoutwager 22 3`";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handlePlaceBet(MessageCreateEvent event, String args) {
-        String[] splitArgs = args.trim().split(" ");
-        String response = "";
-        if (splitArgs.length < 3) {
-            response = "Not enough arguments provided. Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 22 3`";
-        } else {
-            int current = 0;
-            try {
-                long amount = Long.parseLong(splitArgs[current++]);
-                int id = Integer.parseInt(splitArgs[current++]);
-                int option = Integer.parseInt(splitArgs[current++]);
-                if (id < 0) {
-                    response = "Wager id must not be negative";
-                } else if (option < 0 || option > 10) {
-                    response = "Correct response must be between 1 and 10";
-                } else {
-                    response = Wagers.placeBet(event.getMessageAuthor().getId(), id, option, amount);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse arguments \"" + args + "\". Sample usage: `+bet <amount> <wager id> <option>` `+bet 100 22 3`";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleWagerInfo(MessageCreateEvent event, String args) {
-        String response = "";
-        if (args.trim().isEmpty()) {
-            response = "Not enough arguments provided. Sample usage `+wagerinfo <id>` `+wagerinfo 22`";
-        } else {
-            try {
-                int id = Integer.parseInt(args.trim());
-                if (id < 0) {
-                    response = "Wager id must not be negative";
-                } else {
-                    response = Wagers.getWagerInfo(id);
-                }
-            } catch (NumberFormatException e) {
-                response = "Unable to parse argument \"" + args + "\". Sample usage: `+wagerinfo <id>` `+wagerinfo 22`";
-            }
-        }
-        event.getChannel().sendMessage(response);
-    }
-    
-    public static void handleOpenWagers(MessageCreateEvent event, String args) {
-        event.getChannel().sendMessage(Wagers.openWagers());
     }
 }
