@@ -603,7 +603,7 @@ public class Casino {
                 }
                 break;
             }
-            responseSteps.add(new String(output + Collections.nCopies(2 - i, placeholder)));
+            responseSteps.add(new String(output + repeatString(placeholder, 2 - i)));
         }
         output += "\n";
         if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
