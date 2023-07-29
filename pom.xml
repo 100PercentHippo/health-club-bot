@@ -38,13 +38,13 @@
         <dependency>
             <groupId>org.javacord</groupId>
             <artifactId>javacord</artifactId>
-            <version>3.7.0</version>
+            <version>3.8.0</version>
             <type>pom</type>
         </dependency>
 		<dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.3.8</version>
+            <version>42.6.0</version>
         </dependency>
     </dependencies>
 
