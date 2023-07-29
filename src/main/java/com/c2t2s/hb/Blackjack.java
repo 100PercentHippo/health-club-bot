@@ -198,14 +198,12 @@ public class Blackjack {
     public static long blackjackBust(long uid, long amount) {
         Casino.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
             + uid + ";");
-        Casino.reportLosses(amount);
         return Casino.checkBalance(uid);
     }
 
     public static long blackjackLoss(long uid, long amount) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
             + uid +";");
-        Casino.reportLosses(amount);
         return Casino.checkBalance(uid);
     }
 

@@ -439,14 +439,17 @@ public class Casino {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
         Random random = new Random();
-        long pot = moneyMachine.getBalance() + amount + getPot();
+        long pot = moneyMachine.getBalance() + amount;
         double winChance = 0.25;
         if (pot < 20000) {
             winChance = 0.05 + (0.2 * (pot / 20000));
         }
         if (random.nextDouble() < winChance && (amount >= 100 || random.nextInt(100) < amount)) { // Win
+        	long winnings = (long)(pot * 0.75);
+        	long newPot = pot - winnings;
             return "The money machine is satisfied! :dollar: You win "
-                + pot + "! Your new balance is " + moneyMachineWin(uid, pot - amount);
+                + winnings + "! Your new balance is " + moneyMachineWin(uid, winnings, newPot)
+                + ". The pot is now " + newPot + ".";
         } else { // Lose
             return "Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
                 + moneyMachineLoss(uid, amount);
@@ -454,7 +457,11 @@ public class Casino {
     }
 
     public static String handlePot() {
-        return "The current pot is " + (checkBalance(MONEY_MACHINE_UID) + getPot());
+    	User moneyMachine = getUser(MONEY_MACHINE_UID);
+        if (moneyMachine == null) {
+            return "A database error occurred. The money machine is nowhere to be found.";
+        }
+        return "The current pot is " + moneyMachine.getBalance();
     }
 
 // Slots Payout:
@@ -849,15 +856,8 @@ public class Casino {
     }
 
     public static long takeLosses(long uid, long amount) {
-        executeUpdate("UPDATE overunder_user SET winnings = winnings + "
-                + amount + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         return executeBalanceQuery("UPDATE money_user SET balance = balance - "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
-    }
-
-    public static void reportLosses(long amount) {
-        executeUpdate("UPDATE overunder_user SET winnings = winnings + "
-                + amount + " WHERE uid = " + MONEY_MACHINE_UID + ";");
     }
 
     public static long addMoneyDirect(long uid, long amount) {
@@ -870,8 +870,6 @@ public class Casino {
     }
 
     public static long addWinnings(long uid, long amount, long profit) {
-        executeUpdate("UPDATE overunder_user SET winnings = winnings - "
-            + profit + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         return executeBalanceQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
@@ -1109,13 +1107,12 @@ public class Casino {
         return balance;
     }
 
-    private static long moneyMachineWin(long uid, long winnings) {
+    private static long moneyMachineWin(long uid, long winnings, long newPot) {
         long balance = addMoneyDirect(uid, winnings);
-        executeUpdate("UPDATE money_user SET balance = 0 WHERE uid = " + MONEY_MACHINE_UID + ";");
+        executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         setTimer2Time(uid, "1 minute");
         executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
             + winnings + ") WHERE uid = " + uid + ";");
-        executeUpdate("UPDATE overunder_user SET winnings = 0 WHERE uid = " + MONEY_MACHINE_UID + " AND winnings > 0;");
         return balance;
     }
 
@@ -1125,14 +1122,6 @@ public class Casino {
         setTimer2Time(uid, "1 minute");
         executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";");
-        return balance;
-    }
-
-    private static long getPot() {
-        long balance = 0;
-        long overunderBalance = executeBalanceQuery("SELECT winnings FROM overunder_user WHERE uid = " + MONEY_MACHINE_UID + ";");
-        overunderBalance /= 20;
-        balance += (overunderBalance > 0 ? overunderBalance : 0);
         return balance;
     }
 
@@ -1150,7 +1139,6 @@ public class Casino {
     public static void logOverUnderLoss(long uid, long bet) {
         executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
             + uid + ";");
-        reportLosses(bet);
     }
 
     public static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
