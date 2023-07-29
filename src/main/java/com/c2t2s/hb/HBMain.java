@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.0.1"; //Update this in pom.xml too
+    private static final String version = "3.0.2"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -282,8 +282,14 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "3.0.0"
-        	+ "\n\t- Bot is back (again)!";
+        return "3.0.2"
+        	+ "\n\tCorrects wager limits for blackjack and overunder"
+        	+ "\n\tRemoves automatic contributions to the money machine from casino net profits"
+        	+ "\n\tMoney machine now instead retains 25% of the pot when paying out"
+        	+ "3.0.1"
+        	+ "\n\t`\feed` is once again working"
+        	+ "3.0.0"
+        	+ "\n\tBot is back (again)!";
     }
 
     //TODO: Handle negative modifiers in dice rolls
