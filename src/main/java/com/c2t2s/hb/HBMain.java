@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.0.0"; //Update this in pom.xml too
+    private static final String version = "3.0.1"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -72,7 +72,7 @@ public class HBMain {
                     break;
                 case "feed":
                     interaction.createImmediateResponder().setContent(
-                        Casino.handleFeed(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).get()));
+                        Casino.handleFeed(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).get())).respond();
                     break;
                 case "work":
                     interaction.createImmediateResponder().setContent(Casino.handleWork(interaction.getUser().getId())).respond();
@@ -277,8 +277,8 @@ public class HBMain {
             + "\n\t`/overunder` Multiple rounds of predicting if the next number is over or under"
             + "\n\t\tStart a new game with `new`"
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
-            + "\n\t`blackjack` Play a hand of blackjack"
-            + "\n\t\tStart a game with `new`, play with `hit` and `stand`";
+            + "\n\t`/blackjack` Play a hand of blackjack"
+            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`";
     }
 
     private static String getChangelog() {

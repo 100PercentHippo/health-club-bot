@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Collections;
 
 public class Casino {
 
@@ -90,6 +89,15 @@ public class Casino {
             + ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
             + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
             + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
+    }
+    
+    // Emulates String.repeat() but for versions before Java 11
+    private static String repeatString(String phrase, int times) {
+    	String output = "";
+    	for (int i = times; i > 0; --i) {
+    		output += phrase;
+    	}
+    	return output;
     }
 
 // Payout:
@@ -475,7 +483,7 @@ public class Casino {
         int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
         String output = "Bid " + amount + " on slots\n", placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(new String(output + Collections.nCopies(5, placeholder)));
+        responseSteps.add(new String(output + repeatString(placeholder, 5)));
         for (int i = 0; i < 5; ++i) {
             switch (random.nextInt(5)) {
                 case 0:
@@ -504,7 +512,7 @@ public class Casino {
                     }
                     break;
             }
-            responseSteps.add(new String(output + Collections.nCopies(4 - i, placeholder)));
+            responseSteps.add(new String(output + repeatString(placeholder, 4 - i)));
         }
         output += "\n";
         int win_condition = 0;
@@ -566,7 +574,7 @@ public class Casino {
         int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
         String output = "Bid " + amount + " on mini slots\n", placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(new String(output + Collections.nCopies(3, placeholder)));
+        responseSteps.add(new String(output + repeatString(placeholder, 3)));
         for (int i = 0; i < 3; i++) {
             switch (random.nextInt(5)) {
             case 0:
@@ -690,7 +698,8 @@ public class Casino {
     public static String handleBalance(long uid) {
         long balance = checkBalance(uid);
         if (balance < 0) {
-            return "There was an issue checking your balance, value returned was " + balance;
+            return "There was an issue checking your balance, value returned was " + balance
+            		+ "\nIf you're new, use `/claim` to get set up with an initial balance.";
         } else {
             return "Your current balance is " + balance + " coin" + (balance == 1 ? "" : "s") + ".";
         }
@@ -723,6 +732,9 @@ public class Casino {
     }
 
     public static String handleLeaderboard(long entries) {
+    	if (entries > 10) {
+    		entries = 10;
+    	}
         return parseLeaderboard(entries);
     }
 
