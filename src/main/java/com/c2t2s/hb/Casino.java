@@ -92,7 +92,7 @@ public class Casino {
     }
     
     // Emulates String.repeat() but for versions before Java 11
-    private static String repeatString(String phrase, int times) {
+    public static String repeatString(String phrase, int times) {
     	String output = "";
     	for (int i = times; i > 0; --i) {
     		output += phrase;
@@ -749,7 +749,7 @@ public class Casino {
 
     //////////////////////////////////////////////////////////
 
-    public static Connection getConnection() throws URISyntaxException, SQLException {
+    protected static Connection getConnection() throws URISyntaxException, SQLException {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
             System.getenv("JDBC_USERNAME"), System.getenv("JDBC_PASSWORD"));
     }
@@ -900,6 +900,7 @@ public class Casino {
         String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+        String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         //String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         Connection connection = null;
         Statement statement = null;
@@ -1216,6 +1217,8 @@ public class Casino {
         }
     }
 
+    // TODO: Migrate the queries that return a value to be generic
+    // and accept a lambda to run on the ResultSet
     private static long executeBalanceQuery(String query) {
         Connection connection = null;
         Statement statement = null;
@@ -1250,6 +1253,110 @@ public class Casino {
             }
         }
         return balance;
+    }
+
+    protected static int executeIntQuery(String query) {
+        Connection connection = null;
+        Statement statement = null;
+        int result = 0;
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            if (results.next()) {
+                result = results.getInt(1);
+            } else {
+                result = -1;
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+
+    protected static Timestamp executeTimestampQuery(String query) {
+        Connection connection = null;
+        Statement statement = null;
+        Timestamp result = new Timestamp(0);
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            if (results.next()) {
+                result = results.getTimestamp(1);
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+    
+    protected static List<Long> executeListQuery(String query) {
+        Connection connection = null;
+        Statement statement = null;
+        List<Long> resultList = new ArrayList<>();
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(query);
+            while (results.next()) {
+            	resultList.add(results.getLong(1));
+            }
+            statement.close();
+            connection.close();
+        } catch (URISyntaxException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return resultList;
     }
 
 }

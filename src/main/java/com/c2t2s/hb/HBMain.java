@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.0.2"; //Update this in pom.xml too
+    private static final String version = "3.1.0"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -143,6 +143,10 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Blackjack.handleStand(interaction.getUser().getId())).respond();
                     break;
+                case "pull":
+                	makeMultiStepResponse(
+                			Gacha.handleGachaPull(interaction.getUser().getId(), false), 1000, interaction);
+                	break;
             }
         });
         api.addMessageComponentCreateListener(event -> {
@@ -246,6 +250,8 @@ public class HBMain {
         //     Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
         //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
         //     .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pull", "Try to win a gacha character!")
+        //      .setEnabledInDms(false).createGlobal(api).join();
         // TODO: Update leaderboard/richest's argument to be optional
         // TODO: Create /blackjack and /overunder as aliases to start new games
         System.out.println("Command registration complete");
@@ -278,11 +284,14 @@ public class HBMain {
             + "\n\t\tStart a new game with `new`"
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
-            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`";
+            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
+            + "\n\t`/pull` Pull for Gacha characters!";
     }
 
     private static String getChangelog() {
-        return "3.0.2"
+        return "3.1.0"
+        	+ "\n\tAdds `/pull` to test the gacha system"
+        	+ "\n3.0.2"
         	+ "\n\tCorrects wager limits for blackjack and overunder"
         	+ "\n\tRemoves automatic contributions to the money machine from casino net profits"
         	+ "\n\tMoney machine now instead retains 25% of the pot when paying out"
