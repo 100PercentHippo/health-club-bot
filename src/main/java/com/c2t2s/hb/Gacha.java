@@ -506,8 +506,8 @@ public class Gacha {
             ResultSet results = statement.executeQuery(query);
             if (results.next()) {
             	character = new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
-            			results.getString(4), results.getInt(4), results.getInt(5), results.getInt(6),
-            			results.getString(7), results.getString(8));
+            			results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
+            			results.getString(8), results.getString(9));
             }
             statement.close();
             connection.close();
