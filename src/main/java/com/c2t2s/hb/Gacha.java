@@ -98,7 +98,7 @@ public class Gacha {
     	
     	public String toAbbreviatedString() {
     		return getDisplayName() + (duplicates > 0 ? " x" + duplicates : "")
-    				+ "(" + rarity + " Star " + type + ") - Level " + level
+    				+ " (" + rarity + " Star " + type + ") - Level " + level
     				+ (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
     				+ " - +" + getBuffPercent() + "% Bonus";
     	}
@@ -291,8 +291,8 @@ public class Gacha {
     }
     
     private static String awardCharacter(long uid, long cid, boolean shiny, boolean from_banner, boolean is_banner_flop) {
-    	int duplicates = checkCharacterDuplicates(uid, cid);
-    	if (duplicates == 0) {
+    	int duplicates = checkCharacterDuplicates(uid, cid, shiny);
+    	if (duplicates < 0) {
     		awardNewCharacter(uid, cid, shiny);
     	} else if (duplicates < MAX_CHARACTER_DUPLICATES) {
     		awardCharacterDuplicate(uid, cid, shiny);
@@ -609,12 +609,12 @@ public class Gacha {
     			+ rarity + " AND enabled = TRUE;");
     }
     
-    private static int checkCharacterDuplicates(long uid, long cid) {
+    private static int checkCharacterDuplicates(long uid, long cid, boolean shiny) {
     	int isOwned = Casino.executeIntQuery("SELECT COUNT(uid) FROM gacha_user_character WHERE uid = "
-    			+ uid + " AND cid = " + cid + ";");
+    			+ uid + " AND cid = " + cid + "AND foil = " + (shiny ? 1 : 0) + ";");
     	// Shouldn't ever be negative, but doesn't hurt to catch it
     	if (isOwned <= 0) {
-    		return 0;
+    		return -1;
     	} else {
     		return Casino.executeIntQuery("SELECT duplicates FROM gacha_user_character WHERE uid = "
     				+ uid + " AND cid = " + cid + ";");
