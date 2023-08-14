@@ -122,31 +122,34 @@ public class Casino {
                 return "You are still tired. Try again in " + formatTime(remainingTime);
             }
         }
+        String bonus = Events.checkRobBonus(uid, "`/work`");
+        String output = "";
         Random random = new Random();
         int roll = random.nextInt(100);
         if (roll < 25) {
             if (user.getMorality() > 5 && random.nextInt(2) == 0) {
-                return ":scientist: You use your connections and work in The Lab for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
+                output = ":scientist: You use your connections and work in The Lab for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
             } else {
-                return ":mechanic: You work as a mechanic for 2 hours and make 150 coins. Your new balance is " + logWork(uid, 150);
+            	output = ":mechanic: You work as a mechanic for 2 hours and make 150 coins. Your new balance is " + logWork(uid, 150);
             }
         } else if (roll < 50) {
             if (user.getMorality() > 5 && random.nextInt(2) == 0) {
-                return ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
+            	output = ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
             } else {
-                return ":farmer: You work hard in a field for 2 hours and make 150 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 150);
+            	output = ":farmer: You work hard in a field for 2 hours and make 150 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 150);
             }
         } else if (roll < 70) {
-            return ":cook: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
+        	output = ":cook: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
         } else if (roll < 75) {
-            return ":detective: You work as a detective trying to find a missing satellite. You're unable to find it after 2 hours, but are still paid 200 coins. Your new balance is " + logWork(uid, 200);
+        	output = ":detective: You work as a detective trying to find a missing satellite. You're unable to find it after 2 hours, but are still paid 200 coins. Your new balance is " + logWork(uid, 200);
         } else if (roll < 80) {
-            return ":drum: You play your drum in the local park. People smile as they pass by, and you make a total of 250 coins in tips! Your new balance is " + logWork(uid, 250);
+        	output = ":drum: You play your drum in the local park. People smile as they pass by, and you make a total of 250 coins in tips! Your new balance is " + logWork(uid, 250);
         } else if (roll < 85) {
-            return ":potable_water: You win an internet contest and get to work a job job for 250 coins. `LET` `IT` `RIP` `!` `!` `!` Your new balance is " + logWork(uid, 250);
+        	output = ":potable_water: You win an internet contest and get to work a job job for 250 coins. `LET` `IT` `RIP` `!` `!` `!` Your new balance is " + logWork(uid, 250);
         } else {
-            return ":artist: You make an artistic masterpiece and sell it for 250 coins! Your new balance is " + logWork(uid, 250);
+        	output = ":artist: You make an artistic masterpiece and sell it for 250 coins! Your new balance is " + logWork(uid, 250);
         }
+        return output + bonus;
     }
 
 // Payout:
@@ -169,33 +172,36 @@ public class Casino {
                 return "You are still tired. Try again in " + formatTime(remainingTime);
             }
         }
+        String bonus = Events.checkPickBonus(uid, "`/fish`");
+        String output = "";
         Random random = new Random();
         int roll = random.nextInt(100);
         if (roll < 80) {
             int fish = (random.nextInt(3) + 4);
-            return ":fish: You fish for 30 minutes and catch " + fish
+            output = ":fish: You fish for 30 minutes and catch " + fish
                 + " fish. You sell them for " + (fish * 10) + " coins. Your new balance is "
                 + logFish(uid, false, fish * 10);
         } else if (roll < 85) {
-            return ":satellite_orbital: You fish up a satellite??? You're not sure how it got there, but you turn it into The Lab, and they pay you 75 coins. Your new balance is "
+        	output = ":satellite_orbital: You fish up a satellite??? You're not sure how it got there, but you turn it into The Lab, and they pay you 75 coins. Your new balance is "
                 + logFish(uid, false, 75);
         } else if (roll < 90) {
-            return ":blowfish: You fish up a pufferfish! You feed it a carrot and it thanks you with 75 coins. Your new balance is "
-//          return ":octopus: You fish up an octopus, and cook it into delicious sushi worth 75 coins. Your new balance is "
+        	output = ":blowfish: You fish up a pufferfish! You feed it a carrot and it thanks you with 75 coins. Your new balance is "
+//          output = ":octopus: You fish up an octopus, and cook it into delicious sushi worth 75 coins. Your new balance is "
                 + logFish(uid, false, 75);
         } else if (roll < 95) {
-            return ":crocodile: You fish up a baby crocodile! You take it back to someone who may know about it and they exchange it for 100 coins of grey items and some fishing hooks. Your new balance is "
-//          return ":crab: You fish up crab. It pays you 100 coins to let it return to its dance party. Your new balance is "
+        	output = ":crocodile: You fish up a baby crocodile! You take it back to someone who may know about it and they exchange it for 100 coins of grey items and some fishing hooks. Your new balance is "
+//          output = ":crab: You fish up crab. It pays you 100 coins to let it return to its dance party. Your new balance is "
                 + logFish(uid, false, 100);
         } else {
             if (user.getMorality() > 5) {
-                return ":ring: You fish up a ring. Since you're a good person you return it to its rightful owner and are rewarded with 400 coins! Your new balance is "
+            	output = ":ring: You fish up a ring. Since you're a good person you return it to its rightful owner and are rewarded with 400 coins! Your new balance is "
                     + logFish(uid, true, 400);
             } else {
-                return ":ring: You fish up a ring, and sell it for 250 coins! Your new balance is "
+            	output = ":ring: You fish up a ring, and sell it for 250 coins! Your new balance is "
                     + logFish(uid, true, 250);
             }
         }
+        return output + bonus;
     }
 
 // Payout:
@@ -220,42 +226,45 @@ public class Casino {
                 return "You are still tired. Try again in " + formatTime(remainingTime);
             }
         }
+        String bonus = Events.checkRobBonus(uid, "`/rob`");
+        String output = "";
         Random random = new Random();
         if (random.nextInt(2) == 0) {
             robFailed(uid);
-            return "You were caught! You are dragged off to jail for 2 hours.";
+            output = "You were caught! You are dragged off to jail for 2 hours.";
         }
         int roll = random.nextInt(100);
         if (roll < 5) {
             if (user.getMorality() < -10) {
-                return ":slot_machine: You use your criminal knowledge and rob the slot machine of 400 coins! Your new balance is "
+            	output = ":slot_machine: You use your criminal knowledge and rob the slot machine of 400 coins! Your new balance is "
                     + logRob(uid, true, 400) + "\nWait! Get away from that!";
             } else if (user.getBalance() > 10) {
-                return ":book: You rob The Bank! Wait, that's not The Bank, that's The Library. You pay the late fee of 10 coins for your overdue books and leave before the cops arrive. Your new balance is "
+            	output = ":book: You rob The Bank! Wait, that's not The Bank, that's The Library. You pay the late fee of 10 coins for your overdue books and leave before the cops arrive. Your new balance is "
                     + logRob(uid, false, -10);
             } else {
                 logRob(uid, false, 0);
-                return ":book: You rob The Bank! Wait, that's not The Bank, that's The Library. You quickly leave before the cops arrive.";
+                output = ":book: You rob The Bank! Wait, that's not The Bank, that's The Library. You quickly leave before the cops arrive.";
             }
         } else if (roll < 15) {
             logRob(uid, false, 0);
-            return ":motorway: You attempt a highway robbery, but your horse and six shooter are no match for modern automobiles.";
+            output = ":motorway: You attempt a highway robbery, but your horse and six shooter are no match for modern automobiles.";
         } else if (roll < 25) {
-            return ":house_abandoned: You rob a house, but find it empty and abandoned. Except for 5 coins and a dead rat. Though is it still a rat if it is dead? You pick up the 5 coins and leave pondering the question. Your new balance is "
+        	output = ":house_abandoned: You rob a house, but find it empty and abandoned. Except for 5 coins and a dead rat. Though is it still a rat if it is dead? You pick up the 5 coins and leave pondering the question. Your new balance is "
                 + logRob(uid, false, 5);
         } else if (roll < 50) {
-            return ":house: You rob a rich looking house and get away with 200 coins. Your new balance is "
+        	output = ":house: You rob a rich looking house and get away with 200 coins. Your new balance is "
                 + logRob(uid, false, 200);
         } else if (roll < 75) {
-            return ":convenience_store: You rob a convenience store and grab 300 coins from the register! Your new balance is "
+        	output = ":convenience_store: You rob a convenience store and grab 300 coins from the register! Your new balance is "
                 + logRob(uid, true, 300);
         } else if (roll < 80) {
-            return ":full_moon: With the help of some funny friends in overalls you steal THE MOON. The UN pays you 350 coins in ransom. Your new balance is "
+        	output = ":full_moon: With the help of some funny friends in overalls you steal THE MOON. The UN pays you 350 coins in ransom. Your new balance is "
                 + logRob(uid, true, 350);
         } else {
-            return ":bank: You rob The Bank and grab 350 coins worth of diamonds! Your new balance is "
+        	output = ":bank: You rob The Bank and grab 350 coins worth of diamonds! Your new balance is "
                 + logRob(uid, true, 350);
         }
+        return output + bonus;
     }
 
 // Payout:
@@ -280,41 +289,44 @@ public class Casino {
                 return "You are still tired. Try again in " + formatTime(remainingTime);
             }
         }
+        String bonus = Events.checkPickBonus(uid, "`/pickpocket`");
+        String output = "";
         Random random = new Random();
         if (random.nextInt(2) == 0) {
             pickFailed(uid);
-            return "You were caught! You are dragged off to jail for 30 minutes.";
+            output = "You were caught! You are dragged off to jail for 30 minutes.";
         }
         int roll = random.nextInt(100);
         if (roll < 10) {
             logPick(uid, false, 0);
-            return ":paperclip: You steal a paperclip, which you use to bundle together your wanted posters you took down.";
+            output = ":paperclip: You steal a paperclip, which you use to bundle together your wanted posters you took down.";
         } else if (roll < 15) {
             if (user.getMorality() < -10) {
-                return ":lungs: You pickpocket a pair of lungs. Using your criminal connections you find a buyer who pays 150 coins. Your new balance is "
+            	output = ":lungs: You pickpocket a pair of lungs. Using your criminal connections you find a buyer who pays 150 coins. Your new balance is "
                     + logPick(uid, true, 150);
             } else {
                 logPick(uid, false, 0);
-                return ":lungs: You pickpocket a pair of lungs???? This was supposed to be a petty theft! You drop them on the ground and quickly run away.";
+                output = ":lungs: You pickpocket a pair of lungs???? This was supposed to be a petty theft! You drop them on the ground and quickly run away.";
             }
         } else if (roll < 20) {
             logPick(uid, false, 0);
-            return ":satellite_orbital: You pickpocket an orbital satellite???? Unsure what to do with it you ditch it in a nearby lake.";
+            output = ":satellite_orbital: You pickpocket an orbital satellite???? Unsure what to do with it you ditch it in a nearby lake.";
         } else if (roll < 70) {
             int haul = 50 + (random.nextInt(3) * 20);
-            return ":moneybag: You successfully pickpocket " + haul + " coins. Your new balance is "
+            output = ":moneybag: You successfully pickpocket " + haul + " coins. Your new balance is "
                 + logPick(uid, false, haul);
         } else if (roll < 85) {
-            return ":computer: You pickpocket a laptop computer! You sell it for 100 coins, and your new balance is "
+        	output = ":computer: You pickpocket a laptop computer! You sell it for 100 coins, and your new balance is "
                 + logPick(uid, false, 100);
         } else if (roll < 95) {
-//            return ":medal: You pickpocket a medal of pure gold! You sell it for 125 coins, and your new balance is "
-            return ":credit_card: You pickpocket mom's credit card! You note down the 3 wacky numbers on the back and purchase 125 coins. Your new balance is "
+//          output = ":medal: You pickpocket a medal of pure gold! You sell it for 125 coins, and your new balance is "
+        	output = ":credit_card: You pickpocket mom's credit card! You note down the 3 wacky numbers on the back and purchase 125 coins. Your new balance is "
                 + logPick(uid, false, 125);
         } else {
-            return ":gem: You grab a large diamond worth 250 coins!! Your new balance is "
+        	output = ":gem: You grab a large diamond worth 250 coins!! Your new balance is "
                 + logPick(uid, true, 250);
         }
+        return output + bonus;
     }
 
     public static String handleClaim(long uid, String name) {

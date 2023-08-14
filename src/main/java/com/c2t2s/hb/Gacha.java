@@ -173,7 +173,9 @@ public class Gacha {
     			return response;
     		}
     		if (eventUser.robs_today > 0 && eventUser.picks_today > 0 /* && eventUser.events_today >= MAX_DAILY_EVENT_PULLS */) {
-    			response.add("No pulls to spend. Return tomorrow to get more!");
+    			long timeRemaining = Events.DAILY_RESET_MS - (System.currentTimeMillis() - eventUser.reset.getTime());
+    			if (timeRemaining < 1000) { timeRemaining = 1000; }
+    			response.add("No pulls to spend. Return in " + Casino.formatTime(timeRemaining) + " to get more!");
     			return response;
     		}
     		String output = "No pulls to spend. You can still earn pulls today through the following means:";

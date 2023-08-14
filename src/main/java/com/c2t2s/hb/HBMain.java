@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.1.0"; //Update this in pom.xml too
+    private static final String version = "3.1.1"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -297,7 +297,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "3.1.0"
+        return  "3.1.1"
+        	+ "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
+        	+ "\n3.1.0"
         	+ "\n\tAdds `/pull` to test the gacha system"
         	+ "\n3.0.2"
         	+ "\n\tCorrects wager limits for blackjack and overunder"

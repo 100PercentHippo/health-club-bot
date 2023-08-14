@@ -15,7 +15,7 @@ public class Events {
     	public Timestamp reset;
     	
     	public EventUser(long uid, int events, int robs, int picks, Timestamp reset) {
-    		if (System.currentTimeMillis() - reset.getTime() > 24 * 60 * 60 * 1000) {
+    		if (System.currentTimeMillis() - reset.getTime() > DAILY_RESET_MS) {
     			this.reset = resetEventUserDailyLimits(uid);
     		}
     		this.events_today = events;
@@ -26,6 +26,7 @@ public class Events {
     }
 	
 	private static final int MAX_DAILY_EVENT_PULLS = 3;
+	protected static final int DAILY_RESET_MS = 22 * 60 * 60 * 1000;
 
 	public static String checkRobBonus(long uid, String command) {
     	EventUser user = getEventUser(uid);
@@ -39,7 +40,8 @@ public class Events {
     	
     	long pulls = awardRobBonus(uid);
     	
-    	return "\nFirst " + command + " of the day: Received 1 Gotcha pull. You now have " + pulls + " pulls";
+    	return "\nFirst " + command + " of the day: Received 2 Gacha pulls. You now have "
+    		+ pulls + " pull" + (pulls != 1 ? "s" : "");
     }
 
     public static String checkPickBonus(long uid, String command) {
@@ -54,7 +56,8 @@ public class Events {
     	
     	long pulls = awardPickBonus(uid);
     	
-    	return "\nFirst " + command + " of the day: Received 1 Gotcha pull. You now have " + pulls + " pulls";
+    	return "\nFirst " + command + " of the day: Received 2 Gacha pulls. You now have "
+    		+ pulls + " pull" + (pulls != 1 ? "s" : "");
     }
     
     //////////////////////////////////////////////////////////
@@ -129,12 +132,12 @@ public class Events {
 
     public static long awardRobBonus(long uid) {
     	Casino.executeUpdate("UPDATE event_user SET (robs_today) = (robs_today + 1) WHERE uid = " + uid + ";");
-    	return addPulls(uid, 1);
+    	return addPulls(uid, 2);
     }
     
     public static long awardPickBonus(long uid) {
     	Casino.executeUpdate("UPDATE event_user SET (picks_today) = (picks_today + 1) WHERE uid = " + uid + ";");
-    	return addPulls(uid, 1);
+    	return addPulls(uid, 2);
     }
 
     private static int addPulls(long uid, int amount) {
