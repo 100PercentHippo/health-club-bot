@@ -14,14 +14,14 @@ public class Events {
     	public int picks_today;
     	public Timestamp reset;
     	
-    	public EventUser(long uid, int events, int robs, int picks, Timestamp reset) {
-    		if (System.currentTimeMillis() - reset.getTime() > DAILY_RESET_MS) {
+    	public EventUser(long uid, int robs, int picks, int events, Timestamp lastReset) {
+    		if (System.currentTimeMillis() - lastReset.getTime() > DAILY_RESET_MS) {
     			this.reset = resetEventUserDailyLimits(uid);
     		}
     		this.events_today = events;
     		this.robs_today = robs;
     		this.picks_today = picks;
-    		this.reset = reset;
+    		this.reset = lastReset;
     	}
     }
 	
