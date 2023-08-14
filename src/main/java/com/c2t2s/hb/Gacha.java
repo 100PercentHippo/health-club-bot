@@ -69,9 +69,10 @@ public class Gacha {
     	public int duplicates;
     	public String description;
     	public String picture_url;
+    	public String shiny_url;
     	
     	public GachaCharacter(String name, int rarity, int foil, String type, int level,
-    			int xp, int duplicates, String description, String picture_url) {
+    			int xp, int duplicates, String description, String picture_url, String shiny_url) {
     		this.name = name;
     		this.rarity = rarity;
     		this.foil = foil;
@@ -81,6 +82,7 @@ public class Gacha {
     		this.duplicates = duplicates;
     		this.description = description;
     		this.picture_url = picture_url;
+    		this.shiny_url = shiny_url;
     		
     		if (duplicates > MAX_CHARACTER_DUPLICATES) {
     			duplicates = MAX_CHARACTER_DUPLICATES;
@@ -107,7 +109,7 @@ public class Gacha {
     				+ "\n\tLevel " + level + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
     				+ "\n\t+" + getBuffPercent() + "% Bonus"
     				+ "\n" + (description.isEmpty() ? "" : description)
-    				+ "\n" + picture_url;
+    				+ "\n" + (foil == 1 ? shiny_url : picture_url);
     	}
     	
     	public String generateAwardText() {
@@ -126,7 +128,7 @@ public class Gacha {
     				+ "\n" + rarity + " Star " + type
     				+ duplicateString
     				+ "\n" + description
-    				+ "\n" + picture_url;
+    				+ "\n" + (foil == 1 ? shiny_url : picture_url);
     	}
     	
     	public int getXpToLevel() {
@@ -159,17 +161,21 @@ public class Gacha {
 
     public static List<String> handleGachaPull(long uid, boolean on_banner) {
     	GachaUser user = getGachaUser(uid);
+    	List<String> response = new ArrayList<>();
     	if (user == null) {
-    		return Arrays.asList("Unable to fetch user. If you are new run `/claim` to start");
+    		response.add("Unable to fetch user. If you are new run `/claim` to start");
+    		return response;
     	}
     	
     	if (user.pulls < 1) {
     		Events.EventUser eventUser = Events.getEventUser(uid);
     		if (eventUser == null) {
-    			return Arrays.asList("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
+    			response.add("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
+    			return response;
     		}
     		if (eventUser.robs_today > 0 && eventUser.picks_today > 0 /* && eventUser.events_today >= MAX_DAILY_EVENT_PULLS */) {
-    			return Arrays.asList("No pulls to spend. Return tomorrow to get more!");
+    			response.add("No pulls to spend. Return tomorrow to get more!");
+    			return response;
     		}
     		String output = "No pulls to spend. You can still earn pulls today through the following means:";
     		if (eventUser.robs_today < 1) {
@@ -183,7 +189,8 @@ public class Gacha {
     		//if (remaining_events > 0) {
     		//	output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
     		//}
-    		return Arrays.asList(output);
+    		response.add(output);
+    		return response;
     	}
 
     	String result = "";
@@ -298,7 +305,7 @@ public class Gacha {
     }
     
     private static List<String> createThreeStarAnimation(String result) {
-    	List<String> frames = new ArrayList<String>(baseAnimation());
+    	List<String> frames = baseAnimation();
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
     	frames.add(":black_large_square::star::star::star::black_large_square:");
@@ -313,7 +320,7 @@ public class Gacha {
     }
     
     private static List<String> createTwoStarAnimation(String result) {
-    	List<String> frames = new ArrayList<String>(baseAnimation());
+    	List<String> frames = baseAnimation();
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
     	frames.add(":black_large_square::star2::black_large_square::star2::black_large_square:");
@@ -325,7 +332,7 @@ public class Gacha {
     }
     
     private static List<String> createOneStarAnimation(String result) {
-    	List<String> frames = new ArrayList<String>(baseAnimation());
+    	List<String> frames = baseAnimation();
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_medium_small_square::black_medium_small_square::star::black_medium_small_square::black_medium_small_square:");
     	frames.add(":black_small_square::black_small_square::star::black_small_square::black_small_square:");
@@ -334,7 +341,7 @@ public class Gacha {
     }
     
     private static List<String> createAnimation(String result) {
-    	List<String> frames = new ArrayList<String>(baseAnimation());
+    	List<String> frames = baseAnimation();
     	frames.add(":black_medium_small_square::black_medium_small_square::black_medium_small_square::black_medium_small_square::black_medium_small_square:");
     	frames.add(":black_small_square::black_small_square::black_small_square::black_small_square::black_small_square:");
     	frames.add(result);
@@ -342,13 +349,13 @@ public class Gacha {
     }
     
     private static List<String> baseAnimation() {
-    	return Arrays.asList(
+    	return new ArrayList<String>(Arrays.asList(
     			":sparkles::black_large_square::black_large_square::black_large_square::black_large_square:",
     			":black_large_square::sparkles::black_large_square::black_large_square::black_large_square:",
     			":black_large_square::black_large_square::sparkles::black_large_square::black_large_square:",
     			":black_large_square::black_large_square::black_large_square::sparkles::black_large_square:",
     			":black_large_square::black_large_square::black_large_square::black_large_square::sparkles:",
-    			":black_large_square::black_large_square::black_large_square::black_large_square::black_large_square:");
+    			":black_large_square::black_large_square::black_large_square::black_large_square::black_large_square:"));
     }
     
     // TODO
@@ -357,7 +364,7 @@ public class Gacha {
     	
     	// Format text
     	
-    	return Arrays.asList("");
+    	return new ArrayList<String>(Arrays.asList(""));
     }
     
     public static String handleCharacterList(long uid) {
@@ -494,7 +501,7 @@ public class Gacha {
     }
     
     private static GachaCharacter getCharacter(long uid, long cid, boolean shiny) {
-    	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url FROM "
+    	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM "
     			+ "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
     			+ " AND foil = " + (shiny ? 1 : 0) + ";";
         Connection connection = null;
@@ -507,7 +514,7 @@ public class Gacha {
             if (results.next()) {
             	character = new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
             			results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
-            			results.getString(8), results.getString(9));
+            			results.getString(8), results.getString(9), results.getString(10));
             }
             statement.close();
             connection.close();
@@ -534,8 +541,8 @@ public class Gacha {
     
     // TODO: Order by rarity
     private static List<GachaCharacter> getCharacters(long uid) {
-    	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url FROM " +
-    			"(SELECT * FROM gacha_user_character WHERE uid = " + uid + ") AS user_character NATURAL JOIN gacha_character;";
+    	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM " +
+    			"gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC;";
         Connection connection = null;
         Statement statement = null;
         List<GachaCharacter> characters = new ArrayList<GachaCharacter>();
@@ -545,8 +552,8 @@ public class Gacha {
             ResultSet results = statement.executeQuery(query);
             while (results.next()) {
             	characters.add(new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
-            			results.getString(4), results.getInt(4), results.getInt(5), results.getInt(6),
-            			results.getString(7), results.getString(8)));
+            			results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
+            			results.getString(8), results.getString(9), results.getString(10)));
             }
             statement.close();
             connection.close();

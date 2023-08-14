@@ -145,7 +145,11 @@ public class HBMain {
                     break;
                 case "pull":
                 	makeMultiStepResponse(
-                			Gacha.handleGachaPull(interaction.getUser().getId(), false), 1000, interaction);
+                		Gacha.handleGachaPull(interaction.getUser().getId(), false), 1000, interaction);
+                	break;
+                case "gacha character list":
+                	interaction.createImmediateResponder().setContent(
+                		Gacha.handleCharacterList(interaction.getUser().getId())).respond();
                 	break;
             }
         });
@@ -252,6 +256,10 @@ public class HBMain {
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pull", "Try to win a gacha character!")
         //      .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("gacha", "Ha! Gotcha!",
+        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
+        //         Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got")))))
+        //     .setEnabledInDms(false).createGlobal(api).join();
         // TODO: Update leaderboard/richest's argument to be optional
         // TODO: Create /blackjack and /overunder as aliases to start new games
         System.out.println("Command registration complete");
