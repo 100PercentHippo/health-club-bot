@@ -113,11 +113,10 @@ public class Gacha {
     	}
     	
     	public String generateAwardText() {
+    		String star = (foil == 1 ? ":star2:" : ":star:");
     		String stars = "";
-    		if (rarity == 3) {
-    			stars = ":star2::star2::star2:";
-    		} else if (rarity > 0) {
-    			stars = Casino.repeatString(":star:", rarity);
+    		if (rarity > 0) {
+    			stars = Casino.repeatString(star, rarity);
     		}
     		String duplicateString = "";
     		if (duplicates > 0) {
