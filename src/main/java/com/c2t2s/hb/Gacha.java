@@ -495,8 +495,8 @@ public class Gacha {
     
     private static GachaCharacter getCharacter(long uid, long cid, boolean shiny) {
     	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url FROM "
-    			+ "(SELECT * FROM gacha_user_character WHERE uid = " + uid + " AND cid = " + cid
-    			+ " AND foil = " + (shiny ? 1 : 0) + ") AS user_character NATURAL JOIN gacha_character;";
+    			+ "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
+    			+ " AND foil = " + (shiny ? 1 : 0) + ";";
         Connection connection = null;
         Statement statement = null;
         GachaCharacter character = null;
