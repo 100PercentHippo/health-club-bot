@@ -495,8 +495,8 @@ public class Gacha {
     
     private static GachaCharacter getCharacter(long uid, long cid, boolean shiny) {
     	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url FROM "
-    			+ "(SELECT * FROM gacha_user_characters WHERE uid = " + uid + " AND cid = " + cid
-    			+ " AND foil = " + (shiny ? 1 : 0) + ") NATURAL JOIN gacha_character;";
+    			+ "(SELECT * FROM gacha_user_character WHERE uid = " + uid + " AND cid = " + cid
+    			+ " AND foil = " + (shiny ? 1 : 0) + ") AS user_character NATURAL JOIN gacha_character;";
         Connection connection = null;
         Statement statement = null;
         GachaCharacter character = null;
@@ -535,7 +535,7 @@ public class Gacha {
     // TODO: Order by rarity
     private static List<GachaCharacter> getCharacters(long uid) {
     	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url FROM " +
-    			"(SELECT * FROM gacha_user_characters WHERE uid = " + uid + ") NATURAL JOIN gacha_character;";
+    			"(SELECT * FROM gacha_user_character WHERE uid = " + uid + ") AS user_character NATURAL JOIN gacha_character;";
         Connection connection = null;
         Statement statement = null;
         List<GachaCharacter> characters = new ArrayList<GachaCharacter>();
@@ -572,18 +572,20 @@ public class Gacha {
     }
     
     private static List<Long> getEligibleBanner3Stars(long uid, boolean shiny) {
-    	return Casino.executeListQuery("SELECT slot1 AS cid FROM gacha_banner ORDER BY timestamp DESC LIMIT 1 "
-    			+ "WHERE NOT EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = gacha_banner.cid AND duplicates >= "
-    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + ");");
+    	// SELECT cid FROM (SELECT slot1 AS cid FROM gacha_banner ORDER BY start DESC LIMIT 1) AS current WHERE NOT
+    	// EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = current.cid AND duplicates >= 5 AND foil = 0);
+    	return Casino.executeListQuery("SELECT cid FROM (SELECT slot1 AS cid FROM gacha_banner ORDER BY start DESC LIMIT 1) "
+    			+ "AS current WHERE NOT EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = current.cid AND duplicates >= "
+    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + " AND uid = " + uid + ");");
     }
     
     private static List<Long> getEligibleBanner2Stars(long uid, boolean shiny) {
-    	String first2Star = "(SELECT slot2 AS cid FROM gacha_banner ORDER BY timestamp DESC LIMIT 1 "
-    			+ "WHERE NOT EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = gacha_banner.cid AND duplicates >= "
-    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + "))";
-    	String second2Star = "(SELECT slot3 AS cid FROM gacha_banner ORDER BY timestamp DESC LIMIT 1 "
-    			+ "WHERE NOT EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = gacha_banner.cid AND duplicates >= "
-    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + "))";
+    	String first2Star = "(SELECT cid FROM (SELECT slot2 AS cid FROM gacha_banner ORDER BY start DESC LIMIT 1) "
+    			+ "AS current WHERE NOT EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = current.cid AND duplicates >= "
+    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + " AND uid = " + uid + "))";
+    	String second2Star = "(SELECT cid FROM (SELECT slot3 AS cid FROM gacha_banner ORDER BY start DESC LIMIT 1) "
+    			+ "AS current WHERE NOT EXISTS(SELECT 1 FROM gacha_user_character WHERE gacha_user_character.cid = current.cid AND duplicates >= "
+    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + " AND uid = " + uid + "))";
     	return Casino.executeListQuery(first2Star + " UNION " + second2Star + ";");
     	
     }
@@ -592,7 +594,7 @@ public class Gacha {
     	return Casino.executeListQuery("SELECT cid FROM gacha_character WHERE rarity = " + rarity
     			+ " AND enabled = TRUE AND NOT EXISTS(SELECT 1 FROM gacha_user_character "
     			+ "WHERE gacha_user_character.cid = gacha_character.cid AND duplicates >= "
-    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + ");");
+    			+ MAX_CHARACTER_DUPLICATES + " AND foil = " + (shiny ? 1 : 0) + " AND uid = " + uid + ");");
     }
     
     private static List<Long> getAllCharacters(int rarity) {
@@ -601,25 +603,25 @@ public class Gacha {
     }
     
     private static int checkCharacterDuplicates(long uid, long cid) {
-    	int isOwned = Casino.executeIntQuery("SELECT COUNT(uid) FROM gacha_user_characters WHERE uid = "
+    	int isOwned = Casino.executeIntQuery("SELECT COUNT(uid) FROM gacha_user_character WHERE uid = "
     			+ uid + " AND cid = " + cid + ";");
     	// Shouldn't ever be negative, but doesn't hurt to catch it
     	if (isOwned <= 0) {
     		return 0;
     	} else {
-    		return Casino.executeIntQuery("SELECT duplicates FROM gacha_user_characters WHERE uid = "
+    		return Casino.executeIntQuery("SELECT duplicates FROM gacha_user_character WHERE uid = "
     				+ uid + " AND cid = " + cid + ";");
     	}
     }
     
     private static void awardNewCharacter(long uid, long cid, boolean shiny) {
-    	Casino.executeUpdate("INSERT INTO gacha_user_characters(uid, cid, foil) VALUES ("
+    	Casino.executeUpdate("INSERT INTO gacha_user_character(uid, cid, foil) VALUES ("
     			+ uid + ", " + cid + ", " + (shiny ? 1 : 0)
     			+ " ON CONFLICT (uid, cid, foil) DO NOTHING;");
     }
     
     private static void awardCharacterDuplicate(long uid, long cid, boolean shiny) {
-    	Casino.executeUpdate("UPDATE gacha_user_characters SET (duplicates) = (duplicates + 1) WHERE uid = "
+    	Casino.executeUpdate("UPDATE gacha_user_character SET (duplicates) = (duplicates + 1) WHERE uid = "
     			+ uid + " AND cid = " + cid + " AND foil = " + (shiny ? 1 : 0) + ";");
     }
     

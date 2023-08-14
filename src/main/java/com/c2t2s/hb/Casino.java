@@ -901,6 +901,7 @@ public class Casino {
         String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+        String event = "INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         //String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         Connection connection = null;
         Statement statement = null;
@@ -917,6 +918,8 @@ public class Casino {
                 statement.executeUpdate(monemachine);
                 statement.executeUpdate(overunder);
                 statement.executeUpdate(blackjac);
+                statement.executeUpdate(gacha);
+                statement.executeUpdate(event);
                 //statement.executeUpdate(wagers);
             }
             statement.close();
