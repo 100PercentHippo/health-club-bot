@@ -433,8 +433,8 @@ public class Gacha {
     //   xp integer DEFAULT 0,
     //   item_id bigint DEFAULT 0,
     //   PRIMARY KEY(uid, cid, foil),
-    //   CONSTRAINT gacha_user_characters_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
-    //   CONSTRAINT gacha_user_characters_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid)
+    //   CONSTRAINT gacha_user_character_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
+    //   CONSTRAINT gacha_user_character_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid)
     // );
     
     // CREATE TABLE IF NOT EXISTS gacha_banner (
@@ -617,7 +617,7 @@ public class Gacha {
     private static void awardNewCharacter(long uid, long cid, boolean shiny) {
     	Casino.executeUpdate("INSERT INTO gacha_user_character(uid, cid, foil) VALUES ("
     			+ uid + ", " + cid + ", " + (shiny ? 1 : 0)
-    			+ " ON CONFLICT (uid, cid, foil) DO NOTHING;");
+    			+ ") ON CONFLICT (uid, cid, foil) DO NOTHING;");
     }
     
     private static void awardCharacterDuplicate(long uid, long cid, boolean shiny) {
