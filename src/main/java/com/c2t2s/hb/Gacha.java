@@ -298,7 +298,7 @@ public class Gacha {
     }
     
     private static List<String> createThreeStarAnimation(String result) {
-    	List<String> frames = baseAnimation();
+    	List<String> frames = new ArrayList<String>(baseAnimation());
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
     	frames.add(":black_large_square::star::star::star::black_large_square:");
@@ -313,7 +313,7 @@ public class Gacha {
     }
     
     private static List<String> createTwoStarAnimation(String result) {
-    	List<String> frames = baseAnimation();
+    	List<String> frames = new ArrayList<String>(baseAnimation());
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
     	frames.add(":black_large_square::star2::black_large_square::star2::black_large_square:");
@@ -325,7 +325,7 @@ public class Gacha {
     }
     
     private static List<String> createOneStarAnimation(String result) {
-    	List<String> frames = baseAnimation();
+    	List<String> frames = new ArrayList<String>(baseAnimation());
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_medium_small_square::black_medium_small_square::star::black_medium_small_square::black_medium_small_square:");
     	frames.add(":black_small_square::black_small_square::star::black_small_square::black_small_square:");
@@ -334,7 +334,7 @@ public class Gacha {
     }
     
     private static List<String> createAnimation(String result) {
-    	List<String> frames = baseAnimation();
+    	List<String> frames = new ArrayList<String>(baseAnimation());
     	frames.add(":black_medium_small_square::black_medium_small_square::black_medium_small_square::black_medium_small_square::black_medium_small_square:");
     	frames.add(":black_small_square::black_small_square::black_small_square::black_small_square::black_small_square:");
     	frames.add(result);
