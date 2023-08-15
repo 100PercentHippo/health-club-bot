@@ -748,7 +748,7 @@ public class Casino {
         if (donorBalance < 0) {
             return "Unable to process transaction";
         } else {
-            return "Gave " + amount + ", your new balance is " + donorBalance;
+            return "Gave " + amount + " to <@" + recipientUid + ">, your new balance is " + donorBalance;
         }
     }
 
