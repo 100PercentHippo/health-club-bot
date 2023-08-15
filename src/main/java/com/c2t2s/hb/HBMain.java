@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.1.2"; //Update this in pom.xml too
+    private static final String version = "3.1.3"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -315,7 +315,10 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "3.1.2"
+        return "3.1.3"
+        	+ "\n\t`/give` now pings the recipient"
+        	+ "\n\t`/blackjack` now resolves incrementally"
+        	+ "\n3.1.2"
         	+ "\n\tAdds `/pity` and `/pulls`"
         	+ "\n3.1.1"
         	+ "\n\tFirst 2h and 30m income command per day now award Gacha pulls"

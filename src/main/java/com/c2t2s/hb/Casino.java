@@ -744,11 +744,12 @@ public class Casino {
             return "Unable to give money. Has that user run `/claim`?";
         }
         donorBalance = takeMoneyDirect(donorUid, amount);
-        addMoneyDirect(recipientUid, amount);
+        recipientBalance = addMoneyDirect(recipientUid, amount);
         if (donorBalance < 0) {
             return "Unable to process transaction";
         } else {
-            return "Gave " + amount + " to <@" + recipientUid + ">, your new balance is " + donorBalance;
+            return "Gave " + amount + " to <@" + recipientUid + ">\nYour new balance is " + donorBalance
+            	+ "\nTheir new balance is " + recipientBalance;
         }
     }
 
