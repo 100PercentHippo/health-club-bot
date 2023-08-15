@@ -2,7 +2,9 @@ package com.c2t2s.hb;
 
 import java.net.URISyntaxException;
 import java.sql.*; //TODO: Remove the *
+import java.util.List;
 import java.util.Random;
+import java.util.ArrayList;
 
 public class Blackjack {
 
@@ -87,13 +89,15 @@ public class Blackjack {
         return "Bid " + wager + " on Blackjack\n" + displayGame(hand, dealerCard, "[?]");
     }
 
-    public static String handleStand(long uid) {
+    public static List<String> handleStand(long uid) {
+    	List<String> response = new ArrayList<>();
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
-            return "No active game found. Use `/blackjack new` to start a new game";
+        	response.add("No active game found. Use `/blackjack new` to start a new game");
+            return response;
         }
-        String response = "Your hand:    " + game.getHand();
-        String dealerHand = cardLetters[game.getDealerHand()];
+        String playerHand = "Your hand:    " + game.getHand();
+        String dealerHand = "\nDealer's hand: " + cardLetters[game.getDealerHand()];
         int dealerTotal = cardValues[game.getDealerHand()];
         boolean dealerAce = (game.getDealerHand() == 1);
         Random random = new Random();
@@ -111,7 +115,7 @@ public class Blackjack {
             } else {
                 dealerTotal += cardValues[card];
             }
-            response += "\nDealer's hand: " + dealerHand;
+            response.add(new String(playerHand + dealerHand));
         }
         if (dealerAce && dealerTotal > 21) {
             dealerTotal -= 10;
@@ -120,19 +124,21 @@ public class Blackjack {
         if (game.hasAce() && playerTotal > 21) {
             playerTotal -= 10;
         }
+        String resolution = "";
         if (dealerTotal > 21) {
-            response += "\nDealer bust! You win " + (2 * game.getWager())
+            resolution = "\nDealer bust! You win " + (2 * game.getWager())
                     + "! Your new balance is " + blackjackWin(uid, game.getWager(), true);
         } else if (dealerTotal > playerTotal) {
             blackjackLoss(uid, game.getWager());
-            response += "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
+            resolution = "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
         } else if (dealerTotal < playerTotal) {
-            response += "\nYou win " + (2 * game.getWager())
+        	resolution = "\nYou win " + (2 * game.getWager())
                     + "! Your new balance is " + blackjackWin(uid, game.getWager(), false);
         } else { // Tie
-            response += "\nTie. You get " + game.getWager() + " back. Your new balance is "
+        	resolution = "\nTie. You get " + game.getWager() + " back. Your new balance is "
                     + blackjackTie(uid, game.getWager());
         }
+        response.add(playerHand + dealerHand + resolution);
         return response;
     }
 

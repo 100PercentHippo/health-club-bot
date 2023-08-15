@@ -127,7 +127,7 @@ public class Gacha {
     		}
     		String duplicateString = "";
     		if (duplicates > 0) {
-    			duplicateString = "\nUpgraded " + getDisplayName() + (duplicates > 1 ? " +" + duplicates - 1 : "")
+    			duplicateString = "\nUpgraded " + getDisplayName() + (duplicates > 1 ? " +" + (duplicates - 1) : "")
     					+ " -> " + getDisplayName() + " +" + duplicates;
     		}
     		return stars + " " + getDisplayName() + " " + stars

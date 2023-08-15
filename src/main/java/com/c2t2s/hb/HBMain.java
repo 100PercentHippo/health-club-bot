@@ -6,6 +6,7 @@ import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.component.ButtonStyle;
 import org.javacord.api.interaction.MessageComponentInteraction;
+import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -140,8 +141,8 @@ public class HBMain {
                         Blackjack.handleHit(interaction.getUser().getId())).respond();
                     break;
                 case "blackjack stand":
-                    interaction.createImmediateResponder().setContent(
-                        Blackjack.handleStand(interaction.getUser().getId())).respond();
+                	makeMultiStepResponse(
+                		Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
                     break;
                 case "pull":
                 	makeMultiStepResponse(
@@ -190,16 +191,17 @@ public class HBMain {
             } else if (interaction.getCustomId().contains("blackjack")) {
                 if (interaction.getCustomId().equals("blackjack.hit")) {
                     response = Blackjack.handleHit(interaction.getUser().getId());
+                    if (response.contains("balance")) {
+                        interaction.createImmediateResponder().setContent(response).respond();
+                    } else {
+                        interaction.createImmediateResponder().setContent(response)
+                        .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
+                            Button.secondary("blackjack.stand", "Stand")))
+                        .respond();
+                    }
                 } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                    response = Blackjack.handleStand(interaction.getUser().getId());
-                }
-                if (response.contains("balance")) {
-                    interaction.createImmediateResponder().setContent(response).respond();
-                } else {
-                    interaction.createImmediateResponder().setContent(response)
-                    .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
-                        Button.secondary("blackjack.stand", "Stand")))
-                    .respond();
+                	makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                		1000, interaction);
                 }
             }
         });
@@ -386,7 +388,7 @@ public class HBMain {
         }
     }
 
-    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, SlashCommandInteraction interaction) {
+    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, InteractionBase interaction) {
         CompletableFuture<InteractionOriginalResponseUpdater> updater
             =  interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
         if (responseSteps.size() > 0) {
