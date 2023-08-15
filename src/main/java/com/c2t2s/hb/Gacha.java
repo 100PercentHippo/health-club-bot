@@ -56,6 +56,13 @@ public class Gacha {
         		return BASE_1STAR_CHANCE;
     		}
     	}
+    	
+    	protected String getPityString() {
+    		return "3 Star Pity: " + primary_pity + "/" + MAX_3STAR_PITY
+    			+ "\n2 Star Pity: " + secondary_pity + "/" + MAX_2STAR_PITY
+    			+ "\n1 Star Pity: " + tertiary_pity + "/" + MAX_1STAR_PITY
+    			+ "\nAvailable Pulls: " + pulls;
+    	}
     }
     
     private static class GachaCharacter {
@@ -172,25 +179,7 @@ public class Gacha {
     			response.add("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
     			return response;
     		}
-    		if (eventUser.robs_today > 0 && eventUser.picks_today > 0 /* && eventUser.events_today >= MAX_DAILY_EVENT_PULLS */) {
-    			long timeRemaining = Events.DAILY_RESET_MS - (System.currentTimeMillis() - eventUser.reset.getTime());
-    			if (timeRemaining < 1000) { timeRemaining = 1000; }
-    			response.add("No pulls to spend. Return in " + Casino.formatTime(timeRemaining) + " to get more!");
-    			return response;
-    		}
-    		String output = "No pulls to spend. You can still earn pulls today through the following means:";
-    		if (eventUser.robs_today < 1) {
-    			output += "\n\t`/rob` or `/work` once today";
-    		}
-    		if (eventUser.picks_today < 1) {
-    			output += "\n\t`/fish` or `/pickpocket` once today";
-    		}
-    		// TODO: Readd event check
-			//int remaining_events = MAX_DAILY_EVENT_PULLS - eventUser.events_today;
-    		//if (remaining_events > 0) {
-    		//	output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
-    		//}
-    		response.add(output);
+    		response.add(eventUser.getAvailablePullSources());
     		return response;
     	}
 
@@ -398,6 +387,30 @@ public class Gacha {
     	}
     	
     	return character.toFullString();
+    }
+    
+    protected static String handlePity(long uid) {
+    	GachaUser user = getGachaUser(uid);
+    	if (user == null) {
+    		return "Unable to fetch user. If you are new run `/claim` to start";
+    	}
+    	return user.getPityString();
+    }
+    
+    protected static String handlePulls(long uid) {
+    	GachaUser user = getGachaUser(uid);
+    	if (user == null) {
+    		return "Unable to fetch user. If you are new run `/claim` to start";
+    	}
+    	if (user.pulls > 0) {
+    		return "You currently have " + user.pulls + " available pulls.";
+    	} else {
+    		Events.EventUser eventUser = Events.getEventUser(uid);
+    		if (eventUser == null) {
+    			return "Unable to fetch EventUser. Potentially bad DB state";
+    		}
+    		return eventUser.getAvailablePullSources();
+    	}
     }
 
 

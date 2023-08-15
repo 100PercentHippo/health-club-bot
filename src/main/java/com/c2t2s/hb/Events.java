@@ -23,6 +23,28 @@ public class Events {
     		this.picks_today = picks;
     		this.reset = lastReset;
     	}
+    	
+    	protected String getAvailablePullSources() {
+        	if (robs_today < 1 || picks_today < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
+        		String output = "No pulls remaining. You can still earn pulls today through the following means:";
+        		if (robs_today < 1) {
+        			output += "\n\t`/rob` or `/work` once today";
+        		}
+        		if (picks_today < 1) {
+        			output += "\n\t`/fish` or `/pickpocket` once today";
+        		}
+        		// TODO: Readd event check
+        		//int remaining_events = MAX_DAILY_EVENT_PULLS - events_today;
+        		//if (remaining_events > 0) {
+        		//	output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
+        		//}
+	        	return output;
+        	} else {
+        		long timeRemaining = DAILY_RESET_MS - (System.currentTimeMillis() - reset.getTime());
+        		if (timeRemaining < 1000) { timeRemaining = 1000; }
+        		return "No pulls remaining. Return in " + Casino.formatTime(timeRemaining) + " to get more!";
+        	}
+    	}
     }
 	
 	private static final int MAX_DAILY_EVENT_PULLS = 3;

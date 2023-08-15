@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.1.1"; //Update this in pom.xml too
+    private static final String version = "3.1.2"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -151,6 +151,14 @@ public class HBMain {
                 	interaction.createImmediateResponder().setContent(
                 		Gacha.handleCharacterList(interaction.getUser().getId())).respond();
                 	break;
+                case "pulls":
+                	interaction.createImmediateResponder().setContent(
+                		Gacha.handlePulls(interaction.getUser().getId())).respond();
+                	break;
+                case "pity":
+                	interaction.createImmediateResponder().setContent(
+                		Gacha.handlePity(interaction.getUser().getId())).respond();
+                	break;
             }
         });
         api.addMessageComponentCreateListener(event -> {
@@ -255,6 +263,10 @@ public class HBMain {
         //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pull", "Try to win a gacha character!")
+        //      .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pulls", "Check how many gacha pulls you have")
+        //      .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pity", "Check your gacha pity")
         //      .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("gacha", "Ha! Gotcha!",
         //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
