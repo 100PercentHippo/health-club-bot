@@ -305,11 +305,17 @@ public class HBMain {
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
             + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
-            + "\n\t`/pull` Pull for Gacha characters!";
+            + "\nGacha Commands:"
+            + "\n\t`/pull` Pull for gacha characters!"
+            + "\n\t`/pulls` Check your available pulls"
+            + "\n\t`/pity` Check your gacha pity"
+            + "\n\t`/gacha character list` List the characters you've pulled";
     }
 
     private static String getChangelog() {
-        return  "3.1.1"
+        return "3.1.2"
+        	+ "\n\tAdds `/pity` and `/pulls`"
+        	+ "\n3.1.1"
         	+ "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
         	+ "\n3.1.0"
         	+ "\n\tAdds `/pull` to test the gacha system"

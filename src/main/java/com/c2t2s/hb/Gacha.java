@@ -104,14 +104,14 @@ public class Gacha {
     	}
     	
     	public String toAbbreviatedString() {
-    		return getDisplayName() + (duplicates > 0 ? " x" + duplicates : "")
+    		return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
     				+ " (" + rarity + " Star " + type + ") - Level " + level
     				+ (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
     				+ " - +" + getBuffPercent() + "% Bonus";
     	}
     	
     	public String toFullString() {
-    		return getDisplayName() + (duplicates > 0 ? " x" + duplicates : "")
+    		return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
     				+ "\n\t" + rarity + " Star " + type
     				+ "\n\tLevel " + level + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
     				+ "\n\t+" + getBuffPercent() + "% Bonus"
@@ -127,8 +127,8 @@ public class Gacha {
     		}
     		String duplicateString = "";
     		if (duplicates > 0) {
-    			duplicateString = "\nUpgraded " + getDisplayName() + (duplicates > 1 ? duplicates - 1 : "")
-    					+ " -> " + getDisplayName() + " x" + duplicates;
+    			duplicateString = "\nUpgraded " + getDisplayName() + (duplicates > 1 ? " +" + duplicates - 1 : "")
+    					+ " -> " + getDisplayName() + " +" + duplicates;
     		}
     		return stars + " " + getDisplayName() + " " + stars
     				+ "\n" + rarity + " Star " + type
