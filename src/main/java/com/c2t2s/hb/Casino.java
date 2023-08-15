@@ -232,6 +232,7 @@ public class Casino {
         if (random.nextInt(2) == 0) {
             robFailed(uid);
             output = "You were caught! You are dragged off to jail for 2 hours.";
+            return output + bonus;
         }
         int roll = random.nextInt(100);
         if (roll < 5) {
@@ -295,6 +296,7 @@ public class Casino {
         if (random.nextInt(2) == 0) {
             pickFailed(uid);
             output = "You were caught! You are dragged off to jail for 30 minutes.";
+            return output + bonus;
         }
         int roll = random.nextInt(100);
         if (roll < 10) {
