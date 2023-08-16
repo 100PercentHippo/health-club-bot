@@ -58,9 +58,9 @@ public class Gacha {
     	}
     	
     	protected String getPityString() {
-    		return "3 Star Pity: " + primary_pity + "/" + MAX_3STAR_PITY
-    			+ "\n2 Star Pity: " + secondary_pity + "/" + MAX_2STAR_PITY
-    			+ "\n1 Star Pity: " + tertiary_pity + "/" + MAX_1STAR_PITY
+    		return "3 Star Pity: " + primary_pity + "/" + (MAX_3STAR_PITY + 1)
+    			+ "\n2 Star Pity: " + secondary_pity + "/" + (MAX_2STAR_PITY + 1)
+    			+ "\n1 Star Pity: " + tertiary_pity + "/" + (MAX_1STAR_PITY + 1)
     			+ "\nAvailable Pulls: " + pulls;
     	}
     }
@@ -154,9 +154,9 @@ public class Gacha {
     
 	public static final int MAX_CHARACTER_LEVEL = 5;
 	public static final int MAX_CHARACTER_DUPLICATES = 5;
-	public static final int MAX_3STAR_PITY = 99;
-	public static final int MAX_2STAR_PITY = 24;
-	public static final int MAX_1STAR_PITY = 5;
+	public static final int MAX_3STAR_PITY = 191;
+	public static final int MAX_2STAR_PITY = 47;
+	public static final int MAX_1STAR_PITY = 11;
 	public static final int MAX_BANNER_FLOPS = 2;
 	public static final double BASE_3STAR_CHANCE = 0.0078125;
 	public static final double BASE_2STAR_CHANCE = 0.03125;
