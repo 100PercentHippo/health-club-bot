@@ -316,28 +316,20 @@ public class HBMain {
 
     private static String getChangelog() {
         return "3.1.4"
-        	+ "\n\t`/pulls` now lists available pull sources or remaining timer"
-        	+ "\n\tPity now remains unchanged when pulling a character of a higher rarity"
-        	+ "\n\tCharacters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-        	+ "\n\tShiny Characters are now less likely (1/8 -> 1/20)"
-        	+ "\n\tTest Character B has been temporarily disabled for balance reasons"
+        	+ "\n\t- `/pulls` now lists available pull sources or remaining timer"
+        	+ "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
+        	+ "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+        	+ "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
+        	+ "\n\t- Test Character B has been temporarily disabled for balance reasons"
         	+ "\n3.1.3"
-        	+ "\n\t`/give` now pings the recipient"
-        	+ "\n\t`/blackjack` now resolves incrementally"
+        	+ "\n\t- `/give` now pings the recipient"
+        	+ "\n\t- `/blackjack` now resolves incrementally"
         	+ "\n3.1.2"
-        	+ "\n\tAdds `/pity` and `/pulls`"
+        	+ "\n\t- Adds `/pity` and `/pulls`"
         	+ "\n3.1.1"
-        	+ "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
+        	+ "\n\t- First 2h and 30m income command per day now award Gacha pulls"
         	+ "\n3.1.0"
-        	+ "\n\tAdds `/pull` to test the gacha system"
-        	+ "\n3.0.2"
-        	+ "\n\tCorrects wager limits for blackjack and overunder"
-        	+ "\n\tRemoves automatic contributions to the money machine from casino net profits"
-        	+ "\n\tMoney machine now instead retains 25% of the pot when paying out"
-        	+ "\n3.0.1"
-        	+ "\n\t`/feed` is once again working"
-        	+ "\n3.0.0"
-        	+ "\n\tBot is back (again)!";
+        	+ "\n\t- Adds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
