@@ -26,7 +26,7 @@ public class Events {
     	
     	protected String getAvailablePullSources() {
         	if (robs_today < 1 || picks_today < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
-        		String output = "No pulls remaining. You can still earn pulls today through the following means:";
+        		String output = "You can still earn pulls today through the following means:";
         		if (robs_today < 1) {
         			output += "\n\t`/rob` or `/work` once today";
         		}
@@ -42,7 +42,7 @@ public class Events {
         	} else {
         		long timeRemaining = DAILY_RESET_MS - (System.currentTimeMillis() - reset.getTime());
         		if (timeRemaining < 1000) { timeRemaining = 1000; }
-        		return "No pulls remaining. Return in " + Casino.formatTime(timeRemaining) + " to get more!";
+        		return "Return in " + Casino.formatTime(timeRemaining) + " to get more!";
         	}
     	}
     }

@@ -88,7 +88,7 @@ public class Casino {
         return ((days > 0) ? (days + " day" + (days == 1 ? "" : "s") + ", ") : "")
             + ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
             + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
-            + seconds + " second" + (seconds == 1 ? "" : "s") + ".";
+            + seconds + " second" + (seconds == 1 ? "" : "s");
     }
     
     // Emulates String.repeat() but for versions before Java 11
@@ -117,9 +117,9 @@ public class Casino {
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
-                return "You are still in jail! Your sentence ends in " + formatTime(remainingTime);
+                return "You are still in jail! Your sentence ends in " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime);
+                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
             }
         }
         String bonus = Events.checkRobBonus(uid, "`/work`");
@@ -167,9 +167,9 @@ public class Casino {
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
-                return "There's no fishing pool in jail! Your sentence ends in " + formatTime(remainingTime);
+                return "There's no fishing pool in jail! Your sentence ends in " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime);
+                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
             }
         }
         String bonus = Events.checkPickBonus(uid, "`/fish`");
@@ -221,9 +221,9 @@ public class Casino {
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
-                return "The guard gives you a funny look. You're still in jail for " + formatTime(remainingTime);
+                return "The guard gives you a funny look. You're still in jail for " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime);
+                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
             }
         }
         String bonus = Events.checkRobBonus(uid, "`/rob`");
@@ -285,9 +285,9 @@ public class Casino {
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
-                return "The guard gives you a funny look. You're still in jail for " + formatTime(remainingTime);
+                return "The guard gives you a funny look. You're still in jail for " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime);
+                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
             }
         }
         String bonus = Events.checkPickBonus(uid, "`/pickpocket`");
@@ -446,7 +446,7 @@ public class Casino {
         }
         long remainingTime = user.getTimer2().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
-            return "You have recently fed the money machine. Try again in " + formatTime(remainingTime);
+            return "You have recently fed the money machine. Try again in " + formatTime(remainingTime) + ".";
         }
         User moneyMachine = getUser(MONEY_MACHINE_UID);
         if (moneyMachine == null) {
@@ -748,7 +748,7 @@ public class Casino {
         if (donorBalance < 0) {
             return "Unable to process transaction";
         } else {
-            return "Gave " + amount + " to <@" + recipientUid + ">\nYour new balance is " + donorBalance
+            return "Gave " + amount + " coins to <@" + recipientUid + ">\nYour new balance is " + donorBalance
             	+ "\nTheir new balance is " + recipientBalance;
         }
     }

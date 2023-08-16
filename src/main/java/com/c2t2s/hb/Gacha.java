@@ -179,7 +179,7 @@ public class Gacha {
     			response.add("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
     			return response;
     		}
-    		response.add(eventUser.getAvailablePullSources());
+    		response.add("No pulls remaining. " + eventUser.getAvailablePullSources());
     		return response;
     	}
 
@@ -402,14 +402,15 @@ public class Gacha {
     	if (user == null) {
     		return "Unable to fetch user. If you are new run `/claim` to start";
     	}
+    	Events.EventUser eventUser = Events.getEventUser(uid);
+		if (eventUser == null) {
+			return "Unable to fetch EventUser. Potentially bad DB state";
+		}
     	if (user.pulls > 0) {
-    		return "You currently have " + user.pulls + " available pulls.";
+    		return "You currently have " + user.pulls + " available pulls.\n"
+    			+ eventUser.getAvailablePullSources();
     	} else {
-    		Events.EventUser eventUser = Events.getEventUser(uid);
-    		if (eventUser == null) {
-    			return "Unable to fetch EventUser. Potentially bad DB state";
-    		}
-    		return eventUser.getAvailablePullSources();
+    		return "No pulls remaining. " + eventUser.getAvailablePullSources();
     	}
     }
 
