@@ -158,12 +158,12 @@ public class Gacha {
 	public static final int MAX_2STAR_PITY = 24;
 	public static final int MAX_1STAR_PITY = 5;
 	public static final int MAX_BANNER_FLOPS = 2;
-	public static final double BASE_3STAR_CHANCE = 0.015625;
-	public static final double BASE_2STAR_CHANCE = 0.0625;
-	public static final double BASE_1STAR_CHANCE = 0.25;
+	public static final double BASE_3STAR_CHANCE = 0.0078125;
+	public static final double BASE_2STAR_CHANCE = 0.03125;
+	public static final double BASE_1STAR_CHANCE = 0.125;
 	public static final double BANNER_3STAR_CHANCE = 0.5;
 	public static final double BANNER_2STAR_CHANCE = 0.6;
-	public static final double SHINY_CHANCE = 0.125;
+	public static final double SHINY_CHANCE = 0.05;
 
     public static List<String> handleGachaPull(long uid, boolean on_banner) {
     	GachaUser user = getGachaUser(uid);
@@ -273,7 +273,10 @@ public class Gacha {
     
     private static String awardFiller(long uid, boolean from_banner, Random random) {
     	// TODO: Add filler other than coins
-    	int coins = (int)(random.nextGaussian() * 20) + 100;
+    	int coins = (int)(random.nextGaussian() * 20) + 50;
+    	if (coins < 1) {
+    		coins = 1;
+    	}
     	long balance = awardCoinFiller(uid, coins);
     	int pullsRemaining = logFillerPull(uid, from_banner);
     	return ":coin: You pull " + coins + " coins. Your new balance is " + balance
@@ -660,10 +663,22 @@ public class Gacha {
     
     private static int logCharacterAward(long uid, int rarity, boolean from_banner, boolean is_banner_flop) {
     	String pullType = (from_banner ? "times_pulled_banner" : "times_pulled_nonbanner");
+    	String secondary_pity = "secondary_pity + 1";
+    	if (rarity > 2) {
+    		secondary_pity = "secondary_pity";
+    	} else if (rarity == 2) {
+    		secondary_pity = "0";
+    	}
+    	String tertiary_pity = "tertiary_pity + 1";
+    	if (rarity > 1) {
+    		tertiary_pity = "tertiary_pity";
+    	} else if (rarity == 1) {
+    		tertiary_pity = "0";
+    	}
     	return Casino.executeIntQuery("UPDATE gacha_user SET (pulls, " + pullType + ", primary_pity, secondary_pity, "
     			+ "tertiary_pity, banner_flops) = (pulls - 1, " + pullType + " + 1, " + (rarity == 3 ? "0" : "primary_pity + 1") + ", "
-    			+ (rarity == 2 ? "0" : "secondary_pity + 1") + ", " + (rarity == 1 ? "0" : "tertiary_pity + 1")
-    			+ ", " + (is_banner_flop ? "banner_flops + 1" : "0") + ") WHERE uid = " + uid + " RETURNING pulls;");
+    			+ secondary_pity + ", " + tertiary_pity + ", " + (is_banner_flop ? "banner_flops + 1" : "0")
+    			+ ") WHERE uid = " + uid + " RETURNING pulls;");
     }
 
 }
