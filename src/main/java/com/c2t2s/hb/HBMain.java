@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.1.4"; //Update this in pom.xml too
+    private static final String version = "3.1.5"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -315,7 +315,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "3.1.4"
+        return "3.1.5"
+        	+ "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
+        	+ "\n3.1.4"
         	+ "\n\t- `/pulls` now lists available pull sources or remaining timer"
         	+ "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
         	+ "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"

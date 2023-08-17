@@ -9,19 +9,20 @@ import java.net.URISyntaxException;
 public class Events {
 	
 	protected static class EventUser {    	
-    	public int events_today;
-    	public int robs_today;
-    	public int picks_today;
+    	public int events_today = 0;
+    	public int robs_today = 0;
+    	public int picks_today = 0;
     	public Timestamp reset;
     	
     	public EventUser(long uid, int robs, int picks, int events, Timestamp lastReset) {
     		if (System.currentTimeMillis() - lastReset.getTime() > DAILY_RESET_MS) {
     			this.reset = resetEventUserDailyLimits(uid);
+    		} else {
+    			this.reset = lastReset;
+        		this.events_today = events;
+        		this.robs_today = robs;
+        		this.picks_today = picks;
     		}
-    		this.events_today = events;
-    		this.robs_today = robs;
-    		this.picks_today = picks;
-    		this.reset = lastReset;
     	}
     	
     	protected String getAvailablePullSources() {
@@ -48,6 +49,7 @@ public class Events {
     }
 	
 	private static final int MAX_DAILY_EVENT_PULLS = 3;
+	// TODO: Replace DAILY_RESET_MS by making DB store next reset instead of last
 	protected static final int DAILY_RESET_MS = 22 * 60 * 60 * 1000;
 
 	public static String checkRobBonus(long uid, String command) {
