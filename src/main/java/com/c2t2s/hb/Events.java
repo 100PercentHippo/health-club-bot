@@ -26,8 +26,9 @@ public class Events {
     	}
     	
     	protected String getAvailablePullSources() {
+    		String output = "";
         	if (robs_today < 1 || picks_today < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
-        		String output = "You can still earn pulls today through the following means:";
+        		output += "You can still earn pulls today through the following means:";
         		if (robs_today < 1) {
         			output += "\n\t`/rob` or `/work` once today";
         		}
@@ -39,12 +40,11 @@ public class Events {
         		//if (remaining_events > 0) {
         		//	output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
         		//}
-	        	return output;
-        	} else {
-        		long timeRemaining = DAILY_RESET_MS - (System.currentTimeMillis() - reset.getTime());
-        		if (timeRemaining < 1000) { timeRemaining = 1000; }
-        		return "Return in " + Casino.formatTime(timeRemaining) + " to get more!";
         	}
+        	long timeRemaining = DAILY_RESET_MS - (System.currentTimeMillis() - reset.getTime());
+        	if (timeRemaining < 1000) { timeRemaining = 1000; }
+        	output += "Return in " + Casino.formatTime(timeRemaining) + " to get more!";
+        	return output;
     	}
     }
 	
