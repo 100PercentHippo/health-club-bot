@@ -274,8 +274,8 @@ public class Gacha {
     private static String awardFiller(long uid, boolean from_banner, Random random) {
     	// TODO: Add filler other than coins
     	int coins = (int)(random.nextGaussian() * 20) + 50;
-    	if (coins < 1) {
-    		coins = 1;
+    	if (coins < 2) {
+    		coins = 2;
     	}
     	long balance = awardCoinFiller(uid, coins);
     	int pullsRemaining = logFillerPull(uid, from_banner);
