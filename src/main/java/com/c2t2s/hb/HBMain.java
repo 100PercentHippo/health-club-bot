@@ -16,6 +16,11 @@ import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+// Used when initializing commands
+import org.javacord.api.interaction.SlashCommand;
+import org.javacord.api.interaction.SlashCommandOption;
+import java.util.Arrays;
+
 public class HBMain {
 
     private static final String version = "3.1.6"; //Update this in pom.xml too
