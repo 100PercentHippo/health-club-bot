@@ -260,10 +260,10 @@ public class HBMain {
         //     Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
         //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
         //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pull", "Try to win a gacha character!")
-        //      .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pulls", "Check how many gacha pulls you have",
-        //    Arrays.asList(SlashCommandOption.createLongOption("pulls", "Number of pulls to use", false, 1, 1000)))
+        // SlashCommand.with("pull", "Try to win a gacha character!",
+        //        Arrays.asList(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 1000)))
+        //    .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pulls", "Check how many gacha pulls you have")
         //    .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pity", "Check your gacha pity")
         //      .setEnabledInDms(false).createGlobal(api).join();
