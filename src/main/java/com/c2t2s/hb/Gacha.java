@@ -3,8 +3,10 @@ package com.c2t2s.hb;
 import java.sql.*; //TODO: Remove the *
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.HashMap;
 import java.net.URISyntaxException;
 
 public class Gacha {
@@ -119,7 +121,7 @@ public class Gacha {
     				+ "\n" + (foil == 1 ? shiny_url : picture_url);
     	}
     	
-    	public String generateAwardText() {
+    	public String generateAwardText(boolean useBriefResponse) {
     		String star = (foil == 1 ? ":star2:" : ":star:");
     		String stars = "";
     		if (rarity > 0) {
@@ -127,14 +129,22 @@ public class Gacha {
     		}
     		String duplicateString = "";
     		if (duplicates > 0) {
-    			duplicateString = "\nUpgraded " + getDisplayName() + (duplicates > 1 ? " +" + (duplicates - 1) : "")
-    					+ " -> " + getDisplayName() + " +" + duplicates;
+    			duplicateString = "\n" + (useBriefResponse ? "\t" : "") + "Upgraded " + getDisplayName()
+                    + (duplicates > 1 ? " +" + (duplicates - 1) : "")
+    				+ " -> " + getDisplayName() + " +" + duplicates;
     		}
-    		return stars + " " + getDisplayName() + " " + stars
-    				+ "\n" + rarity + " Star " + type
-    				+ duplicateString
-    				+ "\n" + description
-    				+ "\n" + (foil == 1 ? shiny_url : picture_url);
+            if (useBriefResponse) {
+                return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
+                    + duplicateString
+                    + (!description.isEmpty() ? "\n\tThis character has a unique ability" : "")
+    				+ "\n\t" + (foil == 1 ? shiny_url : picture_url);
+            } else {
+                return stars + " " + getDisplayName() + " " + stars
+                    + "\n" + rarity + " Star " + type
+                    + duplicateString
+                    + (!description.isEmpty() ? "\n\tUnique Ability:" + description : "")
+                    + "\n" + (foil == 1 ? shiny_url : picture_url);
+            }
     	}
     	
     	public int getXpToLevel() {
@@ -152,6 +162,35 @@ public class Gacha {
     	}
     }
     
+    protected static class GachaResponse {
+        public String partialMessage;
+        public List<String> messageParts = new ArrayList<String>();
+        public Map<Integer, String> images = new HashMap<Integer, String>();
+
+        public long coinsAwarded = 0;
+        public long coinBalance = 0;
+        public long chocolateCoinsAwarded = 0;
+        public long chocolateCoinBalance = 0;
+        public int highestCharacterAwarded = 0;
+        public int remainingPulls = 0;
+
+        public void addMessagePart(String message) {
+            partialMessage += message;
+            messageParts.add(partialMessage);
+        }
+
+        public void addCharacterMessagePart(String message, int rarity) {
+            if (rarity > highestCharacterAwarded) {
+                highestCharacterAwarded = rarity;
+            }
+            addMessagePart(message);
+        }
+
+        public void addAnimation(List<String> frames) {
+            messageParts.addAll(0, frames);
+        }
+    }
+
 	public static final int MAX_CHARACTER_LEVEL = 5;
 	public static final int MAX_CHARACTER_DUPLICATES = 5;
 	public static final int MAX_3STAR_PITY = 191;
@@ -165,48 +204,79 @@ public class Gacha {
 	public static final double BANNER_2STAR_CHANCE = 0.6;
 	public static final double SHINY_CHANCE = 0.05;
 
-    public static List<String> handleGachaPull(long uid, boolean on_banner) {
+    public static GachaResponse handleGachaPull(long uid, boolean on_banner, long pulls) {
+        GachaResponse response = new GachaResponse();
     	GachaUser user = getGachaUser(uid);
-    	List<String> response = new ArrayList<>();
     	if (user == null) {
-    		response.add("Unable to fetch user. If you are new run `/claim` to start");
-    		return response;
-    	}
-    	
-    	if (user.pulls < 1) {
-    		Events.EventUser eventUser = Events.getEventUser(uid);
-    		if (eventUser == null) {
-    			response.add("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
-    			return response;
-    		}
-    		response.add("No pulls remaining. " + eventUser.getAvailablePullSources());
+    		response.addMessagePart("Unable to fetch user. If you are new run `/claim` to start");
     		return response;
     	}
 
-    	String result = "";
-    	int rarity = 1;
+		Events.EventUser eventUser = Events.getEventUser(uid);
+		if (eventUser == null) {
+			response.addMessagePart("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
+			return response;
+		}
+
+    	if (user.pulls < 1) {
+    		response.addMessagePart("No pulls remaining. " + eventUser.getAvailablePullSources());
+    		return response;
+    	} else if (user.pulls < pulls) {
+            response.addMessagePart("Insufficient pulls, you have " + user.pulls + " pulls remaining. "
+                + eventUser.getAvailablePullSources());
+            return response;
+        }
+
     	Random random = new Random();
-    	
-    	if (random.nextDouble() <= user.getThreeStarChance()) {
-    		result = awardThreeStar(uid, on_banner, user.banner_flops, random);
-    		return createThreeStarAnimation(result);
-    	} else if (random.nextDouble() <= user.getTwoStarChance()) {
-    		result = awardTwoStar(uid, on_banner, random);
-    		return createTwoStarAnimation(result);
-    	} else if (random.nextDouble() <= user.getOneStarChance()) {
-    		result = awardOneStar(uid, on_banner, random);
-    		return createAnimation(result);
-    	} else if (user.times_pulled == 0) {
-    		// First roll always gives at least 1 star
-    		result = awardOneStar(uid, on_banner, random);
-    		return createAnimation(result);
-    	} else {
-    		result = awardFiller(uid, on_banner, random);
-    		return createAnimation(result);
-    	}
+        boolean useBriefResponse = (pulls != 1);
+        GachaUser updatedUser;
+
+        for (int i = 0; i < pulls; ++i) {
+            if (random.nextDouble() <= user.getThreeStarChance()) {
+                updatedUser = awardThreeStar(uid, on_banner, user.banner_flops, useBriefResponse, random, response);
+            } else if (random.nextDouble() <= user.getTwoStarChance()) {
+                updatedUser = awardTwoStar(uid, on_banner, useBriefResponse, random, response);
+            // First roll always gives at least 1 star
+            } else if (random.nextDouble() <= user.getOneStarChance() || user.times_pulled == 0) { 
+                updatedUser = awardOneStar(uid, on_banner, useBriefResponse, random, response);
+            } else {
+                updatedUser = awardFiller(uid, on_banner, random, response);
+            }
+            if (updatedUser != null) {
+                user = updatedUser;
+            }
+        }
+
+        List<String> animation;
+        switch (response.highestCharacterAwarded) {
+            case 1:
+                animation = createOneStarAnimation();
+                break;
+            case 2:
+                animation = createTwoStarAnimation();
+                break;
+            case 3:
+                animation = createThreeStarAnimation();
+                break;
+            default:
+                animation = createAnimation();
+                break;
+        }
+        response.addAnimation(animation);
+
+        String balances = "\n";
+        if (response.coinsAwarded > 0) {
+            balances += "\nYour new balance is " + response.coinBalance;
+        }
+        balances += "\n\nYou have " + response.remainingPulls + " pull"
+            + (response.remainingPulls != 1 ? "s" : "") + " remaining";
+        response.addMessagePart(balances);
+
+        return response;
     }
-    
-    private static String awardOneStar(long uid, boolean from_banner, Random random) {
+
+    private static GachaUser awardOneStar(long uid, boolean from_banner, boolean useBriefResponse,
+            Random random, GachaResponse response) {
     	List<Long> cids = null;
     	boolean shiny = random.nextDouble() < SHINY_CHANCE;
     	cids = getEligibleCharacters(uid, 1, shiny);
@@ -216,14 +286,16 @@ public class Gacha {
 		}
     	
     	if (cids.isEmpty()) {
-    		return "Unable to award 1 star: No eligible character ids found";
+    		response.addMessagePart("Unable to award 1 star: No eligible character ids found");
+            return null;
     	}
     	
     	long cid = cids.get(random.nextInt(cids.size()));
-    	return awardCharacter(uid, cid, shiny, from_banner, false);
+    	return awardCharacter(uid, cid, shiny, from_banner, false, useBriefResponse, response);
     }
     
-    private static String awardTwoStar(long uid, boolean from_banner, Random random) {
+    private static GachaUser awardTwoStar(long uid, boolean from_banner, boolean useBriefResponse,
+            Random random, GachaResponse response) {
     	List<Long> cids = null;
     	boolean shiny = random.nextDouble() < SHINY_CHANCE;
     	if (from_banner && (random.nextDouble() < BANNER_2STAR_CHANCE)) {
@@ -240,14 +312,16 @@ public class Gacha {
     	}
     	
     	if (cids.isEmpty()) {
-    		return "Unable to award 2 star: No eligible character ids found";
+            response.addMessagePart("Unable to award 2 star: No eligible character ids found");
+            return null;
     	}
     	
     	long cid = cids.get(random.nextInt(cids.size()));
-    	return awardCharacter(uid, cid, shiny, from_banner, false);
+        return awardCharacter(uid, cid, shiny, from_banner, false, useBriefResponse, response);
     }
     
-    private static String awardThreeStar(long uid, boolean from_banner, int banner_flops, Random random) {
+    private static GachaUser awardThreeStar(long uid, boolean from_banner, int banner_flops,
+            boolean useBriefResponse, Random random, GachaResponse response) {
     	List<Long> cids = null;
     	boolean shiny = random.nextDouble() < SHINY_CHANCE;
     	if (from_banner && (random.nextDouble() < BANNER_3STAR_CHANCE)) {
@@ -264,26 +338,34 @@ public class Gacha {
     	}
     	
     	if (cids.isEmpty()) {
-    		return "Unable to award 3 star: No eligible character ids found";
+            response.addMessagePart("Unable to award 3 star: No eligible character ids found");
+            return null;
     	}
     	
     	long cid = cids.get(random.nextInt(cids.size()));
-    	return awardCharacter(uid, cid, shiny, from_banner, false);
+        return awardCharacter(uid, cid, shiny, from_banner, false, useBriefResponse, response);
     }
-    
-    private static String awardFiller(long uid, boolean from_banner, Random random) {
-    	// TODO: Add filler other than coins
-    	int coins = (int)(random.nextGaussian() * 20) + 50;
-    	if (coins < 2) {
-    		coins = 2;
-    	}
-    	long balance = awardCoinFiller(uid, coins);
-    	int pullsRemaining = logFillerPull(uid, from_banner);
-    	return ":coin: You pull " + coins + " coins. Your new balance is " + balance
-    		+ "\nYou have " + pullsRemaining + " pull" + (pullsRemaining != 1 ? "s" : "") + " remaining";
+
+    private static GachaUser awardFiller(long uid, boolean from_banner, Random random, GachaResponse response) {
+        int roll = random.nextInt(100);
+        // TODO: Add filler other than coins
+        if (roll < 99) {
+            int coins = (int)(random.nextGaussian() * 20) + 50;
+            if (coins < 2) {
+                coins = 2;
+            }
+            response.coinBalance = awardCoinFiller(uid, coins);
+            response.coinsAwarded += coins;
+            response.addMessagePart(":coin: You pull " + coins + " coins.");
+        } else {
+            addPulls(uid, 1);
+            response.addMessagePart(":stars: You pull ... a pull. Neat.");
+        }
+        return logFillerPull(uid, from_banner);
     }
-    
-    private static String awardCharacter(long uid, long cid, boolean shiny, boolean from_banner, boolean is_banner_flop) {
+
+    private static GachaUser awardCharacter(long uid, long cid, boolean shiny, boolean from_banner,
+            boolean is_banner_flop, boolean useBriefResponse, GachaResponse response) {
     	int duplicates = checkCharacterDuplicates(uid, cid, shiny);
     	if (duplicates < 0) {
     		awardNewCharacter(uid, cid, shiny);
@@ -292,12 +374,11 @@ public class Gacha {
     	}
 
     	GachaCharacter character = getCharacter(uid, cid, shiny);
-    	int pulls_remaining = logCharacterAward(uid, character.rarity, from_banner, is_banner_flop);
-    	return character.generateAwardText()
-    			+ "\n\nYou have " + pulls_remaining + " pull" + (pulls_remaining != 1 ? "s" : "") + " remaining";
+        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse), character.rarity);
+        return logCharacterAward(uid, character.rarity, from_banner, is_banner_flop);
     }
     
-    private static List<String> createThreeStarAnimation(String result) {
+    private static List<String> createThreeStarAnimation() {
     	List<String> frames = baseAnimation();
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
@@ -308,11 +389,10 @@ public class Gacha {
     	frames.add(":black_large_square::star::star::star::black_large_square:");
     	frames.add(":black_medium_small_square::star::star::star::black_medium_small_square:");
     	frames.add(":black_small_square::star::star::star::black_small_square:");
-    	frames.add(result);
     	return frames;
     }
-    
-    private static List<String> createTwoStarAnimation(String result) {
+
+    private static List<String> createTwoStarAnimation() {
     	List<String> frames = baseAnimation();
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
@@ -320,27 +400,24 @@ public class Gacha {
     	frames.add(":black_large_square::star::black_large_square::star::black_large_square:");
     	frames.add(":black_medium_small_square::star::black_medium_small_square::star::black_medium_small_square:");
     	frames.add(":black_small_square::star::black_small_square::star::black_small_square:");
-    	frames.add(result);
     	return frames;
     }
-    
-    private static List<String> createOneStarAnimation(String result) {
+
+    private static List<String> createOneStarAnimation() {
     	List<String> frames = baseAnimation();
     	frames.add(":black_large_square::black_large_square::star::black_large_square::black_large_square:");
     	frames.add(":black_medium_small_square::black_medium_small_square::star::black_medium_small_square::black_medium_small_square:");
     	frames.add(":black_small_square::black_small_square::star::black_small_square::black_small_square:");
-    	frames.add(result);
     	return frames;
     }
-    
-    private static List<String> createAnimation(String result) {
+
+    private static List<String> createAnimation() {
     	List<String> frames = baseAnimation();
     	frames.add(":black_medium_small_square::black_medium_small_square::black_medium_small_square::black_medium_small_square::black_medium_small_square:");
     	frames.add(":black_small_square::black_small_square::black_small_square::black_small_square::black_small_square:");
-    	frames.add(result);
     	return frames;
     }
-    
+
     private static List<String> baseAnimation() {
     	return new ArrayList<String>(Arrays.asList(
     			":sparkles::black_large_square::black_large_square::black_large_square::black_large_square:",
@@ -474,9 +551,15 @@ public class Gacha {
     //   CONSTRAINT gacha_banner_cid3 FOREIGN KEY(slot3) REFERENCES gacha_character(cid),
     //   CONSTRAINT gacha_banner_cid4 FOREIGN KEY(slot4) REFERENCES gacha_character(cid)
     // );
-    
+
+    static final String GACHA_USER_COLUMNS = "primary_pity, secondary_pity, tertiary_pity, banner_flops, pulls, times_pulled_nonbanner + times_pulled_banner AS times_pulled";
+
     private static GachaUser getGachaUser(long uid) {
-        String query = "SELECT primary_pity, secondary_pity, tertiary_pity, banner_flops, pulls, times_pulled_nonbanner + times_pulled_banner AS times_pulled FROM gacha_user WHERE uid = " + uid + ";";
+        String query = "SELECT " + GACHA_USER_COLUMNS + " FROM gacha_user WHERE uid = " + uid + ";";
+        return getGachaUser(uid, query);
+    }
+    
+    private static GachaUser getGachaUser(long uid, String query) {
         Connection connection = null;
         Statement statement = null;
         GachaUser user = null;
@@ -556,8 +639,7 @@ public class Gacha {
         }
         return character;
     }
-    
-    // TODO: Order by rarity
+
     private static List<GachaCharacter> getCharacters(long uid) {
     	String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM " +
     			"gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC;";
@@ -653,15 +735,20 @@ public class Gacha {
     private static long awardCoinFiller(long uid, long coin_amount) {
     	return Casino.addMoneyDirect(uid, coin_amount);
     }
-    
-    private static int logFillerPull(long uid, boolean on_banner) {
-    	String pullType = (on_banner ? "times_pulled_banner" : "times_pulled_nonbanner");
-    	return Casino.executeIntQuery("UPDATE gacha_user SET (pulls, " + pullType + ", primary_pity, secondary_pity, "
-    			+ "tertiary_pity) = (pulls - 1, " + pullType + " + 1, primary_pity + 1, secondary_pity + 1, "
-    			+ "tertiary_pity + 1) WHERE uid = " + uid + " RETURNING pulls;");
+
+    protected static int addPulls(long uid, int amount) {
+    	return Casino.executeIntQuery("UPDATE gacha_user SET (pulls) = (pulls + " + amount
+    			+ ") WHERE uid = " + uid + " RETURNING pulls;");
     }
     
-    private static int logCharacterAward(long uid, int rarity, boolean from_banner, boolean is_banner_flop) {
+    private static GachaUser logFillerPull(long uid, boolean on_banner) {
+    	String pullType = (on_banner ? "times_pulled_banner" : "times_pulled_nonbanner");
+    	return getGachaUser(uid, "UPDATE gacha_user SET (pulls, " + pullType + ", primary_pity, secondary_pity, "
+    			+ "tertiary_pity) = (pulls - 1, " + pullType + " + 1, primary_pity + 1, secondary_pity + 1, "
+    			+ "tertiary_pity + 1) WHERE uid = " + uid + " RETURNING " + GACHA_USER_COLUMNS + ";");
+    }
+    
+    private static GachaUser logCharacterAward(long uid, int rarity, boolean from_banner, boolean is_banner_flop) {
     	String pullType = (from_banner ? "times_pulled_banner" : "times_pulled_nonbanner");
     	String secondary_pity = "secondary_pity + 1";
     	if (rarity > 2) {
@@ -675,10 +762,10 @@ public class Gacha {
     	} else if (rarity == 1) {
     		tertiary_pity = "0";
     	}
-    	return Casino.executeIntQuery("UPDATE gacha_user SET (pulls, " + pullType + ", primary_pity, secondary_pity, "
+    	return getGachaUser(uid, "UPDATE gacha_user SET (pulls, " + pullType + ", primary_pity, secondary_pity, "
     			+ "tertiary_pity, banner_flops) = (pulls - 1, " + pullType + " + 1, " + (rarity == 3 ? "0" : "primary_pity + 1") + ", "
     			+ secondary_pity + ", " + tertiary_pity + ", " + (is_banner_flop ? "banner_flops + 1" : "0")
-    			+ ") WHERE uid = " + uid + " RETURNING pulls;");
+    			+ ") WHERE uid = " + uid + " RETURNING " + GACHA_USER_COLUMNS + ";");
     }
 
 }

@@ -159,17 +159,12 @@ public class Events {
 
     public static long awardRobBonus(long uid) {
     	Casino.executeUpdate("UPDATE event_user SET (robs_today) = (robs_today + 1) WHERE uid = " + uid + ";");
-    	return addPulls(uid, 2);
+    	return Gacha.addPulls(uid, 2);
     }
     
     public static long awardPickBonus(long uid) {
     	Casino.executeUpdate("UPDATE event_user SET (picks_today) = (picks_today + 1) WHERE uid = " + uid + ";");
-    	return addPulls(uid, 2);
-    }
-
-    private static int addPulls(long uid, int amount) {
-    	return Casino.executeIntQuery("UPDATE gacha_user SET (pulls) = (pulls + " + amount
-    			+ ") WHERE uid = " + uid + " RETURNING pulls;");
+    	return Gacha.addPulls(uid, 2);
     }
     
     private static Timestamp resetEventUserDailyLimits(long uid) {

@@ -4,18 +4,12 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
-import org.javacord.api.entity.message.component.ButtonStyle;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.InteractionBase;
-import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,7 +18,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HBMain {
 
-    private static final String version = "3.1.5"; //Update this in pom.xml too
+    private static final String version = "3.1.6"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -146,7 +140,9 @@ public class HBMain {
                     break;
                 case "pull":
                 	makeMultiStepResponse(
-                		Gacha.handleGachaPull(interaction.getUser().getId(), false), 1000, interaction);
+                		Gacha.handleGachaPull(interaction.getUser().getId(), false,
+                            interaction.getArgumentLongValueByIndex(0).orElse(1L)).messageParts,
+                        1000, interaction);
                 	break;
                 case "gacha character list":
                 	interaction.createImmediateResponder().setContent(
@@ -266,8 +262,9 @@ public class HBMain {
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pull", "Try to win a gacha character!")
         //      .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pulls", "Check how many gacha pulls you have")
-        //      .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pulls", "Check how many gacha pulls you have",
+        //    Arrays.asList(SlashCommandOption.createLongOption("pulls", "Number of pulls to use", false, 1, 1000)))
+        //    .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pity", "Check your gacha pity")
         //      .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("gacha", "Ha! Gotcha!",
@@ -315,7 +312,9 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "3.1.5"
+        return "3.1.6"
+            + "\n\t- Adds the abillity to perform multiple pulls at once"
+            + "\n3.1.5"
         	+ "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
         	+ "\n3.1.4"
         	+ "\n\t- `/pulls` now lists available pull sources or remaining timer"
