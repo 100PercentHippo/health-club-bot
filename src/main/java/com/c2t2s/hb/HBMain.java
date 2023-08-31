@@ -238,10 +238,10 @@ public class HBMain {
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("leaderboard", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true, 1, 10)))
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("richest", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true, 1, 10)))
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pot", "Check how much money is in the Money Machine")
         //     .setEnabledInDms(false).createGlobal(api).join();
@@ -276,8 +276,6 @@ public class HBMain {
         //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
         //         Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got")))))
         //     .setEnabledInDms(false).createGlobal(api).join();
-        // TODO: Update leaderboard/richest's argument to be optional
-        // TODO: Create /blackjack and /overunder as aliases to start new games
         System.out.println("Command registration complete");
     }
 
