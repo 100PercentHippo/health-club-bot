@@ -163,7 +163,7 @@ public class Gacha {
     }
     
     protected static class GachaResponse {
-        public String partialMessage;
+        public String partialMessage = "";
         public List<String> messageParts = new ArrayList<String>();
         public Map<Integer, String> images = new HashMap<Integer, String>();
 
@@ -172,10 +172,9 @@ public class Gacha {
         public long chocolateCoinsAwarded = 0;
         public long chocolateCoinBalance = 0;
         public int highestCharacterAwarded = 0;
-        public int remainingPulls = 0;
 
         public void addMessagePart(String message) {
-            partialMessage += message;
+            partialMessage += (!partialMessage.isEmpty() ? "\n" : "") + message;
             messageParts.add(partialMessage);
         }
 
@@ -268,8 +267,8 @@ public class Gacha {
         if (response.coinsAwarded > 0) {
             balances += "\nYour new balance is " + response.coinBalance;
         }
-        balances += "\n\nYou have " + response.remainingPulls + " pull"
-            + (response.remainingPulls != 1 ? "s" : "") + " remaining";
+        balances += "\nYou have " + user.pulls + " pull"
+            + (user.pulls != 1 ? "s" : "") + " remaining";
         response.addMessagePart(balances);
 
         return response;
@@ -356,10 +355,10 @@ public class Gacha {
             }
             response.coinBalance = awardCoinFiller(uid, coins);
             response.coinsAwarded += coins;
-            response.addMessagePart(":coin: You pull " + coins + " coins.");
+            response.addMessagePart(":coin: You pull " + coins + " coins");
         } else {
             addPulls(uid, 1);
-            response.addMessagePart(":stars: You pull ... a pull. Neat.");
+            response.addMessagePart(":stars: You pull ... a pull. Neat");
         }
         return logFillerPull(uid, from_banner);
     }
