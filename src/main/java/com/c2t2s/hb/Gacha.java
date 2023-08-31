@@ -263,7 +263,7 @@ public class Gacha {
         }
         response.addAnimation(animation);
 
-        String balances = "\n";
+        String balances = "";
         if (response.coinsAwarded > 0) {
             balances += "\nYour new balance is " + response.coinBalance;
         }
@@ -355,10 +355,10 @@ public class Gacha {
             }
             response.coinBalance = awardCoinFiller(uid, coins);
             response.coinsAwarded += coins;
-            response.addMessagePart(":coin: You pull " + coins + " coins");
+            response.addMessagePart(":coin: You pull " + coins + " coins.");
         } else {
             addPulls(uid, 1);
-            response.addMessagePart(":stars: You pull ... a pull. Neat");
+            response.addMessagePart(":stars: You pull ... a pull. Neat.");
         }
         return logFillerPull(uid, from_banner);
     }
