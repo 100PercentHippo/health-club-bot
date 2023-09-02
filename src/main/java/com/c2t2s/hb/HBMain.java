@@ -141,27 +141,27 @@ public class HBMain {
                         Blackjack.handleHit(interaction.getUser().getId())).respond();
                     break;
                 case "blackjack stand":
-                	makeMultiStepResponse(
-                		Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
+                    makeMultiStepResponse(
+                        Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
                     break;
                 case "pull":
-                	makeMultiStepResponse(
-                		Gacha.handleGachaPull(interaction.getUser().getId(), false,
+                    makeMultiStepResponse(
+                        Gacha.handleGachaPull(interaction.getUser().getId(), false,
                             interaction.getArgumentLongValueByIndex(0).orElse(1L)).getMessageParts(),
                         1000, interaction);
-                	break;
+                    break;
                 case "gacha character list":
-                	interaction.createImmediateResponder().setContent(
-                		Gacha.handleCharacterList(interaction.getUser().getId())).respond();
-                	break;
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handleCharacterList(interaction.getUser().getId())).respond();
+                    break;
                 case "pulls":
-                	interaction.createImmediateResponder().setContent(
-                		Gacha.handlePulls(interaction.getUser().getId())).respond();
-                	break;
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handlePulls(interaction.getUser().getId())).respond();
+                    break;
                 case "pity":
-                	interaction.createImmediateResponder().setContent(
-                		Gacha.handlePity(interaction.getUser().getId())).respond();
-                	break;
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handlePity(interaction.getUser().getId())).respond();
+                    break;
                 default:
                     return;
             }
@@ -207,13 +207,13 @@ public class HBMain {
                         .respond();
                     }
                 } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                	makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                		1000, interaction);
+                    makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                        1000, interaction);
                 }
             }
         });
     }
-    
+
     private static void initCommands(DiscordApi api) {
         System.out.println("Registering commands with discord");
         //SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
@@ -324,22 +324,22 @@ public class HBMain {
         return "Changelog:\n3.1.6"
             + "\n\t- Adds the abillity to perform multiple pulls at once"
             + "\n3.1.5"
-        	+ "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
-        	+ "\n3.1.4"
-        	+ "\n\t- `/pulls` now lists available pull sources or remaining timer"
-        	+ "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
-        	+ "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-        	+ "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
-        	+ "\n\t- Test Character B has been temporarily disabled for balance reasons"
-        	+ "\n3.1.3"
-        	+ "\n\t- `/give` now pings the recipient"
-        	+ "\n\t- `/blackjack` now resolves incrementally"
-        	+ "\n3.1.2"
-        	+ "\n\t- Adds `/pity` and `/pulls`"
-        	+ "\n3.1.1"
-        	+ "\n\t- First 2h and 30m income command per day now award Gacha pulls"
-        	+ "\n3.1.0"
-        	+ "\n\t- Adds `/pull` to test the gacha system";
+            + "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
+            + "\n3.1.4"
+            + "\n\t- `/pulls` now lists available pull sources or remaining timer"
+            + "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
+            + "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+            + "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
+            + "\n\t- Test Character B has been temporarily disabled for balance reasons"
+            + "\n3.1.3"
+            + "\n\t- `/give` now pings the recipient"
+            + "\n\t- `/blackjack` now resolves incrementally"
+            + "\n3.1.2"
+            + "\n\t- Adds `/pity` and `/pulls`"
+            + "\n3.1.1"
+            + "\n\t- First 2h and 30m income command per day now award Gacha pulls"
+            + "\n3.1.0"
+            + "\n\t- Adds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls

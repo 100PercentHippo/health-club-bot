@@ -94,10 +94,10 @@ class Blackjack {
     }
 
     public static List<String> handleStand(long uid) {
-    	List<String> response = new ArrayList<>();
+        List<String> response = new ArrayList<>();
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
-        	response.add("No active game found. Use `/blackjack new` to start a new game");
+            response.add("No active game found. Use `/blackjack new` to start a new game");
             return response;
         }
         String playerHand = "Your hand:    " + game.getHand();
@@ -137,10 +137,10 @@ class Blackjack {
             blackjackLoss(uid);
             resolution = "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
         } else if (dealerTotal < playerTotal) {
-        	resolution = "\nYou win " + (2 * game.getWager())
+            resolution = "\nYou win " + (2 * game.getWager())
                     + "! Your new balance is " + blackjackWin(uid, game.getWager(), false);
         } else { // Tie
-        	resolution = "\nTie. You get " + game.getWager() + " back. Your new balance is "
+            resolution = "\nTie. You get " + game.getWager() + " back. Your new balance is "
                     + blackjackTie(uid, game.getWager());
         }
         response.add(playerHand + dealerHand + resolution);
