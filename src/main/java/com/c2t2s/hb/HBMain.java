@@ -4,26 +4,26 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
-import org.javacord.api.entity.message.component.ButtonStyle;
 import org.javacord.api.interaction.MessageComponentInteraction;
-import org.javacord.api.interaction.SlashCommand;
+import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+// Used when initializing commands
+import org.javacord.api.interaction.SlashCommand;
+import org.javacord.api.interaction.SlashCommandOption;
+import java.util.Arrays;
+
 public class HBMain {
 
-    private static final String version = "3.0.2"; //Update this in pom.xml too
+    private static final String version = "3.1.6"; //Update this in pom.xml too
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -140,9 +140,27 @@ public class HBMain {
                         Blackjack.handleHit(interaction.getUser().getId())).respond();
                     break;
                 case "blackjack stand":
-                    interaction.createImmediateResponder().setContent(
-                        Blackjack.handleStand(interaction.getUser().getId())).respond();
+                	makeMultiStepResponse(
+                		Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
                     break;
+                case "pull":
+                	makeMultiStepResponse(
+                		Gacha.handleGachaPull(interaction.getUser().getId(), false,
+                            interaction.getArgumentLongValueByIndex(0).orElse(1L)).messageParts,
+                        1000, interaction);
+                	break;
+                case "gacha character list":
+                	interaction.createImmediateResponder().setContent(
+                		Gacha.handleCharacterList(interaction.getUser().getId())).respond();
+                	break;
+                case "pulls":
+                	interaction.createImmediateResponder().setContent(
+                		Gacha.handlePulls(interaction.getUser().getId())).respond();
+                	break;
+                case "pity":
+                	interaction.createImmediateResponder().setContent(
+                		Gacha.handlePity(interaction.getUser().getId())).respond();
+                	break;
             }
         });
         api.addMessageComponentCreateListener(event -> {
@@ -174,16 +192,17 @@ public class HBMain {
             } else if (interaction.getCustomId().contains("blackjack")) {
                 if (interaction.getCustomId().equals("blackjack.hit")) {
                     response = Blackjack.handleHit(interaction.getUser().getId());
+                    if (response.contains("balance")) {
+                        interaction.createImmediateResponder().setContent(response).respond();
+                    } else {
+                        interaction.createImmediateResponder().setContent(response)
+                        .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
+                            Button.secondary("blackjack.stand", "Stand")))
+                        .respond();
+                    }
                 } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                    response = Blackjack.handleStand(interaction.getUser().getId());
-                }
-                if (response.contains("balance")) {
-                    interaction.createImmediateResponder().setContent(response).respond();
-                } else {
-                    interaction.createImmediateResponder().setContent(response)
-                    .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
-                        Button.secondary("blackjack.stand", "Stand")))
-                    .respond();
+                	makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                		1000, interaction);
                 }
             }
         });
@@ -219,10 +238,10 @@ public class HBMain {
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("leaderboard", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true, 1, 10)))
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("richest", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", true, 1, 10)))
+        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10)))
         //     .setEnabledInDms(false).createGlobal(api).join();
         // SlashCommand.with("pot", "Check how much money is in the Money Machine")
         //     .setEnabledInDms(false).createGlobal(api).join();
@@ -246,8 +265,17 @@ public class HBMain {
         //     Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
         //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
         //     .setEnabledInDms(false).createGlobal(api).join();
-        // TODO: Update leaderboard/richest's argument to be optional
-        // TODO: Create /blackjack and /overunder as aliases to start new games
+        // SlashCommand.with("pull", "Try to win a gacha character!",
+        //        Arrays.asList(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 1000)))
+        //    .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pulls", "Check how many gacha pulls you have")
+        //    .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("pity", "Check your gacha pity")
+        //      .setEnabledInDms(false).createGlobal(api).join();
+        // SlashCommand.with("gacha", "Ha! Gotcha!",
+        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
+        //         Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got")))))
+        //     .setEnabledInDms(false).createGlobal(api).join();
         System.out.println("Command registration complete");
     }
 
@@ -278,18 +306,34 @@ public class HBMain {
             + "\n\t\tStart a new game with `new`"
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
-            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`";
+            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
+            + "\nGacha Commands:"
+            + "\n\t`/pull` Pull for gacha characters!"
+            + "\n\t`/pulls` Check your available pulls"
+            + "\n\t`/pity` Check your gacha pity"
+            + "\n\t`/gacha character list` List the characters you've pulled";
     }
 
     private static String getChangelog() {
-        return "3.0.2"
-        	+ "\n\tCorrects wager limits for blackjack and overunder"
-        	+ "\n\tRemoves automatic contributions to the money machine from casino net profits"
-        	+ "\n\tMoney machine now instead retains 25% of the pot when paying out"
-        	+ "\n3.0.1"
-        	+ "\n\t`/feed` is once again working"
-        	+ "\n3.0.0"
-        	+ "\n\tBot is back (again)!";
+        return "3.1.6"
+            + "\n\t- Adds the abillity to perform multiple pulls at once"
+            + "\n3.1.5"
+        	+ "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
+        	+ "\n3.1.4"
+        	+ "\n\t- `/pulls` now lists available pull sources or remaining timer"
+        	+ "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
+        	+ "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+        	+ "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
+        	+ "\n\t- Test Character B has been temporarily disabled for balance reasons"
+        	+ "\n3.1.3"
+        	+ "\n\t- `/give` now pings the recipient"
+        	+ "\n\t- `/blackjack` now resolves incrementally"
+        	+ "\n3.1.2"
+        	+ "\n\t- Adds `/pity` and `/pulls`"
+        	+ "\n3.1.1"
+        	+ "\n\t- First 2h and 30m income command per day now award Gacha pulls"
+        	+ "\n3.1.0"
+        	+ "\n\t- Adds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
@@ -349,7 +393,7 @@ public class HBMain {
         }
     }
 
-    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, SlashCommandInteraction interaction) {
+    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, InteractionBase interaction) {
         CompletableFuture<InteractionOriginalResponseUpdater> updater
             =  interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
         if (responseSteps.size() > 0) {
