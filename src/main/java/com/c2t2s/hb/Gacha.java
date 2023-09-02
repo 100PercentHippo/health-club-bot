@@ -23,7 +23,7 @@ class Gacha {
         int pulls;
         int timesPulled;
 
-        public GachaUser(int primaryPity, int secondaryPity, int tertiaryPity,
+        private GachaUser(int primaryPity, int secondaryPity, int tertiaryPity,
                 int bannerFlops, int pulls, int timesPulled) {
             this.primaryPity = primaryPity;
             this.secondaryPity = secondaryPity;
@@ -34,7 +34,7 @@ class Gacha {
         }
 
         // Returns chance to pull a 3 Star
-        public double getThreeStarChance() {
+        private double getThreeStarChance() {
             // TODO: Scale this to be larger at high pity
             if (primaryPity >= (MAX_3STAR_PITY)) {
                 return 1.0;
@@ -44,7 +44,7 @@ class Gacha {
         }
 
         // Returns chance to pull a 2 Star
-        public double getTwoStarChance() {
+        private double getTwoStarChance() {
             // TODO: Scale this to be larger at high pity
             if (secondaryPity >= (MAX_2STAR_PITY)) {
                 return 1.0;
@@ -54,7 +54,7 @@ class Gacha {
         }
 
         // Returns chance to pull a 1 Star
-        public double getOneStarChance() {
+        private double getOneStarChance() {
             // TODO: Scale this to be larger at high pity
             if (tertiaryPity >= (MAX_1STAR_PITY)) {
                 return 1.0;
@@ -63,18 +63,18 @@ class Gacha {
             }
         }
 
-        protected String getPityString() {
+        private String getPityString() {
             return "3 Star Pity: " + primaryPity + "/" + (MAX_3STAR_PITY + 1)
                 + "\n2 Star Pity: " + secondaryPity + "/" + (MAX_2STAR_PITY + 1)
                 + "\n1 Star Pity: " + tertiaryPity + "/" + (MAX_1STAR_PITY + 1)
                 + "\nAvailable Pulls: " + pulls;
         }
 
-        int getBannerFlops() {
+        private int getBannerFlops() {
             return bannerFlops;
         }
 
-        int getTimesPulled() {
+        private int getTimesPulled() {
             return timesPulled;
         }
     }
@@ -92,7 +92,7 @@ class Gacha {
         private String pictureUrl;
         private String shinyUrl;
 
-        public GachaCharacter(String name, int rarity, int foil, String type, int level,
+        private GachaCharacter(String name, int rarity, int foil, String type, int level,
                 int xp, int duplicates, String description, String pictureUrl, String shinyUrl) {
             this.name = name;
             this.rarity = rarity;
@@ -121,14 +121,14 @@ class Gacha {
             return (foil == 1 ? shinyUrl : pictureUrl);
         }
 
-        public String toAbbreviatedString() {
+        private String toAbbreviatedString() {
             return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
                     + " (" + rarity + " Star " + type + ") - Level " + level
                     + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
                     + " - +" + getBuffPercent() + "% Bonus";
         }
 
-        public String toFullString() {
+        private String toFullString() {
             return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
                     + "\n\t" + rarity + " Star " + type
                     + "\n\tLevel " + level + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
@@ -137,7 +137,7 @@ class Gacha {
                     + "\n" + getPictureUrl();
         }
 
-        public String generateAwardText(boolean useBriefResponse) {
+        private String generateAwardText(boolean useBriefResponse) {
             String star = (foil == 1 ? ":star2:" : ":star:");
             String stars = "";
             if (rarity > 0) {
@@ -163,22 +163,22 @@ class Gacha {
             }
         }
 
-        public int getXpToLevel() {
+        private int getXpToLevel() {
             // Level 0 -> Level 1: 100 xp
             // Every level beyond doubles previous level
             return 50 * (int)Math.pow(2, level + 1);
         }
 
-        public double getBuffPercent() {
+        private double getBuffPercent() {
             return 2.5 + (rarity * 2.5) + (duplicates * 1.0) + (level * 1.0);
         }
 
-        public double getBuffDecimal() {
+        private double getBuffDecimal() {
             return getBuffPercent() / 100;
         }
     }
 
-    protected static class GachaResponse {
+    static class GachaResponse {
         private String partialMessage = "";
         private List<String> messageParts = new ArrayList<>();
         private Map<Integer, String> images = new HashMap<>();
@@ -189,19 +189,19 @@ class Gacha {
         private long chocolateCoinBalance = 0;
         private int highestCharacterAwarded = 0;
 
-        public void addMessagePart(String message) {
+        private void addMessagePart(String message) {
             partialMessage += (!partialMessage.isEmpty() ? "\n" : "") + message;
             messageParts.add(partialMessage);
         }
 
-        public void addCharacterMessagePart(String message, int rarity) {
+        private void addCharacterMessagePart(String message, int rarity) {
             if (rarity > highestCharacterAwarded) {
                 highestCharacterAwarded = rarity;
             }
             addMessagePart(message);
         }
 
-        public void addAnimation(List<String> frames) {
+        private void addAnimation(List<String> frames) {
             messageParts.addAll(0, frames);
         }
 
@@ -210,20 +210,20 @@ class Gacha {
         }
     }
 
-    public static final int MAX_CHARACTER_LEVEL = 5;
-    public static final int MAX_CHARACTER_DUPLICATES = 5;
-    public static final int MAX_3STAR_PITY = 191;
-    public static final int MAX_2STAR_PITY = 47;
-    public static final int MAX_1STAR_PITY = 11;
-    public static final int MAX_BANNER_FLOPS = 2;
-    public static final double BASE_3STAR_CHANCE = 0.0078125;
-    public static final double BASE_2STAR_CHANCE = 0.03125;
-    public static final double BASE_1STAR_CHANCE = 0.125;
-    public static final double BANNER_3STAR_CHANCE = 0.5;
-    public static final double BANNER_2STAR_CHANCE = 0.6;
-    public static final double SHINY_CHANCE = 0.05;
+    private static final int MAX_CHARACTER_LEVEL = 5;
+    private static final int MAX_CHARACTER_DUPLICATES = 5;
+    private static final int MAX_3STAR_PITY = 191;
+    private static final int MAX_2STAR_PITY = 47;
+    private static final int MAX_1STAR_PITY = 11;
+    private static final int MAX_BANNER_FLOPS = 2;
+    private static final double BASE_3STAR_CHANCE = 0.0078125;
+    private static final double BASE_2STAR_CHANCE = 0.03125;
+    private static final double BASE_1STAR_CHANCE = 0.125;
+    private static final double BANNER_3STAR_CHANCE = 0.5;
+    private static final double BANNER_2STAR_CHANCE = 0.6;
+    private static final double SHINY_CHANCE = 0.05;
 
-    public static GachaResponse handleGachaPull(long uid, boolean onBanner, long pulls) {
+    static GachaResponse handleGachaPull(long uid, boolean onBanner, long pulls) {
         GachaResponse response = new GachaResponse();
         GachaUser user = getGachaUser(uid);
         if (user == null) {
@@ -453,7 +453,7 @@ class Gacha {
     }
 
     // TODO
-    public static List<String> provideCharacterPreview(long uid) {
+    static List<String> provideCharacterPreview(long uid) {
         // Query characters
 
         // Format text
@@ -461,7 +461,7 @@ class Gacha {
         return new ArrayList<>(Arrays.asList(""));
     }
 
-    public static String handleCharacterList(long uid) {
+    static String handleCharacterList(long uid) {
         List<GachaCharacter> characters = getCharacters(uid);
         if (characters.isEmpty()) {
             GachaUser user = getGachaUser(uid);
@@ -479,7 +479,7 @@ class Gacha {
         return output.toString();
     }
 
-    public static String handleCharacterDetails(long uid, long cid, int rarity) {
+    static String handleCharacterDetails(long uid, long cid, int rarity) {
         GachaCharacter character = getCharacter(uid, cid, rarity == 1);
         if (character == null) {
             GachaUser user = getGachaUser(uid);
@@ -493,7 +493,7 @@ class Gacha {
         return character.toFullString();
     }
 
-    protected static String handlePity(long uid) {
+    static String handlePity(long uid) {
         GachaUser user = getGachaUser(uid);
         if (user == null) {
             return Casino.USER_NOT_FOUND_MESSAGE;
@@ -501,7 +501,7 @@ class Gacha {
         return user.getPityString();
     }
 
-    protected static String handlePulls(long uid) {
+    static String handlePulls(long uid) {
         GachaUser user = getGachaUser(uid);
         if (user == null) {
             return Casino.USER_NOT_FOUND_MESSAGE;
@@ -754,10 +754,10 @@ class Gacha {
     }
 
     private static long awardCoinFiller(long uid, long coinAmount) {
-        return Casino.addMoneyDirect(uid, coinAmount);
+        return Casino.addMoney(uid, coinAmount);
     }
 
-    protected static int addPulls(long uid, int amount) {
+    static int addPulls(long uid, int amount) {
         return Casino.executeIntQuery("UPDATE gacha_user SET (pulls) = (pulls + " + amount
                 + ") WHERE uid = " + uid + " RETURNING pulls;");
     }

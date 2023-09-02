@@ -15,7 +15,7 @@ class Casino {
     // Hide default constructor
     private Casino() {}
 
-    public static class User {
+    private static class User {
         private int work;
         private int fish;
         private int pick;
@@ -25,7 +25,7 @@ class Casino {
         private Timestamp timer;
         private Timestamp timer2;
 
-        public User(int w, int f, int p, int r, long b, boolean jail, Timestamp time, Timestamp time2) {
+        private User(int w, int f, int p, int r, long b, boolean jail, Timestamp time, Timestamp time2) {
             work = w;
             fish = f;
             pick = p;
@@ -36,55 +36,55 @@ class Casino {
             timer2 = time2;
         }
 
-        public int getMorality() {
+        private int getMorality() {
             return (2 * work) + fish - pick - (2 * rob);
         }
 
-        public long getBalance() {
+        private long getBalance() {
             return balance;
         }
 
-        public boolean isJailed() {
+        private boolean isJailed() {
             return inJail;
         }
 
-        public Timestamp getTimer() {
+        private Timestamp getTimer() {
             return timer;
         }
 
-        public Timestamp getTimer2() {
+        private Timestamp getTimer2() {
             return timer2;
         }
     }
 
-    public static class OverUnderGame {
+    private static class OverUnderGame {
         private int round;
         private long wager;
         private int target;
 
-        public OverUnderGame(int round, long wager, int target) {
+        private OverUnderGame(int round, long wager, int target) {
             this.round = round;
             this.wager = wager;
             this.target = target;
         }
 
-        public int getRound() {
+        private int getRound() {
             return round;
         }
 
-        public long getWager() {
+        private long getWager() {
             return wager;
         }
 
-        public int getTarget() {
+        private int getTarget() {
             return target;
         }
     }
 
-    public static final long MONEY_MACHINE_UID = -1;
-    public static final int PREDICTION_OVER = 0;
-    public static final int PREDICTION_UNDER = 1;
-    public static final int PREDICTION_SAME = 2;
+    private static final long MONEY_MACHINE_UID = -1;
+    static final int PREDICTION_OVER = 0;
+    static final int PREDICTION_UNDER = 1;
+    static final int PREDICTION_SAME = 2;
     static final String USER_NOT_FOUND_MESSAGE = "Unable to fetch user. If you are new run `/claim` to start";
 
     // Returns 's' as needed to write the English version
@@ -93,7 +93,7 @@ class Casino {
         return (value != 1 ? "s" : "");
     }
 
-    public static String formatTime(long time) {
+    static String formatTime(long time) {
         long days = TimeUnit.MILLISECONDS.toDays(time);
         long hours = TimeUnit.MILLISECONDS.toHours(time) - (24 * days);
         long minutes = TimeUnit.MILLISECONDS.toMinutes(time) - (1440 * days) - (60 * hours);
@@ -125,7 +125,7 @@ class Casino {
     }
 
     // Emulates String.repeat() but for versions before Java 11
-    public static String repeatString(String phrase, int times) {
+    static String repeatString(String phrase, int times) {
         StringBuilder output = new StringBuilder();
         for (int i = times; i > 0; --i) {
             output.append(phrase);
@@ -150,7 +150,7 @@ class Casino {
 //  :detective:     5% 200
 //  :artist:       25% 250
 
-    public static String handleWork(long uid) {
+    static String handleWork(long uid) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -199,7 +199,7 @@ class Casino {
 //  :crab:               5% 100
 //  :ring:               5% 250 (400 if high morality)
 
-    public static String handleFish(long uid) {
+    static String handleFish(long uid) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -252,7 +252,7 @@ class Casino {
 //  :convenience_store: 25% 300
 //  :bank:              25% 350
 
-    public static String handleRob(long uid) {
+    static String handleRob(long uid) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -315,7 +315,7 @@ class Casino {
 //  :medal:             10% 125
 //  :gem:                5% 250
 
-    public static String handlePickpocket(long uid) {
+    static String handlePickpocket(long uid) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -368,7 +368,7 @@ class Casino {
         return output + bonus;
     }
 
-    public static String handleClaim(long uid, String name) {
+    static String handleClaim(long uid, String name) {
         User user = getUser(uid);
         String response = "";
         if (user == null) {
@@ -391,7 +391,7 @@ class Casino {
 // Big Guess Payout:
 //  Correct:        1/10  10:1
 
-    public static String handleGuess(long uid, long guess, long amount) {
+    static String handleGuess(long uid, long guess, long amount) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -403,17 +403,17 @@ class Casino {
         int correct = HBMain.RNG_SOURCE.nextInt(10) + 1;
         if (guess == correct) {
             guessWin(uid, amount, 9 * amount);
-            return "Correct! You win " + (10 * amount) + "! New balance is " + addWinnings(uid, 9 * amount);
+            return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 9 * amount);
         } else {
             guessLoss(uid, amount);
-            return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
+            return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
         }
     }
 
 // Huge Guess Payout:
 //  Correct:    1/100  100:1
 
-    public static String handleHugeGuess(long uid, long guess, long amount) {
+    static String handleHugeGuess(long uid, long guess, long amount) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -425,14 +425,14 @@ class Casino {
         int correct = HBMain.RNG_SOURCE.nextInt(100) + 1;
         if (guess == correct) {
             hugeGuessWin(uid, amount, 99 * amount);
-            return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
+            return "Correct! You win " + (100 * amount) + "! New balance is " + addMoney(uid, 99 * amount);
         } else {
             hugeGuessLoss(uid, amount);
-            return "The correct value was " + correct + ". Your new balance is " + takeLosses(uid, amount);
+            return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
         }
     }
 
-    public static String handleFeed(long uid, Long amount) {
+    static String handleFeed(long uid, Long amount) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -465,7 +465,7 @@ class Casino {
         }
     }
 
-    public static String handlePot() {
+    static String handlePot() {
         User moneyMachine = getUser(MONEY_MACHINE_UID);
         if (moneyMachine == null) {
             return "A database error occurred. The money machine is nowhere to be found.";
@@ -484,7 +484,7 @@ class Casino {
 //  4 diamonds:  1/20 000 000       1000:1
 //  5 diamonds:  1/10 000 000 000   10000:1
 
-    public static List<String> handleSlots(long uid, long amount) {
+    static List<String> handleSlots(long uid, long amount) {
         List<String> responseSteps = new ArrayList<>();
         User user = getUser(uid);
         if (user == null) {
@@ -563,9 +563,9 @@ class Casino {
             winnings += amount * (int)Math.pow(10, (diamonds - 1));
         }
         if (amount > winnings) {
-            balance = takeLosses(uid, amount - winnings);
+            balance = takeMoney(uid, amount - winnings);
         } else {
-            balance = addWinnings(uid, winnings - amount);
+            balance = addMoney(uid, winnings - amount);
         }
         if (winnings > 0) {
             output.append("Winnings: " + (winnings) + " ");
@@ -583,7 +583,7 @@ class Casino {
 //  2 diamonds:  3/10000   10:1
 //  3 diamonds:  1/1000000 100:1
 
-    public static List<String> handleMinislots(long uid, long amount) {
+    static List<String> handleMinislots(long uid, long amount) {
         List<String> responseSteps = new ArrayList<>();
         User user = getUser(uid);
         if (user == null) {
@@ -653,9 +653,9 @@ class Casino {
             winnings += amount * (int)Math.pow(10, (diamonds - 1));
         }
         if (amount > winnings) {
-            balance = takeLosses(uid, amount - winnings);
+            balance = takeMoney(uid, amount - winnings);
         } else {
-            balance = addWinnings(uid, winnings - amount);
+            balance = addMoney(uid, winnings - amount);
         }
         if (winnings > 0) {
             output.append("Winnings: " + (winnings) + " ");
@@ -670,7 +670,7 @@ class Casino {
 //  2 correct then 1 wrong: ~2/11 1:1
 //  3 correct:              ~3/11 3:1
 
-    public static String handleOverUnderInitial(long uid, long amount) {
+    static String handleOverUnderInitial(long uid, long amount) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game != null && game.getRound() != -1) {
             return "You already have an active game: Round " + game.getRound() + " with the current value "
@@ -688,7 +688,7 @@ class Casino {
             + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`";
     }
 
-    public static String handleOverUnderFollowup(long uid, int prediction) {
+    static String handleOverUnderFollowup(long uid, int prediction) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game == null || game.getRound() == -1) {
             return "No active game found. Use `/overunder new` to start a new game";
@@ -725,7 +725,7 @@ class Casino {
         }
     }
 
-    public static String handleBalance(long uid) {
+    static String handleBalance(long uid) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
@@ -733,7 +733,7 @@ class Casino {
         return "Your current balance is " + user.getBalance() + " coin" + getPluralSuffix(user.getBalance()) + ".";
     }
 
-    public static String handleGive(long donorUid, long recipientUid, long amount) {
+    static String handleGive(long donorUid, long recipientUid, long amount) {
         if (amount <= 0) {
             return "Can't give someone a negative number of coins. Try asking them nicely if you want money.";
         }
@@ -750,8 +750,8 @@ class Casino {
         if (recipientBalance == -1) {
             return "Unable to give money. Has that user run `/claim`?";
         }
-        donorBalance = takeMoneyDirect(donorUid, amount);
-        recipientBalance = addMoneyDirect(recipientUid, amount);
+        donorBalance = takeMoney(donorUid, amount);
+        recipientBalance = addMoney(recipientUid, amount);
         if (donorBalance < 0) {
             return "Unable to process transaction";
         } else {
@@ -760,7 +760,7 @@ class Casino {
         }
     }
 
-    public static String handleLeaderboard(long entries) {
+    static String handleLeaderboard(long entries) {
         if (entries > 10) {
             entries = 10;
         }
@@ -769,7 +769,7 @@ class Casino {
 
     //////////////////////////////////////////////////////////
 
-    protected static Connection getConnection() throws SQLException {
+    static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
             System.getenv("JDBC_USERNAME"), System.getenv("JDBC_PASSWORD"));
     }
@@ -866,26 +866,16 @@ class Casino {
     //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
-    public static long checkBalance(long uid) {
+    static long checkBalance(long uid) {
         return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
     }
 
-    public static long takeMoneyDirect(long uid, long amount) {
+    static long takeMoney(long uid, long amount) {
         return executeBalanceQuery("UPDATE money_user SET balance = balance - "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
 
-    public static long takeLosses(long uid, long amount) {
-        return executeBalanceQuery("UPDATE money_user SET balance = balance - "
-            + amount + " WHERE uid = " + uid + " RETURNING balance;");
-    }
-
-    public static long addMoneyDirect(long uid, long amount) {
-        return executeBalanceQuery("UPDATE money_user SET balance = balance + "
-            + amount + " WHERE uid = " + uid + " RETURNING balance;");
-    }
-
-    public static long addWinnings(long uid, long amount) {
+    static long addMoney(long uid, long amount) {
         return executeBalanceQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
@@ -1096,7 +1086,7 @@ class Casino {
     }
 
     private static long logPick(long uid, boolean rare, int income) {
-        long balance = addMoneyDirect(uid, income);
+        long balance = addMoney(uid, income);
         executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
             + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
@@ -1109,14 +1099,14 @@ class Casino {
     }
 
     private static long logRob(long uid, boolean rare, int income) {
-        long balance = addMoneyDirect(uid, income);
+        long balance = addMoney(uid, income);
         executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
             + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static long moneyMachineWin(long uid, long winnings, long newPot) {
-        long balance = addMoneyDirect(uid, winnings);
+        long balance = addMoney(uid, winnings);
         executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         setTimer2Time(uid, "1 minute");
         executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
@@ -1125,39 +1115,39 @@ class Casino {
     }
 
     private static long moneyMachineLoss(long uid, long bet) {
-        long balance = takeMoneyDirect(uid, bet);
-        addMoneyDirect(MONEY_MACHINE_UID, bet);
+        long balance = takeMoney(uid, bet);
+        addMoney(MONEY_MACHINE_UID, bet);
         setTimer2Time(uid, "1 minute");
         executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
-    public static void logInitialOverUnder(long uid, long bet, int target) {
-        takeMoneyDirect(uid, bet);
+    private static void logInitialOverUnder(long uid, long bet, int target) {
+        takeMoney(uid, bet);
         executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
             + bet + ", " + bet + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
-    public static void logOverUnderProgress(long uid, int round, int target) {
+    private static void logOverUnderProgress(long uid, int round, int target) {
         executeUpdate("UPDATE overunder_user SET (round, target) = ("
             + round + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
-    public static void logOverUnderLoss(long uid) {
+    private static void logOverUnderLoss(long uid) {
         executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
             + uid + ";");
     }
 
-    public static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
-        long balance = addWinnings(uid, winnings);
+    private static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
+        long balance = addMoney(uid, winnings);
         executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
             + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
             + (winnings - wager) + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
-    public static OverUnderGame getOverUnderRound(long uid) {
+    private static OverUnderGame getOverUnderRound(long uid) {
         String query = "SELECT round, bet, target FROM overunder_user WHERE uid = " + uid + ";";
         Connection connection = null;
         Statement statement = null;
@@ -1195,7 +1185,7 @@ class Casino {
         return game;
     }
 
-    public static void executeUpdate(String query) {
+    static void executeUpdate(String query) {
         Connection connection = null;
         Statement statement = null;
         try {
@@ -1262,7 +1252,7 @@ class Casino {
         return balance;
     }
 
-    protected static int executeIntQuery(String query) {
+    static int executeIntQuery(String query) {
         Connection connection = null;
         Statement statement = null;
         int result = 0;
@@ -1298,7 +1288,7 @@ class Casino {
         return result;
     }
 
-    protected static Timestamp executeTimestampQuery(String query) {
+    static Timestamp executeTimestampQuery(String query) {
         Connection connection = null;
         Statement statement = null;
         Timestamp result = new Timestamp(0);
@@ -1332,7 +1322,7 @@ class Casino {
         return result;
     }
 
-    protected static List<Long> executeListQuery(String query) {
+    static List<Long> executeListQuery(String query) {
         Connection connection = null;
         Statement statement = null;
         List<Long> resultList = new ArrayList<>();

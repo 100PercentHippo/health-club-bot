@@ -15,14 +15,14 @@ class Blackjack {
     private static String[] cardLetters = {"", "[A]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]", "[9]", "[10]", "[J]", "[Q]", "[K]"};
     private static int[] cardValues = {0, 11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10};
 
-    public static class BlackJackGame {
+    private static class BlackJackGame {
         private String hand;
         private int sum;
         private boolean containsAce;
         private int dealerHand;
         private long wager;
 
-        public BlackJackGame(String hand, int sum, boolean ace, int dealer, long wager) {
+        private BlackJackGame(String hand, int sum, boolean ace, int dealer, long wager) {
             this.hand = hand;
             this.sum = sum;
             this.containsAce = ace;
@@ -30,23 +30,23 @@ class Blackjack {
             this.wager = wager;
         }
 
-        public String getHand() {
+        private String getHand() {
             return hand;
         }
 
-        public int getSum() {
+        private int getSum() {
             return sum;
         }
 
-        public boolean hasAce() {
+        private boolean hasAce() {
             return containsAce;
         }
 
-        public int getDealerHand() {
+        private int getDealerHand() {
             return dealerHand;
         }
 
-        public long getWager() {
+        private long getWager() {
             return wager;
         }
     }
@@ -55,7 +55,7 @@ class Blackjack {
         return "Your hand:    " + hand + "\nDealer's hand: " + cardLetters[dealer] + dealerCardTwo;
     }
 
-    public static String handleBlackjack(long uid, long wager) {
+    static String handleBlackjack(long uid, long wager) {
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null) {
             return "Unable to fetch game from the database. Did you `+claim`?";
@@ -88,12 +88,12 @@ class Blackjack {
             }
         }
         String completeHand = hand.toString();
-        Casino.takeMoneyDirect(uid, wager);
+        Casino.takeMoney(uid, wager);
         newBlackjackGame(uid, completeHand, value, hasAce, dealerCard, wager);
         return "Bid " + wager + " on Blackjack\n" + displayGame(completeHand, dealerCard, "[?]");
     }
 
-    public static List<String> handleStand(long uid) {
+    static List<String> handleStand(long uid) {
         List<String> response = new ArrayList<>();
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
@@ -147,7 +147,7 @@ class Blackjack {
         return response;
     }
 
-    public static String handleHit(long uid) {
+    static String handleHit(long uid) {
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
             return "No active game found. Type `/blackjack new` to start a new game";
@@ -194,43 +194,43 @@ class Blackjack {
     //  CONSTRAINT blackjack_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
-    public static void newBlackjackGame(long uid, String hand, int sum, boolean hasAce, int dealerHand, long wager) {
+    private static void newBlackjackGame(long uid, String hand, int sum, boolean hasAce, int dealerHand, long wager) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hands, spent, hand, sum, ace, dealer_hand, wager) = (hands + 1, spent + "
             + wager + ", '" + hand + "', " + sum + ", " + hasAce + ", " + dealerHand + ", "
             + wager + ") WHERE uid = " + uid + ";");
     }
 
-    public static void updateBlackjackGame(long uid, String hand, int sum, boolean containsAce) {
+    private static void updateBlackjackGame(long uid, String hand, int sum, boolean containsAce) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace) = ('" + hand
             + "', " + sum + ", " + containsAce + ") WHERE uid = " + uid + ";");
     }
 
-    public static long blackjackBust(long uid) {
+    private static long blackjackBust(long uid) {
         Casino.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
             + uid + ";");
         return Casino.checkBalance(uid);
     }
 
-    public static long blackjackLoss(long uid) {
+    private static long blackjackLoss(long uid) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
             + uid +";");
         return Casino.checkBalance(uid);
     }
 
-    public static long blackjackTie(long uid, long winnings) {
+    private static long blackjackTie(long uid, long winnings) {
         Casino.executeUpdate("UPDATE blackjack_user SET (ties, winnings, hand, sum, ace, dealer_hand, wager) = (ties + 1, winnings + "
             + winnings + ",'', -1, false, -1, -1) WHERE uid = " + uid +";");
-        return Casino.addMoneyDirect(uid, winnings);
+        return Casino.addMoney(uid, winnings);
     }
 
-    public static long blackjackWin(long uid, long winnings, boolean dealerBust) {
+    private static long blackjackWin(long uid, long winnings, boolean dealerBust) {
         Casino.executeUpdate("UPDATE blackjack_user SET (dealer_busts, wins, winnings, hand, sum, ace, dealer_hand, wager) = (dealer_busts + "
             + (dealerBust ? 1 : 0) + ", wins + " + (dealerBust ? 0 : 1) + ", winnings + "
             + winnings + ", '', -1, false, -1, -1) WHERE uid = " + uid + ";");
-        return Casino.addWinnings(uid, 2 * winnings);
+        return Casino.addMoney(uid, 2 * winnings);
     }
 
-    public static BlackJackGame getBlackjackGame(long uid) {
+    private static BlackJackGame getBlackjackGame(long uid) {
         String query = "SELECT hand, sum, ace, dealer_hand, wager FROM blackjack_user WHERE uid = " + uid + ";";
         Connection connection = null;
         Statement statement = null;
