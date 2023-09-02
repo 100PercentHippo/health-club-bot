@@ -23,7 +23,8 @@ import java.util.Arrays;
 
 public class HBMain {
 
-    private static final String version = "3.1.6"; //Update this in pom.xml too
+    private static final String VERSION_STRING = "3.1.6"; //Update this in pom.xml too when updating
+    static final Random RNG_SOURCE = new Random();
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -38,7 +39,7 @@ public class HBMain {
             SlashCommandInteraction interaction = event.getSlashCommandInteraction();
             switch (interaction.getFullCommandName()) {
                 case "version":
-                    interaction.createImmediateResponder().setContent(version).respond();
+                    interaction.createImmediateResponder().setContent(VERSION_STRING).respond();
                     break;
                 case "help":
                     interaction.createImmediateResponder().setContent(getHelpText()).respond();
@@ -140,27 +141,29 @@ public class HBMain {
                         Blackjack.handleHit(interaction.getUser().getId())).respond();
                     break;
                 case "blackjack stand":
-                	makeMultiStepResponse(
-                		Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
+                    makeMultiStepResponse(
+                        Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
                     break;
                 case "pull":
-                	makeMultiStepResponse(
-                		Gacha.handleGachaPull(interaction.getUser().getId(), false,
-                            interaction.getArgumentLongValueByIndex(0).orElse(1L)).messageParts,
+                    makeMultiStepResponse(
+                        Gacha.handleGachaPull(interaction.getUser().getId(), false,
+                            interaction.getArgumentLongValueByIndex(0).orElse(1L)).getMessageParts(),
                         1000, interaction);
-                	break;
+                    break;
                 case "gacha character list":
-                	interaction.createImmediateResponder().setContent(
-                		Gacha.handleCharacterList(interaction.getUser().getId())).respond();
-                	break;
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handleCharacterList(interaction.getUser().getId())).respond();
+                    break;
                 case "pulls":
-                	interaction.createImmediateResponder().setContent(
-                		Gacha.handlePulls(interaction.getUser().getId())).respond();
-                	break;
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handlePulls(interaction.getUser().getId())).respond();
+                    break;
                 case "pity":
-                	interaction.createImmediateResponder().setContent(
-                		Gacha.handlePity(interaction.getUser().getId())).respond();
-                	break;
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handlePity(interaction.getUser().getId())).respond();
+                    break;
+                default:
+                    return;
             }
         });
         api.addMessageComponentCreateListener(event -> {
@@ -178,6 +181,9 @@ public class HBMain {
                     case "overunder.same":
                         prediction = Casino.PREDICTION_SAME;
                         break;
+                    default:
+                        System.out.println("Encountered unexpected overunder interaction: "
+                            + interaction.getCustomId());
                 }
                 response = Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction);
                 if (response.contains("balance")) {
@@ -201,13 +207,13 @@ public class HBMain {
                         .respond();
                     }
                 } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                	makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                		1000, interaction);
+                    makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                        1000, interaction);
                 }
             }
         });
     }
-    
+
     private static void initCommands(DiscordApi api) {
         System.out.println("Registering commands with discord");
         //SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
@@ -280,7 +286,7 @@ public class HBMain {
     }
 
     private static String getHelpText() {
-        return "Casino Bot Verstion " + version
+        return "Casino Bot Version " + VERSION_STRING
             + "\nCommands:"
             + "\n\t`/help` Displays this help text"
             + "\n\t`/changelog` View recent changes to the bot"
@@ -315,39 +321,38 @@ public class HBMain {
     }
 
     private static String getChangelog() {
-        return "3.1.6"
+        return "Changelog:\n3.1.6"
             + "\n\t- Adds the abillity to perform multiple pulls at once"
             + "\n3.1.5"
-        	+ "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
-        	+ "\n3.1.4"
-        	+ "\n\t- `/pulls` now lists available pull sources or remaining timer"
-        	+ "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
-        	+ "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-        	+ "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
-        	+ "\n\t- Test Character B has been temporarily disabled for balance reasons"
-        	+ "\n3.1.3"
-        	+ "\n\t- `/give` now pings the recipient"
-        	+ "\n\t- `/blackjack` now resolves incrementally"
-        	+ "\n3.1.2"
-        	+ "\n\t- Adds `/pity` and `/pulls`"
-        	+ "\n3.1.1"
-        	+ "\n\t- First 2h and 30m income command per day now award Gacha pulls"
-        	+ "\n3.1.0"
-        	+ "\n\t- Adds `/pull` to test the gacha system";
+            + "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
+            + "\n3.1.4"
+            + "\n\t- `/pulls` now lists available pull sources or remaining timer"
+            + "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
+            + "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+            + "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
+            + "\n\t- Test Character B has been temporarily disabled for balance reasons"
+            + "\n3.1.3"
+            + "\n\t- `/give` now pings the recipient"
+            + "\n\t- `/blackjack` now resolves incrementally"
+            + "\n3.1.2"
+            + "\n\t- Adds `/pity` and `/pulls`"
+            + "\n3.1.1"
+            + "\n\t- First 2h and 30m income command per day now award Gacha pulls"
+            + "\n3.1.0"
+            + "\n\t- Adds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
     private static String handleRoll(String args) {
         int max = 0;
-        Random random = new Random();
         try {
             if (args.contains("d")) {
                 //Dice rolling
-                //args.replace("-\\s*-", "");
-                args.replace("-", "+-");
-                args.replace("\\s", "");
+                args = args.replace("-\\s*-", "");
+                args = args.replace("-", "+-");
+                args = args.replace("\\s", "");
                 String[] pieces = args.split("\\+");
-                String message = "";
+                StringBuilder message = new StringBuilder();
                 int total = 0;
                 for (int i = 0; i < pieces.length; ++i) {
                     boolean negative = false;
@@ -357,7 +362,7 @@ public class HBMain {
                     }
                     if (!pieces[i].contains("d")) {
                         int roll = Integer.parseInt(pieces[i]);
-                        message += ((negative ? " - " : " + ") + roll);
+                        message.append((negative ? " - " : " + ") + roll);
                         total += (negative ? -1 : 1) * roll;
                         continue;
                     }
@@ -367,24 +372,24 @@ public class HBMain {
                     int diceSize = Integer.parseInt(splitArgs[1]);
                     String text = "";
                     for (int j = 0; j < numDice; ++j) {
-                        int roll = random.nextInt(diceSize) + 1;
+                        int roll = RNG_SOURCE.nextInt(diceSize) + 1;
                         total += (roll * (negative ? -1 : 1));
                         text += (negative ? " - " : " + ") + "`" + roll + "`";
                     }
                     text = text.substring(2, text.length());
                     if (message.length() != 0) {
-                        message += (negative ? " - " : " + ");
+                        message.append(negative ? " - " : " + ");
                     }
-                    message += text;
+                    message.append(text);
                 }
-                return message + "\n`" + total + "`";
+                return message.toString() + "\n`" + total + "`";
             } else {
                 // Deathrolling
                 max = Integer.parseInt(args);
                 if (max < 1) {
                     return "Negative numbers make me sad :slight_frown:";
                 }
-                int roll = random.nextInt(max) + 1;
+                int roll = RNG_SOURCE.nextInt(max) + 1;
                 return "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
             }
         } catch (NumberFormatException e) {
@@ -396,7 +401,7 @@ public class HBMain {
     private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, InteractionBase interaction) {
         CompletableFuture<InteractionOriginalResponseUpdater> updater
             =  interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
-        if (responseSteps.size() > 0) {
+        if (!responseSteps.isEmpty()) {
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 @Override
@@ -407,7 +412,7 @@ public class HBMain {
                         System.out.println("Exception while updating delayed message:");
                         e.printStackTrace();
                     }
-                    if (responseSteps.size() == 0) {
+                    if (responseSteps.isEmpty()) {
                         timer.cancel();
                     }
                 }
