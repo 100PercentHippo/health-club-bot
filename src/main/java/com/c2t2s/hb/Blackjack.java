@@ -1,12 +1,16 @@
 package com.c2t2s.hb;
 
-import java.net.URISyntaxException;
-import java.sql.*; //TODO: Remove the *
 import java.util.List;
-import java.util.Random;
+import java.sql.Statement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
-public class Blackjack {
+class Blackjack {
+
+    // Hide public constructor
+    private Blackjack() {}
 
     private static String[] cardLetters = {"", "[A]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]", "[9]", "[10]", "[J]", "[Q]", "[K]"};
     private static int[] cardValues = {0, 11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10};
@@ -14,15 +18,15 @@ public class Blackjack {
     public static class BlackJackGame {
         private String hand;
         private int sum;
-        private boolean contains_ace;
-        private int dealer_hand;
-        private int wager;
+        private boolean containsAce;
+        private int dealerHand;
+        private long wager;
 
-        public BlackJackGame(String hand, int sum, boolean ace, int dealer, int wager) {
+        public BlackJackGame(String hand, int sum, boolean ace, int dealer, long wager) {
             this.hand = hand;
             this.sum = sum;
-            this.contains_ace = ace;
-            this.dealer_hand = dealer;
+            this.containsAce = ace;
+            this.dealerHand = dealer;
             this.wager = wager;
         }
 
@@ -35,14 +39,14 @@ public class Blackjack {
         }
 
         public boolean hasAce() {
-            return contains_ace;
+            return containsAce;
         }
 
         public int getDealerHand() {
-            return dealer_hand;
+            return dealerHand;
         }
 
-        public int getWager() {
+        public long getWager() {
             return wager;
         }
     }
@@ -65,14 +69,13 @@ public class Blackjack {
         } else if (balance < wager) {
             return "Your current balance of " + balance + " is not enough to cover that";
         }
-        Random random = new Random();
-        int dealerCard = random.nextInt(13) + 1;
-        String hand = "";
+        int dealerCard = HBMain.RNG_SOURCE.nextInt(13) + 1;
+        StringBuilder hand = new StringBuilder();
         int value = 0;
         boolean hasAce = false;
         for (int i = 0; i < 2; i++) {
-            int card = random.nextInt(13) + 1;
-            hand += cardLetters[card];
+            int card = HBMain.RNG_SOURCE.nextInt(13) + 1;
+            hand.append(cardLetters[card]);
             if (card == 1) {
                 if (hasAce) {
                     value += 1;
@@ -84,9 +87,10 @@ public class Blackjack {
                 value += cardValues[card];
             }
         }
+        String completeHand = hand.toString();
         Casino.takeMoneyDirect(uid, wager);
-        newBlackjackGame(uid, hand, value, hasAce, dealerCard, wager);
-        return "Bid " + wager + " on Blackjack\n" + displayGame(hand, dealerCard, "[?]");
+        newBlackjackGame(uid, completeHand, value, hasAce, dealerCard, wager);
+        return "Bid " + wager + " on Blackjack\n" + displayGame(completeHand, dealerCard, "[?]");
     }
 
     public static List<String> handleStand(long uid) {
@@ -97,16 +101,15 @@ public class Blackjack {
             return response;
         }
         String playerHand = "Your hand:    " + game.getHand();
-        String dealerHand = "\nDealer's hand: " + cardLetters[game.getDealerHand()];
+        StringBuilder dealerHand = new StringBuilder("\nDealer's hand: " + cardLetters[game.getDealerHand()]);
         String placeholder = "\n:black_small_square:";
-        response.add(playerHand + dealerHand + "[?]" + placeholder);
+        response.add(playerHand + dealerHand.toString() + "[?]" + placeholder);
         int dealerTotal = cardValues[game.getDealerHand()];
         boolean dealerAce = (game.getDealerHand() == 1);
-        Random random = new Random();
         while ((!dealerAce && dealerTotal < 17) || (dealerAce && dealerTotal < 17)
                 || (dealerAce && dealerTotal > 21 && dealerTotal - 10 < 17)) {
-            int card = random.nextInt(13) + 1;
-            dealerHand += cardLetters[card];
+            int card = HBMain.RNG_SOURCE.nextInt(13) + 1;
+            dealerHand.append(cardLetters[card]);
             if (card == 1) {
                 if (dealerAce) {
                     dealerTotal++;
@@ -117,7 +120,7 @@ public class Blackjack {
             } else {
                 dealerTotal += cardValues[card];
             }
-            response.add(new String(playerHand + dealerHand + placeholder));
+            response.add(playerHand + dealerHand.toString() + placeholder);
         }
         if (dealerAce && dealerTotal > 21) {
             dealerTotal -= 10;
@@ -131,7 +134,7 @@ public class Blackjack {
             resolution = "\nDealer bust! You win " + (2 * game.getWager())
                     + "! Your new balance is " + blackjackWin(uid, game.getWager(), true);
         } else if (dealerTotal > playerTotal) {
-            blackjackLoss(uid, game.getWager());
+            blackjackLoss(uid);
             resolution = "\nDealer wins. Your new balance is " + Casino.checkBalance(uid);
         } else if (dealerTotal < playerTotal) {
         	resolution = "\nYou win " + (2 * game.getWager())
@@ -149,10 +152,9 @@ public class Blackjack {
         if (game == null || game.getWager() == -1) {
             return "No active game found. Type `/blackjack new` to start a new game";
         }
-        Random random = new Random();
         boolean hasAce = game.hasAce();
         int value = game.getSum();
-        int card = random.nextInt(13) + 1;
+        int card = HBMain.RNG_SOURCE.nextInt(13) + 1;
         String hand = game.getHand() + cardLetters[card];
         if (card == 1) {
             if (hasAce) {
@@ -165,8 +167,8 @@ public class Blackjack {
             value += cardValues[card];
         }
         if ((hasAce && value > 31) || (!hasAce && value > 21)) {
-            return displayGame(hand, game.getDealerHand(), cardLetters[random.nextInt(13) + 1])
-                + "\nBust! Your new balance is " + blackjackBust(uid, game.getWager());
+            return displayGame(hand, game.getDealerHand(), cardLetters[HBMain.RNG_SOURCE.nextInt(13) + 1])
+                + "\nBust! Your new balance is " + blackjackBust(uid);
         } else {
             updateBlackjackGame(uid, hand, value, hasAce);
             return displayGame(hand, game.getDealerHand(), "[?]");
@@ -198,18 +200,18 @@ public class Blackjack {
             + wager + ") WHERE uid = " + uid + ";");
     }
 
-    public static void updateBlackjackGame(long uid, String hand, int sum, boolean contains_ace) {
+    public static void updateBlackjackGame(long uid, String hand, int sum, boolean containsAce) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace) = ('" + hand
-            + "', " + sum + ", " + contains_ace + ") WHERE uid = " + uid + ";");
+            + "', " + sum + ", " + containsAce + ") WHERE uid = " + uid + ";");
     }
 
-    public static long blackjackBust(long uid, long amount) {
+    public static long blackjackBust(long uid) {
         Casino.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
             + uid + ";");
         return Casino.checkBalance(uid);
     }
 
-    public static long blackjackLoss(long uid, long amount) {
+    public static long blackjackLoss(long uid) {
         Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
             + uid +";");
         return Casino.checkBalance(uid);
@@ -221,11 +223,11 @@ public class Blackjack {
         return Casino.addMoneyDirect(uid, winnings);
     }
 
-    public static long blackjackWin(long uid, int winnings, boolean dealerBust) {
+    public static long blackjackWin(long uid, long winnings, boolean dealerBust) {
         Casino.executeUpdate("UPDATE blackjack_user SET (dealer_busts, wins, winnings, hand, sum, ace, dealer_hand, wager) = (dealer_busts + "
             + (dealerBust ? 1 : 0) + ", wins + " + (dealerBust ? 0 : 1) + ", winnings + "
             + winnings + ", '', -1, false, -1, -1) WHERE uid = " + uid + ";");
-        return Casino.addWinnings(uid, 2 * winnings, winnings);
+        return Casino.addWinnings(uid, 2 * winnings);
     }
 
     public static BlackJackGame getBlackjackGame(long uid) {
@@ -247,7 +249,7 @@ public class Blackjack {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {

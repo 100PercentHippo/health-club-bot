@@ -1,13 +1,19 @@
 package com.c2t2s.hb;
 
-import java.net.URISyntaxException;
-import java.sql.*; //TODO: Remove the *
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-public class Casino {
+class Casino {
+
+    // Hide default constructor
+    private Casino() {}
 
     public static class User {
         private int work;
@@ -53,10 +59,10 @@ public class Casino {
 
     public static class OverUnderGame {
         private int round;
-        private int wager;
+        private long wager;
         private int target;
 
-        public OverUnderGame(int round, int wager, int target) {
+        public OverUnderGame(int round, long wager, int target) {
             this.round = round;
             this.wager = wager;
             this.target = target;
@@ -66,7 +72,7 @@ public class Casino {
             return round;
         }
 
-        public int getWager() {
+        public long getWager() {
             return wager;
         }
 
@@ -79,25 +85,60 @@ public class Casino {
     public static final int PREDICTION_OVER = 0;
     public static final int PREDICTION_UNDER = 1;
     public static final int PREDICTION_SAME = 2;
+    static final String USER_NOT_FOUND_MESSAGE = "Unable to fetch user. If you are new run `/claim` to start";
+
+    // Returns 's' as needed to write the English version
+    // of value, unless value == 1
+    static String getPluralSuffix(long value) {
+        return (value != 1 ? "s" : "");
+    }
 
     public static String formatTime(long time) {
         long days = TimeUnit.MILLISECONDS.toDays(time);
         long hours = TimeUnit.MILLISECONDS.toHours(time) - (24 * days);
         long minutes = TimeUnit.MILLISECONDS.toMinutes(time) - (1440 * days) - (60 * hours);
         long seconds = TimeUnit.MILLISECONDS.toSeconds(time) - (86400 * days) - (3600 * hours) - (60 * minutes);
-        return ((days > 0) ? (days + " day" + (days == 1 ? "" : "s") + ", ") : "")
-            + ((hours > 0) ? (hours + " hour" + (hours == 1 ? "" : "s") + ", ") : "")
-            + ((minutes > 0) ? (minutes + " minute" + (minutes == 1 ? "" : "s") + " and ") : "")
-            + seconds + " second" + (seconds == 1 ? "" : "s");
+        StringBuilder output = new StringBuilder();
+        if (days > 0) {
+            output.append(days);
+            output.append(" day");
+            output.append(getPluralSuffix(days));
+            output.append(", ");
+        }
+        if (hours > 0) {
+            output.append(hours);
+            output.append(" hour");
+            output.append(getPluralSuffix(hours));
+            output.append(", ");
+        }
+        if (minutes > 0) {
+            output.append(minutes);
+            output.append(" minute");
+            output.append(getPluralSuffix(minutes));
+            if (hours > 0) { output.append(','); }
+            output.append(" and ");
+        }
+        output.append(seconds);
+        output.append(" second");
+        output.append(getPluralSuffix(seconds));
+        return output.toString();
     }
     
     // Emulates String.repeat() but for versions before Java 11
     public static String repeatString(String phrase, int times) {
-    	String output = "";
+        StringBuilder output = new StringBuilder();
     	for (int i = times; i > 0; --i) {
-    		output += phrase;
+    		output.append(phrase);
     	}
-    	return output;
+    	return output.toString();
+    }
+
+    private static String stillTiredMessage(long remainingTime) {
+        return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
+    }
+
+    private static String insuffientBalanceMessage(long balance) {
+        return "Your balance of " + balance + " is not enough to cover that!";
     }
 
 // Payout:
@@ -112,28 +153,27 @@ public class Casino {
     public static String handleWork(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you are new run `/claim` to start";
+            return USER_NOT_FOUND_MESSAGE;
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
                 return "You are still in jail! Your sentence ends in " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
+                return stillTiredMessage(remainingTime);
             }
         }
         String bonus = Events.checkRobBonus(uid, "`/work`");
         String output = "";
-        Random random = new Random();
-        int roll = random.nextInt(100);
+        int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 25) {
-            if (user.getMorality() > 5 && random.nextInt(2) == 0) {
+            if (user.getMorality() > 5 && HBMain.RNG_SOURCE.nextInt(2) == 0) {
                 output = ":scientist: You use your connections and work in The Lab for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
             } else {
             	output = ":mechanic: You work as a mechanic for 2 hours and make 150 coins. Your new balance is " + logWork(uid, 150);
             }
         } else if (roll < 50) {
-            if (user.getMorality() > 5 && random.nextInt(2) == 0) {
+            if (user.getMorality() > 5 && HBMain.RNG_SOURCE.nextInt(2) == 0) {
             	output = ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
             } else {
             	output = ":farmer: You work hard in a field for 2 hours and make 150 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 150);
@@ -162,22 +202,21 @@ public class Casino {
     public static String handleFish(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you are new run `/claim` to start";
+            return USER_NOT_FOUND_MESSAGE;
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
                 return "There's no fishing pool in jail! Your sentence ends in " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
+                return stillTiredMessage(remainingTime);
             }
         }
         String bonus = Events.checkPickBonus(uid, "`/fish`");
         String output = "";
-        Random random = new Random();
-        int roll = random.nextInt(100);
+        int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 80) {
-            int fish = (random.nextInt(3) + 4);
+            int fish = (HBMain.RNG_SOURCE.nextInt(3) + 4);
             output = ":fish: You fish for 30 minutes and catch " + fish
                 + " fish. You sell them for " + (fish * 10) + " coins. Your new balance is "
                 + logFish(uid, false, fish * 10);
@@ -216,25 +255,24 @@ public class Casino {
     public static String handleRob(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you are new run `/claim` to start";
+            return USER_NOT_FOUND_MESSAGE;
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
                 return "The guard gives you a funny look. You're still in jail for " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
+                return stillTiredMessage(remainingTime);
             }
         }
         String bonus = Events.checkRobBonus(uid, "`/rob`");
         String output = "";
-        Random random = new Random();
-        if (random.nextInt(2) == 0) {
+        if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             robFailed(uid);
             output = "You were caught! You are dragged off to jail for 2 hours.";
             return output + bonus;
         }
-        int roll = random.nextInt(100);
+        int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 5) {
             if (user.getMorality() < -10) {
             	output = ":slot_machine: You use your criminal knowledge and rob the slot machine of 400 coins! Your new balance is "
@@ -280,25 +318,24 @@ public class Casino {
     public static String handlePickpocket(long uid) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you are new run `/claim` to start";
+            return USER_NOT_FOUND_MESSAGE;
         }
         long remainingTime = user.getTimer().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             if (user.isJailed()) {
                 return "The guard gives you a funny look. You're still in jail for " + formatTime(remainingTime) + ".";
             } else {
-                return "You are still tired. Try again in " + formatTime(remainingTime) + ".";
+                return stillTiredMessage(remainingTime);
             }
         }
         String bonus = Events.checkPickBonus(uid, "`/pickpocket`");
         String output = "";
-        Random random = new Random();
-        if (random.nextInt(2) == 0) {
+        if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             pickFailed(uid);
             output = "You were caught! You are dragged off to jail for 30 minutes.";
             return output + bonus;
         }
-        int roll = random.nextInt(100);
+        int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 10) {
             logPick(uid, false, 0);
             output = ":paperclip: You steal a paperclip, which you use to bundle together your wanted posters you took down.";
@@ -314,7 +351,7 @@ public class Casino {
             logPick(uid, false, 0);
             output = ":satellite_orbital: You pickpocket an orbital satellite???? Unsure what to do with it you ditch it in a nearby lake.";
         } else if (roll < 70) {
-            int haul = 50 + (random.nextInt(3) * 20);
+            int haul = 50 + (HBMain.RNG_SOURCE.nextInt(3) * 20);
             output = ":moneybag: You successfully pickpocket " + haul + " coins. Your new balance is "
                 + logPick(uid, false, haul);
         } else if (roll < 85) {
@@ -351,60 +388,19 @@ public class Casino {
             + "You can also gamble with `/guess`, `/bigguess`, `/hugeguess`, `/slots`, `/minislots`, `/moneymachine`, `/overunder`, or `/blackjack`";
     }
 
-// Guess Payout:
-//  Correct:        1/10  6:1
-//  Close:          1/5   2:1
-//  Dealer mistake: 1/200 2.5:1
-
-    // public static String handleGuess(long uid, int guess, int amount) {
-    //  long balance = checkBalance(uid);
-    //  if (balance < 0) {
-    //      return "Unable to guess. Balance check failed or was negative (" + balance +")";
-    //  } else if (balance < amount) {
-    //      return "Your balance of " + balance + " is not enough to cover that!";
-    //  }
-    //  Random random = new Random();
-    //  int correct = random.nextInt(10) + 1;
-    //  if (guess == correct) {
-    //      if (guess == 1 || guess == 10) {
-    //          guessWin(uid, amount, 6 * amount);
-    //          return "Correct!! Big win of " + (6 * amount) + "! New balance is "
-    //              + addWinnings(uid, 6 * amount);
-    //      }
-    //      guessWin(uid, amount, 5 * amount);
-    //      return "Correct! You win " + (5 * amount) + "! New balance is "
-    //          + addWinnings(uid, 5 * amount);
-    //  } else if (guess + 1 == correct || guess - 1 == correct) {
-    //      guessClose(uid, amount, 1 * amount);
-    //      return "Very close. The value was " + correct + ". You get " + (amount)
-    //          + " as a consolation prize. New balance is " + addWinnings(uid, amount);
-    //  } else {
-    //      if (random.nextInt(140) == 0) {
-    //          guessMistake(uid, amount, ((int)2.5 * amount));
-    //          return "The correct value was " + (random.nextInt(5) + 11)
-    //              + ". Wait, that isn't right. Here, take " + ((int)2.5 * amount)
-    //              + " to pretend that never happened. New balance is "
-    //                  + addWinnings(uid, ((int)2.5 * amount));
-    //      }
-    //      guessLoss(uid, amount);
-    //      return "The correct value was " + correct + ". Your new balance is "
-    //          + takeLosses(uid, amount);
-    //  }
-    // }
-
 // Big Guess Payout:
 //  Correct:        1/10  10:1
 
     public static String handleGuess(long uid, long guess, long amount) {
-        long balance = checkBalance(uid);
-        if (balance < 0) {
-            return "Unable to guess. Balance check failed or was negative (" + balance +")"
-                + "\nIf you're new, use `/claim` to get set up with an initial balance.";
-        } else if (balance < amount) {
-            return "Your balance of " + balance + " is not enough to cover that!";
+        User user = getUser(uid);
+        if (user == null) {
+            return USER_NOT_FOUND_MESSAGE;
         }
-        Random random = new Random();
-        int correct = random.nextInt(10) + 1;
+        long balance = user.getBalance();
+        if (balance < amount) {
+            return insuffientBalanceMessage(balance);
+        }
+        int correct = HBMain.RNG_SOURCE.nextInt(10) + 1;
         if (guess == correct) {
             guessWin(uid, amount, 9 * amount);
             return "Correct! You win " + (10 * amount) + "! New balance is " + addWinnings(uid, 9 * amount);
@@ -418,15 +414,15 @@ public class Casino {
 //  Correct:    1/100  100:1
 
     public static String handleHugeGuess(long uid, long guess, long amount) {
-        long balance = checkBalance(uid);
-        if (balance < 0) {
-            return "Unable to guess. Balance check failed or was negative (" + balance +")"
-                + "\nIf you're new, use `/claim` to get set up with an initial balance.";
-        } else if (balance < amount) {
-            return "Your balance of " + balance + " is not enough to cover that!";
+        User user = getUser(uid);
+        if (user == null) {
+            return USER_NOT_FOUND_MESSAGE;
         }
-        Random random = new Random();
-        int correct = random.nextInt(100) + 1;
+        long balance = user.getBalance();
+        if (balance < amount) {
+            return insuffientBalanceMessage(balance);
+        }
+        int correct = HBMain.RNG_SOURCE.nextInt(100) + 1;
         if (guess == correct) {
             hugeGuessWin(uid, amount, 99 * amount);
             return "Correct! You win " + (100 * amount) + "! New balance is " + addWinnings(uid, 99 * amount);
@@ -439,10 +435,10 @@ public class Casino {
     public static String handleFeed(long uid, Long amount) {
         User user = getUser(uid);
         if (user == null) {
-            return "Unable to fetch user. If you are new run `/claim` to start";
+            return USER_NOT_FOUND_MESSAGE;
         }
         if (user.getBalance() < amount) {
-            return "Your balance of " + user.getBalance() + " is not enough to cover that!";
+            return insuffientBalanceMessage(user.getBalance());
         }
         long remainingTime = user.getTimer2().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
@@ -452,13 +448,12 @@ public class Casino {
         if (moneyMachine == null) {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
-        Random random = new Random();
         long pot = moneyMachine.getBalance() + amount;
         double winChance = 0.25;
         if (pot < 20000) {
-            winChance = 0.05 + (0.2 * (pot / 20000));
+            winChance = 0.05 + (0.2 * ((double)pot / 20000));
         }
-        if (random.nextDouble() < winChance && (amount >= 100 || random.nextInt(100) < amount)) { // Win
+        if (HBMain.RNG_SOURCE.nextDouble() < winChance && (amount >= 100 || HBMain.RNG_SOURCE.nextInt(100) < amount)) { // Win
         	long winnings = (long)(pot * 0.75);
         	long newPot = pot - winnings;
             return "The money machine is satisfied! :dollar: You win "
@@ -490,74 +485,82 @@ public class Casino {
 //  5 diamonds:  1/10 000 000 000   10000:1
 
     public static List<String> handleSlots(long uid, long amount) {
-        List<String> responseSteps = new ArrayList<String>();
-        long balance = checkBalance(uid);
-        if (balance < 0) {
-            responseSteps.add("Unable to guess. Balance check failed or was negative (" + balance +")"
-            + "\nIf you're new, use `/claim` to get set up with an initial balance.");
-            return responseSteps;
-        } else if (balance < amount) {
-            responseSteps.add("Your balance of " + balance + " is not enough to cover that!");
+        List<String> responseSteps = new ArrayList<>();
+        User user = getUser(uid);
+        if (user == null) {
+            responseSteps.add(USER_NOT_FOUND_MESSAGE);
             return responseSteps;
         }
-        Random random = new Random();
-        int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-        String output = "Bid " + amount + " on slots\n", placeholder = ":blue_square:";
+        long balance = user.getBalance();
+        if (balance < amount) {
+            responseSteps.add(insuffientBalanceMessage(balance));
+            return responseSteps;
+        }
+        int cherries = 0;
+        int oranges = 0;
+        int lemons = 0;
+        int blueberries = 0;
+        int grapes = 0;
+        int diamonds = 0;
+        StringBuilder output = new StringBuilder("Bid " + amount + " on slots\n");
+        String placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(new String(output + repeatString(placeholder, 5)));
+        responseSteps.add(output + repeatString(placeholder, 5));
         for (int i = 0; i < 5; ++i) {
-            switch (random.nextInt(5)) {
+            switch (HBMain.RNG_SOURCE.nextInt(5)) {
                 case 0:
-                    output += ":cherries:";
+                    output.append(":cherries:");
                     cherries++;
                     break;
                 case 1:
-                    output += ":tangerine:";
+                    output.append(":tangerine:");
                     oranges++;
                     break;
                 case 2:
-                    output += ":lemon:";
+                    output.append(":lemon:");
                     lemons++;
                     break;
                 case 3:
-                    output += ":blueberries:";
+                    output.append(":blueberries:");
                     blueberries++;
                     break;
                 case 4:
-                    if (random.nextInt(20) == 10) {
-                        output += ":gem:";
+                    if (HBMain.RNG_SOURCE.nextInt(20) == 10) {
+                        output.append(":gem:");
                         diamonds++;
                     } else {
-                        output += ":grapes:";
+                        output.append(":grapes:");
                         grapes++;
                     }
                     break;
+                default:
+                    System.out.println("Out of range value encountered when generating slots");
             }
-            responseSteps.add(new String(output + repeatString(placeholder, 4 - i)));
+            responseSteps.add(output.toString() + repeatString(placeholder, 4 - i));
         }
-        output += "\n";
-        int win_condition = 0;
+        output.append("\n");
+        int winCondition = 0;
         if (cherries == 5 || oranges == 5 || lemons == 5 || blueberries == 5 || grapes == 5) {
-            output += ":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:";
+            output.append(":moneybag::moneybag: 5 OF A KIND!!! :moneybag::moneybag:");
             winnings += 30 * amount;
-            win_condition = 5;
+            winCondition = 5;
         } else if (cherries == 4 || oranges == 4 || lemons == 4 || blueberries == 4 || grapes == 4) {
-            output += ":moneybag: 4 of a kind!! :moneybag: ";
+            output.append(":moneybag: 4 of a kind!! :moneybag: ");
             winnings += 10 * amount;
-            win_condition = 4;
+            winCondition = 4;
         } else if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
-            output += "3 of a kind. ";
+            output.append("3 of a kind. ");
             winnings += (int)(1.5 * amount);
-            win_condition = 3;
+            winCondition = 3;
         } else if (cherries == 1 && oranges == 1 && lemons == 1 && blueberries == 1 && grapes == 1) {
-            output += "Fruit salad! ";
+            output.append("Fruit salad! ");
             winnings += 2 * amount;
-            win_condition = 1;
+            winCondition = 1;
         }
         if (diamonds > 0) {
-            output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ";
-            if (diamonds > 3) { output += "Jackpot!!! "; }
-            winnings += amount * (int)Math.pow(10, diamonds - 1);
+            output.append(":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: ");
+            if (diamonds > 3) { output.append("Jackpot!!! "); }
+            winnings += amount * (int)Math.pow(10, (diamonds - 1));
         }
         if (amount > winnings) {
             balance = takeLosses(uid, amount - winnings);
@@ -565,11 +568,11 @@ public class Casino {
             balance = addWinnings(uid, winnings - amount);
         }
         if (winnings > 0) {
-            output += "Winnings: " + (winnings) + " ";
+            output.append("Winnings: " + (winnings) + " ");
         }
-        output += "New balance: " + balance;
-        logSlots(uid, amount, winnings, diamonds, win_condition);
-        responseSteps.add(new String(output));
+        output.append("New balance: " + balance);
+        logSlots(uid, amount, winnings, diamonds, winCondition);
+        responseSteps.add(output.toString());
         return responseSteps;
     }
 
@@ -581,65 +584,73 @@ public class Casino {
 //  3 diamonds:  1/1000000 100:1
 
     public static List<String> handleMinislots(long uid, long amount) {
-        List<String> responseSteps = new ArrayList<String>();
-        long balance = checkBalance(uid);
-        if (balance < 0) {
-            responseSteps.add("Unable to guess. Balance check failed or was negative (" + balance +")"
-            + "\nIf you're new, use `/claim` to get set up with an initial balance.");
-            return responseSteps;
-        } else if (balance < amount) {
-            responseSteps.add("Your balance of " + balance + " is not enough to cover that!");
+        List<String> responseSteps = new ArrayList<>();
+        User user = getUser(uid);
+        if (user == null) {
+            responseSteps.add(USER_NOT_FOUND_MESSAGE);
             return responseSteps;
         }
-        Random random = new Random();
-        int cherries = 0, oranges = 0, lemons = 0, blueberries = 0, grapes = 0, diamonds = 0;
-        String output = "Bid " + amount + " on mini slots\n", placeholder = ":blue_square:";
+        long balance = user.getBalance();
+        if (balance < amount) {
+            responseSteps.add(insuffientBalanceMessage(balance));
+            return responseSteps;
+        }
+        int cherries = 0;
+        int oranges = 0;
+        int lemons = 0;
+        int blueberries = 0;
+        int grapes = 0;
+        int diamonds = 0;
+        StringBuilder output = new StringBuilder("Bid " + amount + " on mini slots\n");
+        String placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(new String(output + repeatString(placeholder, 3)));
+        responseSteps.add(output + repeatString(placeholder, 3));
         for (int i = 0; i < 3; i++) {
-            switch (random.nextInt(5)) {
+            switch (HBMain.RNG_SOURCE.nextInt(5)) {
             case 0:
-                output += ":cherries:";
+                output.append(":cherries:");
                 cherries++;
                 break;
             case 1:
-                output += ":tangerine:";
+                output.append(":tangerine:");
                 oranges++;
                 break;
             case 2:
-                output += ":lemon:";
+                output.append(":lemon:");
                 lemons++;
                 break;
             case 3:
-                output += ":blueberries:";
+                output.append(":blueberries:");
                 blueberries++;
                 break;
             case 4:
-                if (random.nextInt(20) == 10) {
-                    output += ":gem:";
+                if (HBMain.RNG_SOURCE.nextInt(20) == 10) {
+                    output.append(":gem:");
                     diamonds++;
                 } else {
-                    output += ":grapes:";
+                    output.append(":grapes:");
                     grapes++;
                 }
                 break;
+            default:
+                System.out.println("Out of range value encountered when generating slots");
             }
-            responseSteps.add(new String(output + repeatString(placeholder, 2 - i)));
+            responseSteps.add(output.toString() + repeatString(placeholder, 2 - i));
         }
-        output += "\n";
+        output.append("\n");
         if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
-            output += ":moneybag: 3 of a kind! :moneybag: ";
+            output.append(":moneybag: 3 of a kind! :moneybag: ");
             winnings += 5 * amount;
         } else if (cherries == 2 || oranges == 2 || lemons == 2 || blueberries == 2 || grapes == 2) {
-            output += "2 of a kind. ";
+            output.append("2 of a kind. ");
             winnings += (int)(1.6 * amount);
         }
         if (diamonds == 1) {
-            output += "1 bonus diamond :gem:";
+            output.append("1 bonus diamond :gem:");
             winnings += (int)(0.4 * amount);
         } else if (diamonds > 1) {
-            output += ":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: Jackpot!!! ";
-            winnings += amount * (int)Math.pow(10, diamonds - 1);
+            output.append(":gem: " + diamonds + " diamond" + (diamonds == 1 ? "" : "s") + "! :gem: Jackpot!!! ");
+            winnings += amount * (int)Math.pow(10, (diamonds - 1));
         }
         if (amount > winnings) {
             balance = takeLosses(uid, amount - winnings);
@@ -647,11 +658,11 @@ public class Casino {
             balance = addWinnings(uid, winnings - amount);
         }
         if (winnings > 0) {
-            output += "Winnings: " + (winnings) + " ";
+            output.append("Winnings: " + (winnings) + " ");
         }
-        output += "New balance: " + balance;
+        output.append("New balance: " + balance);
         logMinislots(uid, amount, winnings, diamonds);
-        responseSteps.add(new String(output));
+        responseSteps.add(output.toString());
         return responseSteps;
     }
 
@@ -671,8 +682,7 @@ public class Casino {
         } else if (balance < amount) {
             return "Your current balance of " + balance + " is not enough to cover that";
         }
-        Random random = new Random();
-        int target = random.nextInt(10) + 1;
+        int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
         return "Bid " + amount + " on overunder.\nYour initial value is " + target
             + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`";
@@ -683,8 +693,7 @@ public class Casino {
         if (game == null || game.getRound() == -1) {
             return "No active game found. Use `/overunder new` to start a new game";
         }
-        Random random = new Random();
-        int target = random.nextInt(10) + 1;
+        int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         if ((prediction == PREDICTION_OVER && target > game.getTarget())
                 || (prediction == PREDICTION_UNDER && target < game.getTarget())
                 || (prediction == PREDICTION_SAME && target == game.getTarget())) { // Correct
@@ -710,20 +719,18 @@ public class Casino {
                 return response + " With 2 correct your " + game.getWager()
                     + " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager());
             } else {
-                logOverUnderLoss(uid, game.getWager());
+                logOverUnderLoss(uid);
                 return response + " Your current balance is " + checkBalance(uid);
             }
         }
     }
 
     public static String handleBalance(long uid) {
-        long balance = checkBalance(uid);
-        if (balance < 0) {
-            return "There was an issue checking your balance, value returned was " + balance
-            		+ "\nIf you're new, use `/claim` to get set up with an initial balance.";
-        } else {
-            return "Your current balance is " + balance + " coin" + (balance == 1 ? "" : "s") + ".";
+        User user = getUser(uid);
+        if (user == null) {
+            return USER_NOT_FOUND_MESSAGE;
         }
+        return "Your current balance is " + user.getBalance() + " coin" + getPluralSuffix(user.getBalance()) + ".";
     }
 
     public static String handleGive(long donorUid, long recipientUid, long amount) {
@@ -734,7 +741,7 @@ public class Casino {
         if (donorBalance < 0) {
             return "Unable to give money. Balance check failed or was negative (" + donorBalance +")";
         } else if (donorBalance < amount) {
-            return "Your balance of " + donorBalance + " is not enough to cover that!";
+            return insuffientBalanceMessage(donorBalance);
         }
         if (donorUid == recipientUid) {
             return "You give yourself " + amount + ". Your balance is unchanged for some reason.";
@@ -764,7 +771,7 @@ public class Casino {
 
     //////////////////////////////////////////////////////////
 
-    protected static Connection getConnection() throws URISyntaxException, SQLException {
+    protected static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
             System.getenv("JDBC_USERNAME"), System.getenv("JDBC_PASSWORD"));
     }
@@ -881,10 +888,6 @@ public class Casino {
     }
 
     public static long addWinnings(long uid, long amount) {
-        return addWinnings(uid, amount, amount);
-    }
-
-    public static long addWinnings(long uid, long amount, long profit) {
         return executeBalanceQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
@@ -917,7 +920,6 @@ public class Casino {
         String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String event = "INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        //String wagers = "INSERT INTO wager_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         Connection connection = null;
         Statement statement = null;
         try {
@@ -935,11 +937,10 @@ public class Casino {
                 statement.executeUpdate(blackjac);
                 statement.executeUpdate(gacha);
                 statement.executeUpdate(event);
-                //statement.executeUpdate(wagers);
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -964,23 +965,23 @@ public class Casino {
         String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
         Connection connection = null;
         Statement statement = null;
-        String leaderboard = "";
+        StringBuilder leaderboard = new StringBuilder();
         try {
             connection = getConnection();
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
             int place = 1;
             while (results.next()) {
-                leaderboard += "#" + place++ + " ";
+                leaderboard.append("#" + place++ + " ");
                 String name = results.getString(1);
                 if (name.contains("#")) {
                     name = name.substring(0, name.indexOf('#'));
                 }
-                leaderboard += name + " " + results.getLong(2) + "\n";
+                leaderboard.append(name + " " + results.getLong(2) + "\n");
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -998,7 +999,7 @@ public class Casino {
                 e.printStackTrace();
             }
         }
-        return leaderboard;
+        return leaderboard.toString();
     }
 
     private static void hugeGuessWin(long uid, long spent, long winnings) {
@@ -1016,20 +1017,10 @@ public class Casino {
             + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
-    // private static void guessClose(long uid, int spent, int winnings) {
-    //     executeUpdate("UPDATE guess_user SET (guesses, close, spent, winnings) = (guesses + 1, close + 1, spent + "
-    //         + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
-    // }
-
     private static void guessLoss(long uid, long spent) {
         executeUpdate("UPDATE guess_user SET (guesses, spent) = (guesses + 1, spent + "
             + spent + ") WHERE uid = " + uid + ";");
     }
-
-    // private static void guessMistake(long uid, int spent, int winnings) {
-    //     executeUpdate("UPDATE guess_user SET (guesses, mistake, spent, winnings) = (guesses + 1, mistake + 1, spent + "
-    //         + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
-    // }
 
     private static void logSlots(long uid, long spent, long winnings, int diamonds, int winCondition) {
         executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
@@ -1065,7 +1056,7 @@ public class Casino {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -1155,13 +1146,13 @@ public class Casino {
             + round + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
-    public static void logOverUnderLoss(long uid, long bet) {
+    public static void logOverUnderLoss(long uid) {
         executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
             + uid + ";");
     }
 
     public static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
-        long balance = addWinnings(uid, winnings, winnings - wager);
+        long balance = addWinnings(uid, winnings);
         executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
             + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
             + (winnings - wager) + ") WHERE uid = " + uid + ";");
@@ -1185,7 +1176,7 @@ public class Casino {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -1215,7 +1206,7 @@ public class Casino {
             statement.executeUpdate(query);
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -1252,7 +1243,7 @@ public class Casino {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -1288,7 +1279,7 @@ public class Casino {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -1322,7 +1313,7 @@ public class Casino {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -1356,7 +1347,7 @@ public class Casino {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {

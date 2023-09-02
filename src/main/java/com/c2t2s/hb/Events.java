@@ -1,12 +1,15 @@
 package com.c2t2s.hb;
 
-import java.sql.*;
-import java.util.Arrays;
-import java.util.List; //TODO: Remove the *
-import java.util.Random;
-import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 
-public class Events {
+class Events {
+
+    // Hide default constructor
+    private Events() {}
 	
 	protected static class EventUser {    	
     	public int events_today = 0;
@@ -28,7 +31,7 @@ public class Events {
     	protected String getAvailablePullSources() {
     		long timeRemaining = DAILY_RESET_MS - (System.currentTimeMillis() - reset.getTime());
     		if (timeRemaining < 1000) { timeRemaining = 1000; }
-    		String reset = Casino.formatTime(timeRemaining);
+    		String remainingTime = Casino.formatTime(timeRemaining);
         	if (robs_today < 1 || picks_today < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
         		String output = "You can still earn pulls today through the following means:";
         		if (robs_today < 1) {
@@ -43,10 +46,10 @@ public class Events {
         		//	output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
         		//}
         		
-        		output += "\nYour next reset occurs in " + reset;
+        		output += "\nYour next reset occurs in " + remainingTime;
 	        	return output;
         	} else {
-        		return "Return in " + reset + " to get more!";
+        		return "Return in " + remainingTime + " to get more!";
         	}
     	}
     }
@@ -136,7 +139,7 @@ public class Events {
             }
             statement.close();
             connection.close();
-        } catch (URISyntaxException | SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             try {
