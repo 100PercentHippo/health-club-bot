@@ -35,9 +35,13 @@ class Gacha {
 
         // Returns chance to pull a 3 Star
         private double getThreeStarChance() {
-            // TODO: Scale this to be larger at high pity
             if (primaryPity >= (MAX_3STAR_PITY)) {
                 return 1.0;
+            }
+            int averagePulls = (int)(1.0 / BASE_3STAR_CHANCE);
+            if (primaryPity > averagePulls) {
+                return BASE_3STAR_CHANCE
+                    + 0.25 * (((double)primaryPity - averagePulls) / (MAX_3STAR_PITY - averagePulls));
             } else {
                 return BASE_3STAR_CHANCE;
             }
@@ -45,9 +49,13 @@ class Gacha {
 
         // Returns chance to pull a 2 Star
         private double getTwoStarChance() {
-            // TODO: Scale this to be larger at high pity
             if (secondaryPity >= (MAX_2STAR_PITY)) {
                 return 1.0;
+            }
+            int averagePulls = (int)(1.0 / BASE_2STAR_CHANCE);
+            if (secondaryPity > averagePulls) {
+                return BASE_2STAR_CHANCE
+                    + 0.25 * (((double)secondaryPity - averagePulls) / (MAX_2STAR_PITY - averagePulls));
             } else {
                 return BASE_2STAR_CHANCE;
             }
@@ -55,7 +63,6 @@ class Gacha {
 
         // Returns chance to pull a 1 Star
         private double getOneStarChance() {
-            // TODO: Scale this to be larger at high pity
             if (tertiaryPity >= (MAX_1STAR_PITY)) {
                 return 1.0;
             } else {
@@ -137,14 +144,18 @@ class Gacha {
                     + "\n" + getPictureUrl();
         }
 
-        private String generateAwardText(boolean useBriefResponse) {
+        private String generateAwardText(boolean useBriefResponse, boolean alreadyMaxed) {
             String star = (foil == 1 ? ":star2:" : ":star:");
             String stars = "";
             if (rarity > 0) {
                 stars = Casino.repeatString(star, rarity);
             }
             String duplicateString = "";
-            if (duplicates > 0) {
+            if (alreadyMaxed) {
+                long coinEquivalent = getMaxedCharacterCoinEquivalent();
+                duplicateString = "\n" + (useBriefResponse ? "\t" : "") + getDisplayName() + " +" + duplicates
+                    + " already maxed, converted to " + coinEquivalent + " coin" + Casino.getPluralSuffix(coinEquivalent);
+            } else if (duplicates > 0) {
                 duplicateString = "\n" + (useBriefResponse ? "\t" : "") + "Upgraded " + getDisplayName()
                     + (duplicates > 1 ? " +" + (duplicates - 1) : "")
                     + " -> " + getDisplayName() + " +" + duplicates;
@@ -175,6 +186,13 @@ class Gacha {
 
         private double getBuffDecimal() {
             return getBuffPercent() / 100;
+        }
+
+        private long getMaxedCharacterCoinEquivalent() {
+            if (rarity < MAXED_CHARACTER_COIN_VALUES.size()) {
+                return MAXED_CHARACTER_COIN_VALUES.get(rarity);
+            }
+            return 100L;
         }
     }
 
@@ -222,6 +240,7 @@ class Gacha {
     private static final double BANNER_3STAR_CHANCE = 0.5;
     private static final double BANNER_2STAR_CHANCE = 0.6;
     private static final double SHINY_CHANCE = 0.05;
+    private static final List<Long> MAXED_CHARACTER_COIN_VALUES = Arrays.asList(0L, 100L, 500L, 1000L);
 
     static GachaResponse handleGachaPull(long uid, boolean onBanner, long pulls) {
         GachaResponse response = new GachaResponse();
@@ -387,10 +406,14 @@ class Gacha {
     private static GachaUser awardCharacter(long uid, long cid, boolean shiny, boolean fromBanner,
             boolean isBannerFlop, boolean useBriefResponse, GachaResponse response) {
         int duplicates = checkCharacterDuplicates(uid, cid, shiny);
+        boolean alreadyMaxed = false;
         if (duplicates < 0) {
             awardNewCharacter(uid, cid, shiny);
         } else if (duplicates < MAX_CHARACTER_DUPLICATES) {
             awardCharacterDuplicate(uid, cid, shiny);
+        } else {
+            alreadyMaxed = true;
+            // Award coins once we have the character object to check rarity
         }
 
         GachaCharacter character = getCharacter(uid, cid, shiny);
@@ -398,7 +421,10 @@ class Gacha {
             System.out.println("Failed to award character: " + uid + ", " + cid + ", " + shiny);
             response.addMessagePart("Failed to award character. Error: (" + cid + ", " + shiny + ")");
         }
-        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse), character.rarity);
+        if (alreadyMaxed) {
+            awardMaxedCharacter(uid, character.getMaxedCharacterCoinEquivalent());
+        }
+        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse, alreadyMaxed), character.rarity);
         return logCharacterAward(uid, character.rarity, fromBanner, isBannerFlop);
     }
 
@@ -751,6 +777,10 @@ class Gacha {
     private static void awardCharacterDuplicate(long uid, long cid, boolean shiny) {
         Casino.executeUpdate("UPDATE gacha_user_character SET (duplicates) = (duplicates + 1) WHERE uid = "
                 + uid + " AND cid = " + cid + " AND foil = " + (shiny ? 1 : 0) + ";");
+    }
+
+    private static long awardMaxedCharacter(long uid, long coinEquivalent) {
+        return Casino.addMoney(uid, coinEquivalent);
     }
 
     private static long awardCoinFiller(long uid, long coinAmount) {
