@@ -93,31 +93,31 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
-                            interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
+                            interaction.getArgumentLongValueByIndex(1).orElse(100L))).respond();
                     break;
                 case "hugeguess":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleHugeGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
-                            interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
+                            interaction.getArgumentLongValueByIndex(1).orElse(100L))).respond();
                     break;
                 case "slots":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Casino.handleSlots(interaction.getUser().getId(),
-                            interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                            interaction.getArgumentLongValueByIndex(0).orElse(100L)),
                         1000,  updater);
                     });
                     break;
                 case "minislots":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Casino.handleMinislots(interaction.getUser().getId(),
-                            interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                            interaction.getArgumentLongValueByIndex(0).orElse(100L)),
                         1000,  updater);
                     });
                     break;
                 case "overunder new":
                     interaction.createImmediateResponder().setContent(
-                        Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(100L)))
                         .addComponents(ActionRow.of(Button.secondary("overunder.over", "Over"),
                             Button.secondary("overunder.under", "Under"),
                             Button.secondary("overunder.same", "Same")))
@@ -137,7 +137,7 @@ public class HBMain {
                     break;
                 case "blackjack new":
                     interaction.createImmediateResponder().setContent(
-                        Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(100L)))
                         .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
                             Button.secondary("blackjack.stand", "Stand")))
                         .respond();
@@ -241,17 +241,17 @@ public class HBMain {
             .setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName("guess").setDescription("Guess a number from 1 to 10!")
             .addOption(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10))
-            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("hugeguess").setDescription("Guess a number from 1 to 100!")
             .addOption(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100))
-            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("slots").setDescription("Spin the slots!")
-            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("minislots").setDescription("Spin the little slots!")
-            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("claim").setDescription("Initialize yourself as a casino user")
             .setEnabledInDms(false));
@@ -278,14 +278,14 @@ public class HBMain {
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("overunder").setDescription("Multiple rounds of predicting if the next number is over or under")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
-                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))))
+                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))))
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"))
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"))
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same"))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("blackjack").setDescription("Play a game of blackjack")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
-                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))))
+                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))))
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"))
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have"))
             .setEnabledInDms(false));
@@ -372,11 +372,11 @@ public class HBMain {
         try {
             if (args.contains("d")) {
                 //Dice rolling
+                StringBuilder message = new StringBuilder("Rolling `" + args + "`\n");
                 args = args.replace("-\\s*-", "");
                 args = args.replace("-", "+-");
                 args = args.replace("\\s", "");
                 String[] pieces = args.split("\\+");
-                StringBuilder message = new StringBuilder();
                 int total = 0;
                 for (int i = 0; i < pieces.length; ++i) {
                     boolean negative = false;
@@ -414,7 +414,8 @@ public class HBMain {
                     return "Negative numbers make me sad :slight_frown:";
                 }
                 int roll = RNG_SOURCE.nextInt(max) + 1;
-                return "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
+                return "Rolling 1-" + max + "\n" + roll
+                    + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
             }
         } catch (NumberFormatException e) {
             // Unrecognized syntax
