@@ -102,8 +102,7 @@ class Blackjack {
         }
         String playerHand = "Your hand:    " + game.getHand();
         StringBuilder dealerHand = new StringBuilder("\nDealer's hand: " + cardLetters[game.getDealerHand()]);
-        String placeholder = "\n:black_small_square:";
-        response.add(playerHand + dealerHand.toString() + "[?]" + placeholder);
+        response.add(playerHand + dealerHand.toString() + "[?]" + Casino.PLACEHOLDER_NEWLINE_STRING);
         int dealerTotal = cardValues[game.getDealerHand()];
         boolean dealerAce = (game.getDealerHand() == 1);
         while ((!dealerAce && dealerTotal < 17) || (dealerAce && dealerTotal < 17)
@@ -120,7 +119,7 @@ class Blackjack {
             } else {
                 dealerTotal += cardValues[card];
             }
-            response.add(playerHand + dealerHand.toString() + placeholder);
+            response.add(playerHand + dealerHand.toString() + Casino.PLACEHOLDER_NEWLINE_STRING);
         }
         if (dealerAce && dealerTotal > 21) {
             dealerTotal -= 10;
