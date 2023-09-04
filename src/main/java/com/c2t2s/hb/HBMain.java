@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.6"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.7"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     public static void main(String[] args) {
@@ -49,6 +49,8 @@ public class HBMain {
                 case "changelog":
                     interaction.createImmediateResponder().setContent(getChangelog()).respond();
                     break;
+                case "latestrelease":
+                    interaction.createImmediateResponder().setContent(getLatestRelease()).respond();
                 case "roll":
                     interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
                     break;
@@ -232,9 +234,11 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName("version")
             .setDescription("Check the current bot version").setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("help")
-            .setDescription("Print available Casino Bot commands").setEnabledInDms(false));
+            .setDescription("Print available Casino Bot commands").setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName("changelog")
-            .setDescription("Print recent Casino Bot changelog").setEnabledInDms(false));
+            .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true));
+        builders.add(new SlashCommandBuilder().setName("latestrelease")
+            .setDescription("Print the changelog of the most recent Casino Bot update").setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName("roll")
             .setDescription("Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)")
             .addOption(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true))
@@ -344,26 +348,41 @@ public class HBMain {
             + "\n\t`/gacha character list` List the characters you've pulled";
     }
 
+    private static String getLatestRelease() {
+        return "Casino Bot Release " + VERSION_STRING + ":"
+            + getLatestReleaseString();
+    }
+
+    private static String getLatestReleaseString() {
+        return "\n\tGacha character pull rates are now increased at high pity"
+            + "\n\t`/feed` now correctly increases the payout chance when the pot is large"
+            + "\n\t`/pull` will no longer timeout when using many pulls at once"
+            + "\n\tDefault wager on all games is now 100"
+            + "\n\t`/roll` should no properly handle negatives when using RPG style input";
+    }
+
     private static String getChangelog() {
-        return "Changelog:\n3.1.6"
-            + "\n\t- Adds the abillity to perform multiple pulls at once"
+        return "Changelog:\n" + VERSION_STRING
+            + getLatestReleaseString()
+            + "\n3.1.6"
+            + "\n\tAdds the abillity to perform multiple pulls at once"
             + "\n3.1.5"
-            + "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
+            + "\n\tFirst pull check after a user's daily reset will now correctly have the reset applied"
             + "\n3.1.4"
-            + "\n\t- `/pulls` now lists available pull sources or remaining timer"
-            + "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
-            + "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-            + "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
-            + "\n\t- Test Character B has been temporarily disabled for balance reasons"
+            + "\n\t`/pulls` now lists available pull sources or remaining timer"
+            + "\n\tPity now remains unchanged when pulling a character of a higher rarity"
+            + "\n\tCharacters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+            + "\n\tShiny Characters are now less likely (1/8 -> 1/20)"
+            + "\n\tTest Character B has been temporarily disabled for balance reasons"
             + "\n3.1.3"
-            + "\n\t- `/give` now pings the recipient"
-            + "\n\t- `/blackjack` now resolves incrementally"
+            + "\n\t`/give` now pings the recipient"
+            + "\n\t`/blackjack` now resolves incrementally"
             + "\n3.1.2"
-            + "\n\t- Adds `/pity` and `/pulls`"
+            + "\n\tAdds `/pity` and `/pulls`"
             + "\n3.1.1"
-            + "\n\t- First 2h and 30m income command per day now award Gacha pulls"
+            + "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
             + "\n3.1.0"
-            + "\n\t- Adds `/pull` to test the gacha system";
+            + "\n\tAdds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
