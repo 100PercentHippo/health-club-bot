@@ -2,10 +2,10 @@ package com.c2t2s.hb;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.interaction.MessageComponentInteraction;
-import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 // Used when initializing commands
 import org.javacord.api.interaction.SlashCommand;
@@ -42,7 +40,7 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(VERSION_STRING).respond();
                     break;
                 case "help":
-                    interaction.createImmediateResponder().setContent(getHelpText()).respond();
+                    interaction.createImmediateResponder().setContent(getHelpText()).setFlags(MessageFlag.EPHEMERAL).respond();
                     break;
                 case "changelog":
                     interaction.createImmediateResponder().setContent(getChangelog()).respond();
@@ -100,14 +98,18 @@ public class HBMain {
                             interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
                     break;
                 case "slots":
-                    makeMultiStepResponse(
-                        Casino.handleSlots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
-                        1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Casino.handleSlots(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                        1000,  updater);
+                    });
                     break;
                 case "minislots":
-                    makeMultiStepResponse(
-                        Casino.handleMinislots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
-                        1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Casino.handleMinislots(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).orElse(10L)),
+                        1000,  updater);
+                    });
                     break;
                 case "overunder new":
                     interaction.createImmediateResponder().setContent(
@@ -141,14 +143,17 @@ public class HBMain {
                         Blackjack.handleHit(interaction.getUser().getId())).respond();
                     break;
                 case "blackjack stand":
-                    makeMultiStepResponse(
-                        Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                        1000,  updater);
+                    });
                     break;
                 case "pull":
-                    makeMultiStepResponse(
-                        Gacha.handleGachaPull(interaction.getUser().getId(), false,
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Gacha.handleGachaPull(interaction.getUser().getId(), false,
                             interaction.getArgumentLongValueByIndex(0).orElse(1L)).getMessageParts(),
-                        1000, interaction);
+                        1000,  updater);
+                    });
                     break;
                 case "gacha character list":
                     interaction.createImmediateResponder().setContent(
@@ -207,8 +212,10 @@ public class HBMain {
                         .respond();
                     }
                 } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                    makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                        1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                        1000,  updater);
+                    });
                 }
             }
         });
@@ -398,20 +405,17 @@ public class HBMain {
         }
     }
 
-    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, InteractionBase interaction) {
-        CompletableFuture<InteractionOriginalResponseUpdater> updater
-            =  interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
+    private static void makeMultiStepResponse(List<String> responseSteps,
+            long delay /* milliseconds */, InteractionOriginalResponseUpdater updater) {
+        if (updater == null) {
+            throw new IllegalArgumentException("Updater was null");
+        }
         if (!responseSteps.isEmpty()) {
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    try {
-                        updater.get().setContent(responseSteps.remove(0)).update();
-                    } catch (ExecutionException | InterruptedException e) {
-                        System.out.println("Exception while updating delayed message:");
-                        e.printStackTrace();
-                    }
+                    updater.setContent(responseSteps.remove(0)).update();
                     if (responseSteps.isEmpty()) {
                         timer.cancel();
                     }
