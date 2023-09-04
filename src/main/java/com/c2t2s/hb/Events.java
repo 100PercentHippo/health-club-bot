@@ -119,7 +119,7 @@ class Events {
     // );
 
     static EventUser getEventUser(long uid) {
-        String query = "SELECT robs_today, picks_today, events_today, last_reset FROM event_user WHERE uid = " + uid + ";";
+        String query = "SELECT robs_today, picks_today, events_today, next_reset FROM event_user WHERE uid = " + uid + ";";
         Connection connection = null;
         Statement statement = null;
         EventUser user = null;
