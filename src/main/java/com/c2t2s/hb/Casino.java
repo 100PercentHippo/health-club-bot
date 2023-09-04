@@ -463,7 +463,7 @@ class Casino {
             long winnings = (long)(pot * 0.75);
             long newPot = pot - winnings;
             output.append("The money machine is satisfied! :dollar: You win "
-                + winnings + "! Your new balance is " + moneyMachineWin(uid, winnings, newPot)
+                + winnings + "! Your new balance is " + moneyMachineWin(uid, winnings, winnings - amount, newPot)
                 + ". The pot is now " + newPot + ".");
         } else { // Lose
             output.append("Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
@@ -1114,8 +1114,8 @@ class Casino {
         return balance;
     }
 
-    private static long moneyMachineWin(long uid, long winnings, long newPot) {
-        long balance = addMoney(uid, winnings);
+    private static long moneyMachineWin(long uid, long winnings, long profit, long newPot) {
+        long balance = addMoney(uid, profit);
         executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         setTimer2Time(uid, "1 minute");
         executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
