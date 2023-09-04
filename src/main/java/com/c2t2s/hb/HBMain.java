@@ -51,6 +51,7 @@ public class HBMain {
                     break;
                 case "latestrelease":
                     interaction.createImmediateResponder().setContent(getLatestRelease()).respond();
+                    break;
                 case "roll":
                     interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
                     break;
