@@ -124,8 +124,8 @@ class Gacha {
             return (foil == 1 ? "Shiny " : "") + name;
         }
 
-        private String getPictureUrl() {
-            return (foil == 1 ? shinyUrl : pictureUrl);
+        private String getPictureLink() {
+            return " [.](" + (foil == 1 ? shinyUrl : pictureUrl) + ")";
         }
 
         private String toAbbreviatedString() {
@@ -139,9 +139,9 @@ class Gacha {
             return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
                     + "\n\t" + rarity + " Star " + type
                     + "\n\tLevel " + level + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
+                    + getPictureLink()
                     + "\n\t+" + getBuffPercent() + "% Bonus"
-                    + "\n" + (description.isEmpty() ? "" : description)
-                    + "\n" + getPictureUrl();
+                    + (description.isEmpty() ? "" : "\n\t" + description);
         }
 
         private String generateAwardText(boolean useBriefResponse, boolean alreadyMaxed) {
@@ -162,15 +162,13 @@ class Gacha {
             }
             if (useBriefResponse) {
                 return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
-                    + duplicateString
-                    + (!description.isEmpty() ? "\n\tThis character has a unique ability" : "")
-                    + "\n\t" + getPictureUrl();
+                    + duplicateString + getPictureLink()
+                    + (!description.isEmpty() ? "\n\tThis character has a unique ability" : "");
             } else {
                 return stars + " " + getDisplayName() + " " + stars
                     + "\n" + rarity + " Star " + type
-                    + duplicateString
-                    + (!description.isEmpty() ? "\n\tUnique Ability:" + description : "")
-                    + "\n" + getPictureUrl();
+                    + duplicateString + getPictureLink()
+                    + (!description.isEmpty() ? "\n\tUnique Ability:" + description : "");
             }
         }
 
