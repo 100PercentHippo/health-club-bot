@@ -299,7 +299,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createLongOption("amount", "Amount to transfer", true, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pull").setDescription("Try to win a gacha character!")
-            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 1000))
+            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 25))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pulls").setDescription("Check how many gacha pulls you have")
             .setEnabledInDms(false));
