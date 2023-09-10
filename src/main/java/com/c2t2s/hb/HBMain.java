@@ -2,28 +2,30 @@ package com.c2t2s.hb;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.interaction.MessageComponentInteraction;
-import org.javacord.api.interaction.InteractionBase;
+import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
 
 // Used when initializing commands
-import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionType;
+
 import java.util.Arrays;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.6"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.7"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     public static void main(String[] args) {
@@ -42,10 +44,13 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(VERSION_STRING).respond();
                     break;
                 case "help":
-                    interaction.createImmediateResponder().setContent(getHelpText()).respond();
+                    interaction.createImmediateResponder().setContent(getHelpText()).setFlags(MessageFlag.EPHEMERAL).respond();
                     break;
                 case "changelog":
                     interaction.createImmediateResponder().setContent(getChangelog()).respond();
+                    break;
+                case "latestrelease":
+                    interaction.createImmediateResponder().setContent(getLatestRelease()).respond();
                     break;
                 case "roll":
                     interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
@@ -91,27 +96,31 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Casino.handleGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
-                            interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
+                            interaction.getArgumentLongValueByIndex(1).orElse(100L))).respond();
                     break;
                 case "hugeguess":
                     interaction.createImmediateResponder().setContent(
                         Casino.handleHugeGuess(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
-                            interaction.getArgumentLongValueByIndex(1).orElse(10L))).respond();
+                            interaction.getArgumentLongValueByIndex(1).orElse(100L))).respond();
                     break;
                 case "slots":
-                    makeMultiStepResponse(
-                        Casino.handleSlots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
-                        1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Casino.handleSlots(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).orElse(100L)),
+                        1000,  updater);
+                    });
                     break;
                 case "minislots":
-                    makeMultiStepResponse(
-                        Casino.handleMinislots(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)),
-                        1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Casino.handleMinislots(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).orElse(100L)),
+                        1000,  updater);
+                    });
                     break;
                 case "overunder new":
                     interaction.createImmediateResponder().setContent(
-                        Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(100L)))
                         .addComponents(ActionRow.of(Button.secondary("overunder.over", "Over"),
                             Button.secondary("overunder.under", "Under"),
                             Button.secondary("overunder.same", "Same")))
@@ -131,7 +140,7 @@ public class HBMain {
                     break;
                 case "blackjack new":
                     interaction.createImmediateResponder().setContent(
-                        Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(10L)))
+                        Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(100L)))
                         .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
                             Button.secondary("blackjack.stand", "Stand")))
                         .respond();
@@ -141,14 +150,17 @@ public class HBMain {
                         Blackjack.handleHit(interaction.getUser().getId())).respond();
                     break;
                 case "blackjack stand":
-                    makeMultiStepResponse(
-                        Blackjack.handleStand(interaction.getUser().getId()), 1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                        1000,  updater);
+                    });
                     break;
                 case "pull":
-                    makeMultiStepResponse(
-                        Gacha.handleGachaPull(interaction.getUser().getId(), false,
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Gacha.handleGachaPull(interaction.getUser().getId(), false,
                             interaction.getArgumentLongValueByIndex(0).orElse(1L)).getMessageParts(),
-                        1000, interaction);
+                        1000,  updater);
+                    });
                     break;
                 case "gacha character list":
                     interaction.createImmediateResponder().setContent(
@@ -207,8 +219,10 @@ public class HBMain {
                         .respond();
                     }
                 } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                    makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                        1000, interaction);
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                        1000,  updater);
+                    });
                 }
             }
         });
@@ -216,72 +230,87 @@ public class HBMain {
 
     private static void initCommands(DiscordApi api) {
         System.out.println("Registering commands with discord");
-        //SlashCommand.with("version", "Check the current bot version").createGlobal(api).join();
-        //SlashCommand.with("help", "Print available Casino Bot commands").createGlobal(api).join();
-        //SlashCommand.with("changelog", "Print recent Casino Bot changelog").createGlobal(api).join();
-        //SlashCommand.with("roll", "Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)",
-        //    Arrays.asList(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true)))
-        //    .createGlobal(api).join();
-        //SlashCommand.with("guess", "Guess a number from 1 to 10!",
-        //    Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10),
-        //        SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-        //    .createGlobal(api).join();
-        //SlashCommand.with("hugeguess", "Guess a number from 1 to 100!",
-        //    Arrays.asList(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100),
-        //        SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-        //    .createGlobal(api).join();
-        // SlashCommand.with("slots", "Spin the slots!",
-        //     Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("minislots", "Spin the little slots!",
-        //     Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000)))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        //SlashCommand.with("claim", "Initialize yourself as a casino user").setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("balance", "Check your current balance").setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("work", "Work for 2 hours to earn some coins").setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("fish", "Fish for 30 minutes to earn some coins").setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("rob", "Attempt to rob The Bank to steal some of The Money. You might be caught!")
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pickpocket", "Attempt a petty theft of pickpocketting").setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("leaderboard", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10)))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("richest", "View the richest people in the casino",
-        //     Arrays.asList(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10)))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pot", "Check how much money is in the Money Machine")
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("feed", "Feed the Money Machine",
-        //     Arrays.asList(SlashCommandOption.createLongOption("amount", "How much to feed", true, 1, 100000)))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("overunder", "Multiple rounds of predicting if the next number is over or under",
-        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
-        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))),
-        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"),
-        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"),
-        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same")))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("blackjack", "Play a game of blackjack",
-        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
-        //         Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 10", false, 1, 100000))),
-        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"),
-        //         SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have")))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("give", "Give coins to another user",
-        //     Arrays.asList(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true),
-        //         SlashCommandOption.createLongOption("amount", "Amount to transfer", true)))
-        //     .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pull", "Try to win a gacha character!",
-        //        Arrays.asList(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 1000)))
-        //    .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pulls", "Check how many gacha pulls you have")
-        //    .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("pity", "Check your gacha pity")
-        //      .setEnabledInDms(false).createGlobal(api).join();
-        // SlashCommand.with("gacha", "Ha! Gotcha!",
-        //     Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
-        //         Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got")))))
-        //     .setEnabledInDms(false).createGlobal(api).join();
+        Set<SlashCommandBuilder> builders = new HashSet<>();
+
+        builders.add(new SlashCommandBuilder().setName("version")
+            .setDescription("Check the current bot version").setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("help")
+            .setDescription("Print available Casino Bot commands").setEnabledInDms(true));
+        builders.add(new SlashCommandBuilder().setName("changelog")
+            .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true));
+        builders.add(new SlashCommandBuilder().setName("latestrelease")
+            .setDescription("Print the changelog of the most recent Casino Bot update").setEnabledInDms(true));
+        builders.add(new SlashCommandBuilder().setName("roll")
+            .setDescription("Roll a random number. Supports deathrolling (`/roll 10`) or RPG style dice (`/roll 1d20`)")
+            .addOption(SlashCommandOption.createStringOption("argument", "What to roll. Either a number (`100`) or an RPG style sequence (`1d20`)", true))
+            .setEnabledInDms(true));
+        builders.add(new SlashCommandBuilder().setName("guess").setDescription("Guess a number from 1 to 10!")
+            .addOption(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 10))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("hugeguess").setDescription("Guess a number from 1 to 100!")
+            .addOption(SlashCommandOption.createLongOption("guess", "What you think the number will be", true, 1, 100))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("slots").setDescription("Spin the slots!")
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("minislots").setDescription("Spin the little slots!")
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("claim").setDescription("Initialize yourself as a casino user")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("balance").setDescription("Check your current balance")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("work").setDescription("Work for 2 hours to earn some coins")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("fish").setDescription("Fish for 30 minutes to earn some coins")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("rob").setDescription("Attempt to rob The Bank to steal some of The Money. You might be caught!")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("pickpocket").setDescription("Attempt a petty theft of pickpocketting")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("leaderboard").setDescription("View the richest people in the casino")
+            .addOption(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("richest").setDescription("View the richest people in the casino")
+            .addOption(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("pot").setDescription("Check how much money is in the Money Machine")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("feed").setDescription("Feed the Money Machine")
+            .addOption(SlashCommandOption.createLongOption("amount", "How much to feed", true, 1, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("overunder").setDescription("Multiple rounds of predicting if the next number is over or under")
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
+                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))))
+            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "over", "Guess the next number in an ongoing game will be over"))
+            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "under", "Guess the next number in an ongoing game will be under"))
+            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same"))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("blackjack").setDescription("Play a game of blackjack")
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
+                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))))
+            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"))
+            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have"))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("give").setDescription("Give coins to another user")
+            .addOption(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true))
+            .addOption(SlashCommandOption.createLongOption("amount", "Amount to transfer", true, 1, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("pull").setDescription("Try to win a gacha character!")
+            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 1000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("pulls").setDescription("Check how many gacha pulls you have")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("pity").setDescription("Check your gacha pity")
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
+                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got"))))
+            .setEnabledInDms(false));
+
+        api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");
     }
 
@@ -320,26 +349,41 @@ public class HBMain {
             + "\n\t`/gacha character list` List the characters you've pulled";
     }
 
+    private static String getLatestRelease() {
+        return "Casino Bot Release " + VERSION_STRING + ":"
+            + getLatestReleaseString();
+    }
+
+    private static String getLatestReleaseString() {
+        return "\n\tGacha character pull rates are now increased at high pity"
+            + "\n\t`/feed` now correctly increases the payout chance when the pot is large"
+            + "\n\t`/pull` will no longer timeout when using many pulls at once"
+            + "\n\tDefault wager on all games is now 100"
+            + "\n\t`/roll` should no properly handle negatives when using RPG style input";
+    }
+
     private static String getChangelog() {
-        return "Changelog:\n3.1.6"
-            + "\n\t- Adds the abillity to perform multiple pulls at once"
+        return "Changelog:\n" + VERSION_STRING
+            + getLatestReleaseString()
+            + "\n3.1.6"
+            + "\n\tAdds the abillity to perform multiple pulls at once"
             + "\n3.1.5"
-            + "\n\t- First pull check after a user's daily reset will now correctly have the reset applied"
+            + "\n\tFirst pull check after a user's daily reset will now correctly have the reset applied"
             + "\n3.1.4"
-            + "\n\t- `/pulls` now lists available pull sources or remaining timer"
-            + "\n\t- Pity now remains unchanged when pulling a character of a higher rarity"
-            + "\n\t- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-            + "\n\t- Shiny Characters are now less likely (1/8 -> 1/20)"
-            + "\n\t- Test Character B has been temporarily disabled for balance reasons"
+            + "\n\t`/pulls` now lists available pull sources or remaining timer"
+            + "\n\tPity now remains unchanged when pulling a character of a higher rarity"
+            + "\n\tCharacters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+            + "\n\tShiny Characters are now less likely (1/8 -> 1/20)"
+            + "\n\tTest Character B has been temporarily disabled for balance reasons"
             + "\n3.1.3"
-            + "\n\t- `/give` now pings the recipient"
-            + "\n\t- `/blackjack` now resolves incrementally"
+            + "\n\t`/give` now pings the recipient"
+            + "\n\t`/blackjack` now resolves incrementally"
             + "\n3.1.2"
-            + "\n\t- Adds `/pity` and `/pulls`"
+            + "\n\tAdds `/pity` and `/pulls`"
             + "\n3.1.1"
-            + "\n\t- First 2h and 30m income command per day now award Gacha pulls"
+            + "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
             + "\n3.1.0"
-            + "\n\t- Adds `/pull` to test the gacha system";
+            + "\n\tAdds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
@@ -348,11 +392,11 @@ public class HBMain {
         try {
             if (args.contains("d")) {
                 //Dice rolling
+                StringBuilder message = new StringBuilder("Rolling `" + args + "`\n");
                 args = args.replace("-\\s*-", "");
                 args = args.replace("-", "+-");
                 args = args.replace("\\s", "");
                 String[] pieces = args.split("\\+");
-                StringBuilder message = new StringBuilder();
                 int total = 0;
                 for (int i = 0; i < pieces.length; ++i) {
                     boolean negative = false;
@@ -390,7 +434,8 @@ public class HBMain {
                     return "Negative numbers make me sad :slight_frown:";
                 }
                 int roll = RNG_SOURCE.nextInt(max) + 1;
-                return "" + roll + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
+                return "Rolling 1-" + max + "\n" + roll
+                    + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
             }
         } catch (NumberFormatException e) {
             // Unrecognized syntax
@@ -398,20 +443,17 @@ public class HBMain {
         }
     }
 
-    private static void makeMultiStepResponse(List<String> responseSteps, long delay /* milliseconds */, InteractionBase interaction) {
-        CompletableFuture<InteractionOriginalResponseUpdater> updater
-            =  interaction.createImmediateResponder().setContent(responseSteps.remove(0)).respond();
+    private static void makeMultiStepResponse(List<String> responseSteps,
+            long delay /* milliseconds */, InteractionOriginalResponseUpdater updater) {
+        if (updater == null) {
+            throw new IllegalArgumentException("Updater was null");
+        }
         if (!responseSteps.isEmpty()) {
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    try {
-                        updater.get().setContent(responseSteps.remove(0)).update();
-                    } catch (ExecutionException | InterruptedException e) {
-                        System.out.println("Exception while updating delayed message:");
-                        e.printStackTrace();
-                    }
+                    updater.setContent(responseSteps.remove(0)).update();
                     if (responseSteps.isEmpty()) {
                         timer.cancel();
                     }

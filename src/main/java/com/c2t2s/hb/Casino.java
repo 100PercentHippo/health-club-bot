@@ -86,6 +86,7 @@ class Casino {
     static final int PREDICTION_UNDER = 1;
     static final int PREDICTION_SAME = 2;
     static final String USER_NOT_FOUND_MESSAGE = "Unable to fetch user. If you are new run `/claim` to start";
+    static final String PLACEHOLDER_NEWLINE_STRING = "\n:black_small_square:";
 
     // Returns 's' as needed to write the English version
     // of value, unless value == 1
@@ -401,13 +402,15 @@ class Casino {
             return insuffientBalanceMessage(balance);
         }
         int correct = HBMain.RNG_SOURCE.nextInt(10) + 1;
+        StringBuilder output = new StringBuilder("Guessed " + guess + "\n");
         if (guess == correct) {
             guessWin(uid, amount, 9 * amount);
-            return "Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 9 * amount);
+            output.append("Correct! You win " + (10 * amount) + "! New balance is " + addMoney(uid, 9 * amount));
         } else {
             guessLoss(uid, amount);
-            return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
+            output.append("The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount));
         }
+        return output.toString();
     }
 
 // Huge Guess Payout:
@@ -423,13 +426,15 @@ class Casino {
             return insuffientBalanceMessage(balance);
         }
         int correct = HBMain.RNG_SOURCE.nextInt(100) + 1;
+        StringBuilder output = new StringBuilder("Guessed " + guess + "\n");
         if (guess == correct) {
             hugeGuessWin(uid, amount, 99 * amount);
-            return "Correct! You win " + (100 * amount) + "! New balance is " + addMoney(uid, 99 * amount);
+            output.append("Correct! You win " + (100 * amount) + "! New balance is " + addMoney(uid, 99 * amount));
         } else {
             hugeGuessLoss(uid, amount);
-            return "The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount);
+            output.append("The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount));
         }
+        return output.toString();
     }
 
     static String handleFeed(long uid, Long amount) {
@@ -453,16 +458,18 @@ class Casino {
         if (pot < 20000) {
             winChance = 0.05 + (0.2 * ((double)pot / 20000));
         }
+        StringBuilder output = new StringBuilder("Fed " + amount + " coins to the Money Machine\n");
         if (HBMain.RNG_SOURCE.nextDouble() < winChance && (amount >= 100 || HBMain.RNG_SOURCE.nextInt(100) < amount)) { // Win
             long winnings = (long)(pot * 0.75);
             long newPot = pot - winnings;
-            return "The money machine is satisfied! :dollar: You win "
-                + winnings + "! Your new balance is " + moneyMachineWin(uid, winnings, newPot)
-                + ". The pot is now " + newPot + ".";
+            output.append("The money machine is satisfied! :dollar: You win "
+                + winnings + "! Your new balance is " + moneyMachineWin(uid, winnings, winnings - amount, newPot)
+                + ". The pot is now " + newPot + ".");
         } else { // Lose
-            return "Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
-                + moneyMachineLoss(uid, amount);
+            output.append("Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
+                + moneyMachineLoss(uid, amount));
         }
+        return output.toString();
     }
 
     static String handlePot() {
@@ -470,7 +477,7 @@ class Casino {
         if (moneyMachine == null) {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
-        return "The current pot is " + moneyMachine.getBalance();
+        return "The current Money Machine pot is " + moneyMachine.getBalance();
     }
 
 // Slots Payout:
@@ -505,7 +512,7 @@ class Casino {
         StringBuilder output = new StringBuilder("Bid " + amount + " on slots\n");
         String placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(output + repeatString(placeholder, 5));
+        responseSteps.add(output + repeatString(placeholder, 5) + PLACEHOLDER_NEWLINE_STRING);
         for (int i = 0; i < 5; ++i) {
             switch (HBMain.RNG_SOURCE.nextInt(5)) {
                 case 0:
@@ -536,7 +543,8 @@ class Casino {
                 default:
                     System.out.println("Out of range value encountered when generating slots");
             }
-            responseSteps.add(output.toString() + repeatString(placeholder, 4 - i));
+            responseSteps.add(output.toString() + repeatString(placeholder, 4 - i)
+                + PLACEHOLDER_NEWLINE_STRING);
         }
         output.append("\n");
         int winCondition = 0;
@@ -604,7 +612,7 @@ class Casino {
         StringBuilder output = new StringBuilder("Bid " + amount + " on mini slots\n");
         String placeholder = ":blue_square:";
         int winnings = 0;
-        responseSteps.add(output + repeatString(placeholder, 3));
+        responseSteps.add(output + repeatString(placeholder, 3) + PLACEHOLDER_NEWLINE_STRING);
         for (int i = 0; i < 3; i++) {
             switch (HBMain.RNG_SOURCE.nextInt(5)) {
             case 0:
@@ -635,7 +643,8 @@ class Casino {
             default:
                 System.out.println("Out of range value encountered when generating slots");
             }
-            responseSteps.add(output.toString() + repeatString(placeholder, 2 - i));
+            responseSteps.add(output.toString() + repeatString(placeholder, 2 - i)
+                + PLACEHOLDER_NEWLINE_STRING);
         }
         output.append("\n");
         if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
@@ -684,7 +693,7 @@ class Casino {
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
-        return "Bid " + amount + " on overunder.\nYour initial value is " + target
+        return "Bid " + amount + " on overunder\nYour initial value is " + target
             + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`";
     }
 
@@ -1105,8 +1114,8 @@ class Casino {
         return balance;
     }
 
-    private static long moneyMachineWin(long uid, long winnings, long newPot) {
-        long balance = addMoney(uid, winnings);
+    private static long moneyMachineWin(long uid, long winnings, long profit, long newPot) {
+        long balance = addMoney(uid, profit);
         executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         setTimer2Time(uid, "1 minute");
         executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "

@@ -17,11 +17,11 @@ class Events {
         private int picksToday = 0;
         private Timestamp reset;
 
-        private EventUser(long uid, int robs, int picks, int events, Timestamp lastReset) {
-            if (System.currentTimeMillis() - lastReset.getTime() > DAILY_RESET_MS) {
+        private EventUser(long uid, int robs, int picks, int events, Timestamp nextReset) {
+            if (nextReset.getTime() - System.currentTimeMillis() < 0) {
                 this.reset = resetEventUserDailyLimits(uid);
             } else {
-                this.reset = lastReset;
+                this.reset = nextReset;
                 this.eventsToday = events;
                 this.robsToday = robs;
                 this.picksToday = picks;
@@ -29,7 +29,7 @@ class Events {
         }
 
         String getAvailablePullSources() {
-            long timeRemaining = DAILY_RESET_MS - (System.currentTimeMillis() - reset.getTime());
+            long timeRemaining = reset.getTime() - System.currentTimeMillis();
             if (timeRemaining < 1000) { timeRemaining = 1000; }
             String remainingTime = Casino.formatTime(timeRemaining);
             if (robsToday < 1 || picksToday < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
@@ -55,8 +55,6 @@ class Events {
     }
 
     private static final int MAX_DAILY_EVENT_PULLS = 3;
-    // TODO: Replace DAILY_RESET_MS by making DB store next reset instead of last
-    private static final int DAILY_RESET_MS = 22 * 60 * 60 * 1000;
 
     static String checkRobBonus(long uid, String command) {
         EventUser user = getEventUser(uid);
@@ -97,7 +95,7 @@ class Events {
     //   robs_today integer DEFAULT 0,
     //   picks_today integer DEFAULT 0,
     //   events_today integer DEFAULT 0,
-    //   last_reset timestamp DEFAULT '2021-01-01 00:00:00',
+    //   next_reset timestamp DEFAULT '2021-01-01 00:00:00',
     //   robs_joined bigint DEFAULT 0,
     //   rob_successes bigint DEFAULT 0,
     //   rob_profit bigint DEFAULT 0,
@@ -121,7 +119,7 @@ class Events {
     // );
 
     static EventUser getEventUser(long uid) {
-        String query = "SELECT robs_today, picks_today, events_today, last_reset FROM event_user WHERE uid = " + uid + ";";
+        String query = "SELECT robs_today, picks_today, events_today, next_reset FROM event_user WHERE uid = " + uid + ";";
         Connection connection = null;
         Statement statement = null;
         EventUser user = null;
@@ -171,7 +169,7 @@ class Events {
     }
 
     private static Timestamp resetEventUserDailyLimits(long uid) {
-        return Casino.executeTimestampQuery("UPDATE event_user SET (robs_today, picks_today, last_reset) = (0, 0, NOW()) WHERE uid = "
-                + uid + " RETURNING last_reset;");
+        return Casino.executeTimestampQuery("UPDATE event_user SET (robs_today, picks_today, next_reset) = (0, 0, NOW() + INTERVAL '22 hours') WHERE uid = "
+                + uid + " RETURNING next_reset;");
     }
 }
