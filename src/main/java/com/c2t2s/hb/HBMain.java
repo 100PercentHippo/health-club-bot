@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.7"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.8"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     public static void main(String[] args) {
@@ -355,35 +355,37 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n\tGacha character pull rates are now increased at high pity"
-            + "\n\t`/feed` now correctly increases the payout chance when the pot is large"
-            + "\n\t`/pull` will no longer timeout when using many pulls at once"
-            + "\n\tDefault wager on all games is now 100"
-            + "\n\t`/roll` should no properly handle negatives when using RPG style input";
+        return "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message";
     }
 
     private static String getChangelog() {
         return "Changelog:\n" + VERSION_STRING
             + getLatestReleaseString()
+            + "\n3.1.7"
+            + "\n- Gacha character pull rates are now increased at high pity"
+            + "\n- `/feed` now correctly increases the payout chance when the pot is large"
+            + "\n- `/pull` will no longer timeout when using many pulls at once"
+            + "\n- Default wager on all games is now 100"
+            + "\n- `/roll` should no properly handle negatives when using RPG style input"
             + "\n3.1.6"
-            + "\n\tAdds the abillity to perform multiple pulls at once"
+            + "\n- Adds the abillity to perform multiple pulls at once"
             + "\n3.1.5"
-            + "\n\tFirst pull check after a user's daily reset will now correctly have the reset applied"
+            + "\n- First pull check after a user's daily reset will now correctly have the reset applied"
             + "\n3.1.4"
-            + "\n\t`/pulls` now lists available pull sources or remaining timer"
-            + "\n\tPity now remains unchanged when pulling a character of a higher rarity"
-            + "\n\tCharacters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-            + "\n\tShiny Characters are now less likely (1/8 -> 1/20)"
-            + "\n\tTest Character B has been temporarily disabled for balance reasons"
+            + "\n- `/pulls` now lists available pull sources or remaining timer"
+            + "\n- Pity now remains unchanged when pulling a character of a higher rarity"
+            + "\n- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+            + "\n- Shiny Characters are now less likely (1/8 -> 1/20)"
+            + "\n- Test Character B has been temporarily disabled for balance reasons"
             + "\n3.1.3"
-            + "\n\t`/give` now pings the recipient"
-            + "\n\t`/blackjack` now resolves incrementally"
+            + "\n- `/give` now pings the recipient"
+            + "\n- `/blackjack` now resolves incrementally"
             + "\n3.1.2"
-            + "\n\tAdds `/pity` and `/pulls`"
+            + "\n- Adds `/pity` and `/pulls`"
             + "\n3.1.1"
-            + "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
+            + "\n- First 2h and 30m income command per day now award Gacha pulls"
             + "\n3.1.0"
-            + "\n\tAdds `/pull` to test the gacha system";
+            + "\n- Adds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
