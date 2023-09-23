@@ -74,29 +74,38 @@ class AllOrNothing {
 
             String response = "";
             long potentialPayout = activeGame.getPotentialPayout();
-            if (potentialPayout > globalPotRecord) {
-                globalPotRecord = potentialPayout;
-                entry.pot = potentialPayout;
-                response = ":tada: New Global " + activeGame.difficulty.description
-                    + " Pot Record: " + potentialPayout + "!";
-            } else if (potentialPayout > entry.pot) {
-                entry.pot = potentialPayout;
-                response = ":tada: New Personal " + activeGame.difficulty.description
-                    + " Best Pot: " + potentialPayout + "!";
+            if (potentialPayout > entry.pot) {
+                long validatedRecord = logPotRecord(uid, activeGame.difficulty, potentialPayout);
+                if (validatedRecord == potentialPayout) {
+                    entry.pot = potentialPayout;
+                    if (potentialPayout > globalPotRecord) {
+                        globalPotRecord = potentialPayout;
+                        response = ":tada: New Global " + activeGame.difficulty.description
+                            + " Pot Record: " + potentialPayout + "!";
+                    } else {
+                        response = ":tada: New Personal " + activeGame.difficulty.description
+                            + " Best Pot: " + potentialPayout + "!";
+                    }
+                }
             }
 
-            if (activeGame.rolls > globalRollRecord) {
-                globalRollRecord = activeGame.rolls;
-                entry.rolls = activeGame.rolls;
-                response += (response.isEmpty() ? "" : "\n") + ":tada: New Global "
-                    + activeGame.difficulty.description + " Multiplier Record: "
-                    + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!";
-            } else if (activeGame.rolls > entry.rolls) {
-                entry.rolls = activeGame.rolls;
-                response += (response.isEmpty() ? "" : "\n") + ":tada: New Personal "
-                    + activeGame.difficulty.description + " Best Multiplier: "
-                    + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!";
+            if (activeGame.rolls > entry.rolls) {
+                long validatedRecord = logRollRecord(uid, activeGame.difficulty, activeGame.rolls);
+                if (validatedRecord == activeGame.rolls) {
+                    entry.rolls = activeGame.rolls;
+                    if (activeGame.rolls > globalRollRecord) {
+                        globalRollRecord = activeGame.rolls;
+                        response += (response.isEmpty() ? "" : "\n") + ":tada: New Global "
+                            + activeGame.difficulty.description + " Multiplier Record: "
+                            + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!";
+                    } else {
+                        response += (response.isEmpty() ? "" : "\n") + ":tada: New Personal "
+                            + activeGame.difficulty.description + " Best Multiplier: "
+                            + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!";
+                    }
+                }
             }
+
             return response;
         }
 
@@ -107,16 +116,21 @@ class AllOrNothing {
             }
 
             long payout = activeGame.getPotentialPayout();
-            if (payout > globalCashoutRecord) {
-                globalCashoutRecord = payout;
-                entry.cashout = payout;
-                return ":tada: New Global " + activeGame.difficulty.description
-                    + " Payout Record: " + payout + "!";
-            } else if (payout > entry.cashout) {
-                entry.cashout = payout;
-                return ":tada: New Personal " + activeGame.difficulty.description
-                    + " Best Payout: " + payout + "!";
+            if (payout > entry.cashout) {
+                long validatedRecord = logCashoutRecord(uid, activeGame.difficulty, payout);
+                if (validatedRecord == payout) {
+                    entry.cashout = payout;
+                    if (payout > globalCashoutRecord) {
+                        globalCashoutRecord = payout;
+                        return ":tada: New Global " + activeGame.difficulty.description
+                            + " Payout Record: " + payout + "!";
+                    } else {
+                        return ":tada: New Personal " + activeGame.difficulty.description
+                            + " Best Payout: " + payout + "!";
+                    }
+                }
             }
+
             return "";
         }
     }
@@ -251,8 +265,8 @@ class AllOrNothing {
                 + "\nCurrent multiplier: 0"
                 + "\nBust! Your new balance is " + balance);
         } else {
-            activeGame = logRoll(uid, activeGame.difficulty);
             String recordString = getRecordCache(activeGame.difficulty).checkPotRecord(uid, activeGame);
+            activeGame = logRoll(uid, activeGame.difficulty);
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + ")"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
@@ -272,8 +286,8 @@ class AllOrNothing {
             return "No active game found. Use `/allornothing new` to start a new game";
         }
 
-        long balance = logCashout(uid, activeGame.difficulty);
         String recordString = getRecordCache(activeGame.difficulty).checkCashoutRecord(uid, activeGame);
+        long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
         return "Cashed out for " + activeGame.getPotentialPayout() + ". Your new balance is " + balance
             + "\n" + recordString;
     }
@@ -299,26 +313,96 @@ class AllOrNothing {
     // );
 
     static RecordCache populateRecordCache(Difficulty difficulty) {
-        return null;
+        String query = "SELECT uid, record_rolls, record_pot, record_cashout FROM allornothing_user WHERE rolls_to_double = " + difficulty.rollsToDouble + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            HashMap<Long, RecordEntry> personalBests = new HashMap<>();
+            int rollRecord = 0;
+            long potRecord = 0;
+            long cashoutRecord = 0;
+            long uid = 0;
+            int personalRollRecord = 0;
+            long personalPotRecord = 0;
+            long personalCashoutRecord = 0;
+            while (results.next()) {
+                uid = results.getLong(1);
+                personalRollRecord = results.getInt(2);
+                personalPotRecord = results.getLong(3);
+                personalCashoutRecord = results.getLong(4);
+
+                if (personalRollRecord > rollRecord) {
+                    rollRecord = personalRollRecord;
+                }
+                if (personalPotRecord > potRecord) {
+                    potRecord = personalPotRecord;
+                }
+                if (personalCashoutRecord > cashoutRecord) {
+                    cashoutRecord = personalCashoutRecord;
+                }
+                personalBests.put(uid,
+                    new RecordEntry(personalRollRecord, personalPotRecord, personalCashoutRecord));
+            }
+            return new RecordCache(personalBests, rollRecord, potRecord, cashoutRecord);
+        }, null);
+    }
+
+    static ActiveGame executeActiveGameQuery(String query, Difficulty difficulty) {
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                int rolls = results.getInt(1);
+                long wager = results.getLong(2);
+                return new ActiveGame(rolls, wager, difficulty);
+            }
+            return null;
+        }, null);
     }
 
     static ActiveGame fetchActiveGame(long uid, Difficulty difficulty) {
-        return null;
+        String query = "SELECT current_rolls, current_wager FROM allornothing_user WHERE uid = " + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + ";";
+        return executeActiveGameQuery(query, difficulty);
     }
 
     static ActiveGame logNewGame(long uid, Difficulty difficulty, long wager) {
-        return null;
-    }
-
-    static long logBust(long uid, Difficulty difficulty) {
-        return 0;
+        Casino.takeMoney(uid, wager);
+        String query = "UPDATE allornothing_user SET (games_played, spent, current_rolls, current_wager) = (games_played + 1, spent + " + wager
+            + ", 0, " + wager + ") WHERE uid = " + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + " RETURNING current_rolls, current_wager;";
+        return executeActiveGameQuery(query, difficulty);
     }
 
     static ActiveGame logRoll(long uid, Difficulty difficulty) {
-        return null;
+        String query = "UPDATE allornothing_user SET (times_rolled, current_rolls) = (timers_rolled + 1, current_rolls + 1) WHERE uid = "
+            + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + " RETURNING current_rolls, current_wager;";
+        return executeActiveGameQuery(query, difficulty);
     }
 
-    static long logCashout(long uid, Difficulty difficulty) {
-        return 0;
+    static long logBust(long uid, Difficulty difficulty) {
+        String query = "UPDATE allornothing_user SET (times_rolled, busts, current_rolls) = (times_rolled + 1, busts + 1, -1) WHERE uid = "
+            + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + ";";
+        CasinoDB.executeUpdate(query);
+        return Casino.checkBalance(uid);
+    }
+
+    static long logCashout(long uid, Difficulty difficulty, long winnings) {
+        String query = "UPDATE allornothing_user SET (times_cashed_out, winnings, current_rolls) = (times_cashed_out + 1, winnings "
+            + winnings + ", -1) WHERE uid = " + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + ";";
+        CasinoDB.executeUpdate(query);
+        return Casino.addMoney(uid, winnings);
+    }
+
+    static long logRollRecord(long uid, Difficulty difficulty, int newRecord) {
+        return logRecord(uid, difficulty, newRecord, "record_rolls");
+    }
+
+    static long logPotRecord(long uid, Difficulty difficulty, long newRecord) {
+        return logRecord(uid, difficulty, newRecord, "record_pot");
+    }
+
+    static long logCashoutRecord(long uid, Difficulty difficulty, long newRecord) {
+        return logRecord(uid, difficulty, newRecord, "record_cashout");
+    }
+
+    static long logRecord(long uid, Difficulty difficulty, long newRecord, String field) {
+        String query = "UPDATE allornothing_user SET " + field + " = GREATEST(" + field + ", " + newRecord
+            + ") WHERE uid = " + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + " RETURNING " + field + ";";
+        return CasinoDB.executeLongQuery(query);
     }
 }
