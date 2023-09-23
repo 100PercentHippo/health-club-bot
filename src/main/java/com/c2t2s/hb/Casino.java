@@ -1,13 +1,7 @@
 package com.c2t2s.hb;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -373,7 +367,7 @@ class Casino {
         User user = getUser(uid);
         String response = "";
         if (user == null) {
-            boolean error = addUser(uid, name);
+            boolean error = CasinoDB.addUser(uid, name);
             if (!error) {
                 response += "Welcome! You have been given an initial balance of 1000 coins";
             } else {
@@ -778,11 +772,6 @@ class Casino {
 
     //////////////////////////////////////////////////////////
 
-    static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
-            System.getenv("JDBC_USERNAME"), System.getenv("JDBC_PASSWORD"));
-    }
-
     //CREATE TABLE IF NOT EXISTS money_user (
     //  uid bigint PRIMARY KEY,
     //  name varchar(40) DEFAULT '',
@@ -876,91 +865,37 @@ class Casino {
     // );
 
     static long checkBalance(long uid) {
-        return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
+        return CasinoDB.executeLongQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
     }
 
     static long takeMoney(long uid, long amount) {
-        return executeBalanceQuery("UPDATE money_user SET balance = balance - "
+        return CasinoDB.executeLongQuery("UPDATE money_user SET balance = balance - "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
 
     static long addMoney(long uid, long amount) {
-        return executeBalanceQuery("UPDATE money_user SET balance = balance + "
+        return CasinoDB.executeLongQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
 
     private static long addWorkMoney(long uid, int amount, String delay) {
-        return executeBalanceQuery("UPDATE money_user SET (in_jail, balance, last_claim) = (false, balance + "
+        return CasinoDB.executeLongQuery("UPDATE money_user SET (in_jail, balance, last_claim) = (false, balance + "
             + amount + ", NOW() + INTERVAL '" + delay + "') WHERE uid = " + uid + " RETURNING balance;");
     }
 
     private static void setJailTime(long uid, String interval) {
-        executeUpdate("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
+        CasinoDB.executeUpdate("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
             + interval + "') WHERE uid = " + uid + ";");
     }
 
     private static void setTimer2Time(long uid, String interval) {
-        executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
+        CasinoDB.executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
             + interval + "' WHERE uid = " + uid + ";");
-    }
-
-    private static boolean addUser(long uid, String name) {
-        boolean error = false;
-        String query = "INSERT INTO money_user (uid, name, balance) VALUES(" + uid + ", '" + name +"', 1000) ON CONFLICT (uid) DO NOTHING;";
-        String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String event = "INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            error = statement.executeUpdate(query) < 1;
-            if (!error) {
-                statement.executeUpdate(job);
-                statement.executeUpdate(slots);
-                statement.executeUpdate(guess);
-                statement.executeUpdate(minislots);
-                statement.executeUpdate(hugeguess);
-                statement.executeUpdate(monemachine);
-                statement.executeUpdate(overunder);
-                statement.executeUpdate(blackjac);
-                statement.executeUpdate(gacha);
-                statement.executeUpdate(event);
-            }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return error;
     }
 
     private static String parseLeaderboard(long entries) {
         String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
-        return executeQueryWithReturn(query, results -> {
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             StringBuilder leaderboard = new StringBuilder();
             int place = 1;
             while (results.next()) {
@@ -976,40 +911,40 @@ class Casino {
     }
 
     private static void hugeGuessWin(long uid, long spent, long winnings) {
-        executeUpdate("UPDATE hugeguess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE hugeguess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
             + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
     private static void hugeGuessLoss(long uid, long spent) {
-        executeUpdate("UPDATE hugeguess_user SET (guesses, spent) = (guesses + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE hugeguess_user SET (guesses, spent) = (guesses + 1, spent + "
                 + spent + ") WHERE uid = " + uid + ";");
     }
 
     private static void guessWin(long uid, long spent, long winnings) {
-        executeUpdate("UPDATE guess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE guess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
             + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
     private static void guessLoss(long uid, long spent) {
-        executeUpdate("UPDATE guess_user SET (guesses, spent) = (guesses + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE guess_user SET (guesses, spent) = (guesses + 1, spent + "
             + spent + ") WHERE uid = " + uid + ";");
     }
 
     private static void logSlots(long uid, long spent, long winnings, int diamonds, int winCondition) {
-        executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
+        CasinoDB.executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
             + diamonds + ", spent + " + spent + ", winnings + " + winnings + ", threes + "
             + (winCondition == 3 ? 1 : 0) + ", fours + " + (winCondition == 4 ? 1 : 0) + ", fives + "
             + (winCondition == 5 ? 1 : 0) + ", fruitsalads + " + (winCondition == 1 ? 1 : 0) + ") WHERE uid = " + uid + ";");
     }
 
     private static void logMinislots(long uid, long spent, long winnings, int diamonds) {
-        executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
+        CasinoDB.executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
             + diamonds + ", spent + " + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
     private static User getUser(long uid) {
         String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim, timestamp2 FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
-        return executeQueryWithReturn(query, results -> {
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int work = results.getInt(1);
                 int fish = results.getInt(2);
@@ -1027,49 +962,49 @@ class Casino {
 
     private static long logWork(long uid, int income) {
         long balance = addWorkMoney(uid, income, "2 hours");
-        executeUpdate("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
+        CasinoDB.executeUpdate("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
             + "work_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static long logFish(long uid, boolean rare, int income) {
         long balance = addWorkMoney(uid, income, "30 minutes");
-        executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
+        CasinoDB.executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
             + (rare ? 1 : 0) + ", fish_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static void pickFailed(long uid) {
         setJailTime(uid, "30 minutes");
-        executeUpdate("UPDATE job_user SET (pick_count, pick_fails, jail_time) = (pick_count + 1, pick_fails + 1, jail_time + 30) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE job_user SET (pick_count, pick_fails, jail_time) = (pick_count + 1, pick_fails + 1, jail_time + 30) WHERE uid = "
             + uid + ";");
     }
 
     private static long logPick(long uid, boolean rare, int income) {
         long balance = addMoney(uid, income);
-        executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
+        CasinoDB.executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
             + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static void robFailed(long uid) {
         setJailTime(uid, "2 hours");
-        executeUpdate("UPDATE job_user SET (rob_count, rob_fails, jail_time) = (rob_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE job_user SET (rob_count, rob_fails, jail_time) = (rob_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
                 + uid + ";");
     }
 
     private static long logRob(long uid, boolean rare, int income) {
         long balance = addMoney(uid, income);
-        executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
+        CasinoDB.executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
             + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static long moneyMachineWin(long uid, long winnings, long profit, long newPot) {
         long balance = addMoney(uid, profit);
-        executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+        CasinoDB.executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         setTimer2Time(uid, "1 minute");
-        executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
+        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
             + winnings + ") WHERE uid = " + uid + ";");
         return balance;
     }
@@ -1078,30 +1013,30 @@ class Casino {
         long balance = takeMoney(uid, bet);
         addMoney(MONEY_MACHINE_UID, bet);
         setTimer2Time(uid, "1 minute");
-        executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static void logInitialOverUnder(long uid, long bet, int target) {
         takeMoney(uid, bet);
-        executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
             + bet + ", " + bet + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
     private static void logOverUnderProgress(long uid, int round, int target) {
-        executeUpdate("UPDATE overunder_user SET (round, target) = ("
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (round, target) = ("
             + round + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
     private static void logOverUnderLoss(long uid) {
-        executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
             + uid + ";");
     }
 
     private static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
         long balance = addMoney(uid, winnings);
-        executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
             + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
             + (winnings - wager) + ") WHERE uid = " + uid + ";");
         return balance;
@@ -1109,7 +1044,7 @@ class Casino {
 
     private static OverUnderGame getOverUnderRound(long uid) {
         String query = "SELECT round, bet, target FROM overunder_user WHERE uid = " + uid + ";";
-        return executeQueryWithReturn(query, results -> {
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int round = results.getInt(1);
                 int wager = results.getInt(2);
@@ -1118,112 +1053,6 @@ class Casino {
             }
             return null;
         }, null);
-    }
-
-    static void executeUpdate(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            statement.executeUpdate(query);
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    interface ResultSetConsumer <T> {
-        public T apply(ResultSet results) throws SQLException;
-    }
-
-    static <T> T executeQueryWithReturn(String query, ResultSetConsumer<T> parseResult, T defaultValue) {
-        Connection connection = null;
-        Statement statement = null;
-        T output = defaultValue;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            output = parseResult.apply(results);
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return output;
-    }
-
-    private static long executeBalanceQuery(String query) {
-        long defaultValue = -1L;
-        return executeQueryWithReturn(query, results -> {
-            if (results.next()) {
-                return results.getLong(1);
-            }
-            return defaultValue;
-        }, defaultValue);
-    }
-
-    static int executeIntQuery(String query) {
-        int defaultValue = 0;
-        return executeQueryWithReturn(query, results -> {
-            if (results.next()) {
-                return results.getInt(1);
-            }
-            return -1;
-        }, defaultValue);
-    }
-
-    static Timestamp executeTimestampQuery(String query) {
-        Timestamp defaultValue = new Timestamp(0);
-        return executeQueryWithReturn(query, results -> {
-            if (results.next()) {
-                return results.getTimestamp(1);
-            }
-            return defaultValue;
-        }, defaultValue);
-    }
-
-    static List<Long> executeListQuery(String query) {
-        List<Long> defaultValue = new ArrayList<>();
-        return executeQueryWithReturn(query, results -> {
-            List<Long> output = defaultValue;
-            while (results.next()) {
-                output.add(results.getLong(1));
-            }
-            return output;
-        }, defaultValue);
     }
 
 }

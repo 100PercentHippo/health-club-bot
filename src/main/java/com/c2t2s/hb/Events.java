@@ -1,9 +1,5 @@
 package com.c2t2s.hb;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 
 class Events {
@@ -120,56 +116,31 @@ class Events {
 
     static EventUser getEventUser(long uid) {
         String query = "SELECT robs_today, picks_today, events_today, next_reset FROM event_user WHERE uid = " + uid + ";";
-        Connection connection = null;
-        Statement statement = null;
-        EventUser user = null;
-        try {
-            connection = Casino.getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int robs = results.getInt(1);
                 int picks = results.getInt(2);
                 int events = results.getInt(3);
                 Timestamp reset = results.getTimestamp(4);
 
-                user = new EventUser(uid, robs, picks, events, reset);
+                return new EventUser(uid, robs, picks, events, reset);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return user;
+            return null;
+        }, null);
     }
 
     private static long awardRobBonus(long uid) {
-        Casino.executeUpdate("UPDATE event_user SET (robs_today) = (robs_today + 1) WHERE uid = " + uid + ";");
+        CasinoDB.executeUpdate("UPDATE event_user SET (robs_today) = (robs_today + 1) WHERE uid = " + uid + ";");
         return Gacha.addPulls(uid, 2);
     }
 
     private static long awardPickBonus(long uid) {
-        Casino.executeUpdate("UPDATE event_user SET (picks_today) = (picks_today + 1) WHERE uid = " + uid + ";");
+        CasinoDB.executeUpdate("UPDATE event_user SET (picks_today) = (picks_today + 1) WHERE uid = " + uid + ";");
         return Gacha.addPulls(uid, 2);
     }
 
     private static Timestamp resetEventUserDailyLimits(long uid) {
-        return Casino.executeTimestampQuery("UPDATE event_user SET (robs_today, picks_today, next_reset) = (0, 0, NOW() + INTERVAL '22 hours') WHERE uid = "
+        return CasinoDB.executeTimestampQuery("UPDATE event_user SET (robs_today, picks_today, next_reset) = (0, 0, NOW() + INTERVAL '22 hours') WHERE uid = "
                 + uid + " RETURNING next_reset;");
     }
 }

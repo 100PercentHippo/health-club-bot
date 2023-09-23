@@ -1,10 +1,6 @@
 package com.c2t2s.hb;
 
 import java.util.List;
-import java.sql.Statement;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 
 class Blackjack {
@@ -194,36 +190,36 @@ class Blackjack {
     // );
 
     private static void newBlackjackGame(long uid, String hand, int sum, boolean hasAce, int dealerHand, long wager) {
-        Casino.executeUpdate("UPDATE blackjack_user SET (hands, spent, hand, sum, ace, dealer_hand, wager) = (hands + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE blackjack_user SET (hands, spent, hand, sum, ace, dealer_hand, wager) = (hands + 1, spent + "
             + wager + ", '" + hand + "', " + sum + ", " + hasAce + ", " + dealerHand + ", "
             + wager + ") WHERE uid = " + uid + ";");
     }
 
     private static void updateBlackjackGame(long uid, String hand, int sum, boolean containsAce) {
-        Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace) = ('" + hand
+        CasinoDB.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace) = ('" + hand
             + "', " + sum + ", " + containsAce + ") WHERE uid = " + uid + ";");
     }
 
     private static long blackjackBust(long uid) {
-        Casino.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE blackjack_user SET (busts, hand, sum, ace, dealer_hand, wager) = (busts + 1, '', -1, false, -1, -1) WHERE uid = "
             + uid + ";");
         return Casino.checkBalance(uid);
     }
 
     private static long blackjackLoss(long uid) {
-        Casino.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE blackjack_user SET (hand, sum, ace, dealer_hand, wager) = ('', -1, false, -1, -1) WHERE uid = "
             + uid +";");
         return Casino.checkBalance(uid);
     }
 
     private static long blackjackTie(long uid, long winnings) {
-        Casino.executeUpdate("UPDATE blackjack_user SET (ties, winnings, hand, sum, ace, dealer_hand, wager) = (ties + 1, winnings + "
+        CasinoDB.executeUpdate("UPDATE blackjack_user SET (ties, winnings, hand, sum, ace, dealer_hand, wager) = (ties + 1, winnings + "
             + winnings + ",'', -1, false, -1, -1) WHERE uid = " + uid +";");
         return Casino.addMoney(uid, winnings);
     }
 
     private static long blackjackWin(long uid, long winnings, boolean dealerBust) {
-        Casino.executeUpdate("UPDATE blackjack_user SET (dealer_busts, wins, winnings, hand, sum, ace, dealer_hand, wager) = (dealer_busts + "
+        CasinoDB.executeUpdate("UPDATE blackjack_user SET (dealer_busts, wins, winnings, hand, sum, ace, dealer_hand, wager) = (dealer_busts + "
             + (dealerBust ? 1 : 0) + ", wins + " + (dealerBust ? 0 : 1) + ", winnings + "
             + winnings + ", '', -1, false, -1, -1) WHERE uid = " + uid + ";");
         return Casino.addMoney(uid, 2 * winnings);
@@ -231,7 +227,7 @@ class Blackjack {
 
     private static BlackJackGame getBlackjackGame(long uid) {
         String query = "SELECT hand, sum, ace, dealer_hand, wager FROM blackjack_user WHERE uid = " + uid + ";";
-        return Casino.executeQueryWithReturn(query, results -> {
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 String hand = results.getString(1);
                 int sum = results.getInt(2);
