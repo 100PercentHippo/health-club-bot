@@ -5,23 +5,23 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.interaction.AutocompleteInteraction;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionChoice;
+import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Set;
-
-// Used when initializing commands
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
-
-import java.util.Arrays;
 
 public class HBMain {
 
@@ -174,6 +174,19 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Gacha.handlePity(interaction.getUser().getId())).respond();
                     break;
+                case "stats":
+                    interaction.createImmediateResponder().setContent(
+                        Stats.handleStats(interaction.getArgumentStringValueByIndex(0).orElse(""),
+                        interaction.getUser().getId())).respond();
+                    break;
+                case "allornothing new":
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(AllOrNothing.handleNew(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get(),
+                            interaction.getArgumentLongValueByIndex(1).orElse(500L)),
+                        1000, updater);
+                    });
+                    break;
                 default:
                     return;
             }
@@ -224,6 +237,18 @@ public class HBMain {
                         1000,  updater);
                     });
                 }
+            }
+        });
+        api.addAutocompleteCreateListener(event -> {
+            AutocompleteInteraction interaction = event.getAutocompleteInteraction();
+            switch (interaction.getFullCommandName()) {
+                case "stats":
+                    interaction.respondWithChoices(Arrays.asList(SlashCommandOptionChoice.create("Work [Text]", "work"),
+                        SlashCommandOptionChoice.create("Fish [Text]", "fish"), SlashCommandOptionChoice.create("Rob [Text]", "rob"),
+                        SlashCommandOptionChoice.create("Pickpocket [Text]", "pickpocket")));
+                    break;
+                default:
+                    return;
             }
         });
     }
@@ -308,6 +333,16 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got"))))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
+                Arrays.asList(new SlashCommandOptionBuilder().setName("odds").setDescription("Chance to win each roll").setRequired(true)
+                .setChoices(Arrays.asList(SlashCommandOptionChoice.create("70%", 70), SlashCommandOptionChoice.create("80%", 80),
+                    SlashCommandOptionChoice.create("90%", 90), SlashCommandOptionChoice.create("95%", 95))).build(),
+                SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000)))));
+        builders.add(new SlashCommandBuilder().setName("stats").setDescription("Check the odds of a given game")
+            .addOption(new SlashCommandOptionBuilder().setName("Game").setDescription("Which game to display associated stats")
+                .setAutocompletable(true).build())
             .setEnabledInDms(false));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
