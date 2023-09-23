@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -959,13 +960,8 @@ class Casino {
 
     private static String parseLeaderboard(long entries) {
         String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
-        Connection connection = null;
-        Statement statement = null;
-        StringBuilder leaderboard = new StringBuilder();
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return executeQueryWithReturn(query, results -> {
+            StringBuilder leaderboard = new StringBuilder();
             int place = 1;
             while (results.next()) {
                 leaderboard.append("#" + place++ + " ");
@@ -975,27 +971,8 @@ class Casino {
                 }
                 leaderboard.append(name + " " + results.getLong(2) + "\n");
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return leaderboard.toString();
+            return leaderboard.toString();
+        }, "");
     }
 
     private static void hugeGuessWin(long uid, long spent, long winnings) {
@@ -1032,13 +1009,7 @@ class Casino {
 
     private static User getUser(long uid) {
         String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim, timestamp2 FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
-        Connection connection = null;
-        Statement statement = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int work = results.getInt(1);
                 int fish = results.getInt(2);
@@ -1048,29 +1019,10 @@ class Casino {
                 boolean isJail = results.getBoolean(6);
                 Timestamp time = results.getTimestamp(7);
                 Timestamp time2 = results.getTimestamp(8);
-                user = new Casino.User(work, fish, pick, rob, balance, isJail, time, time2);
+                return new Casino.User(work, fish, pick, rob, balance, isJail, time, time2);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return user;
+            return null;
+        }, null);
     }
 
     private static long logWork(long uid, int income) {
@@ -1157,40 +1109,15 @@ class Casino {
 
     private static OverUnderGame getOverUnderRound(long uid) {
         String query = "SELECT round, bet, target FROM overunder_user WHERE uid = " + uid + ";";
-        Connection connection = null;
-        Statement statement = null;
-        OverUnderGame game = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int round = results.getInt(1);
                 int wager = results.getInt(2);
                 int target = results.getInt(3);
-                game = new Casino.OverUnderGame(round, wager, target);
+                return new Casino.OverUnderGame(round, wager, target);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return game;
+            return null;
+        }, null);
     }
 
     static void executeUpdate(String query) {
@@ -1222,21 +1149,19 @@ class Casino {
         }
     }
 
-    // TODO: Migrate the queries that return a value to be generic
-    // and accept a lambda to run on the ResultSet
-    private static long executeBalanceQuery(String query) {
+    interface ResultSetConsumer <T> {
+        public T apply(ResultSet results) throws SQLException;
+    }
+
+    static <T> T executeQueryWithReturn(String query, ResultSetConsumer<T> parseResult, T defaultValue) {
         Connection connection = null;
         Statement statement = null;
-        long balance = 0;
+        T output = defaultValue;
         try {
             connection = getConnection();
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
-            if (results.next()) {
-                balance = results.getLong(1);
-            } else {
-                balance = -1;
-            }
+            output = parseResult.apply(results);
             statement.close();
             connection.close();
         } catch (SQLException e) {
@@ -1257,111 +1182,48 @@ class Casino {
                 e.printStackTrace();
             }
         }
-        return balance;
+        return output;
+    }
+
+    private static long executeBalanceQuery(String query) {
+        long defaultValue = -1L;
+        return executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return results.getLong(1);
+            }
+            return defaultValue;
+        }, defaultValue);
     }
 
     static int executeIntQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        int result = 0;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        int defaultValue = 0;
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                result = results.getInt(1);
-            } else {
-                result = -1;
+                return results.getInt(1);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return result;
+            return -1;
+        }, defaultValue);
     }
 
     static Timestamp executeTimestampQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        Timestamp result = new Timestamp(0);
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        Timestamp defaultValue = new Timestamp(0);
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                result = results.getTimestamp(1);
+                return results.getTimestamp(1);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return result;
+            return defaultValue;
+        }, defaultValue);
     }
 
     static List<Long> executeListQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        List<Long> resultList = new ArrayList<>();
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        List<Long> defaultValue = new ArrayList<>();
+        return executeQueryWithReturn(query, results -> {
+            List<Long> output = defaultValue;
             while (results.next()) {
-                resultList.add(results.getLong(1));
+                output.add(results.getLong(1));
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return resultList;
+            return output;
+        }, defaultValue);
     }
 
 }

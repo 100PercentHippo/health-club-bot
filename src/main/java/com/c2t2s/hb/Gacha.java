@@ -607,13 +607,7 @@ class Gacha {
     }
 
     private static GachaUser getGachaUser(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        GachaUser user = null;
-        try {
-            connection = Casino.getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return Casino.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int primary = results.getInt(1);
                 int secondary = results.getInt(2);
@@ -622,107 +616,39 @@ class Gacha {
                 int pulls = results.getInt(5);
                 int timesPulled = results.getInt(6);
 
-                user = new Gacha.GachaUser(primary, secondary, tertiary,
+                return new Gacha.GachaUser(primary, secondary, tertiary,
                         bannerFlops, pulls, timesPulled);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return user;
+            return null;
+        }, null);
     }
 
     private static GachaCharacter getCharacter(long uid, long cid, boolean shiny) {
         String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
                 + " AND foil = " + (shiny ? 1 : 0) + ";";
-        Connection connection = null;
-        Statement statement = null;
-        GachaCharacter character = null;
-        try {
-            connection = Casino.getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return Casino.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                character = new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
+                return new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
                         results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
                         results.getString(8), results.getString(9), results.getString(10));
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return character;
+            return null;
+        }, null);
     }
 
     private static List<GachaCharacter> getCharacters(long uid) {
         String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM " +
                 "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC;";
-        Connection connection = null;
-        Statement statement = null;
-        List<GachaCharacter> characters = new ArrayList<>();
-        try {
-            connection = Casino.getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return Casino.executeQueryWithReturn(query, results -> {
+            List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
-                characters.add(new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
+                output.add(new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
                         results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
                         results.getString(8), results.getString(9), results.getString(10)));
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return characters;
+            return output;
+        }, new ArrayList<>());
     }
 
     private static List<Long> getEligibleBanner3Stars(long uid, boolean shiny) {

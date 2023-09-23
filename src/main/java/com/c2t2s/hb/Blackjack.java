@@ -231,42 +231,17 @@ class Blackjack {
 
     private static BlackJackGame getBlackjackGame(long uid) {
         String query = "SELECT hand, sum, ace, dealer_hand, wager FROM blackjack_user WHERE uid = " + uid + ";";
-        Connection connection = null;
-        Statement statement = null;
-        BlackJackGame game = null;
-        try {
-            connection = Casino.getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return Casino.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 String hand = results.getString(1);
                 int sum = results.getInt(2);
                 boolean ace = results.getBoolean(3);
                 int dealer = results.getInt(4);
                 int wager = results.getInt(5);
-                game = new Blackjack.BlackJackGame(hand, sum, ace, dealer, wager);
+                return new Blackjack.BlackJackGame(hand, sum, ace, dealer, wager);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return game;
+            return null;
+        }, null);
     }
 
 }
