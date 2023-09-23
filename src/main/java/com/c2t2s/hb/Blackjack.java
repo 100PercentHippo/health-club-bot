@@ -51,19 +51,20 @@ class Blackjack {
         return "Your hand:    " + hand + "\nDealer's hand: " + cardLetters[dealer] + dealerCardTwo;
     }
 
-    static String handleBlackjack(long uid, long wager) {
+    static HBMain.SingleResponse handleBlackjack(long uid, long wager) {
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null) {
-            return "Unable to fetch game from the database. Did you `+claim`?";
+            return new HBMain.SingleResponse("Unable to fetch game from the database. Did you `+claim`?");
         } else if (game.getWager() != -1) {
-            return "You have a currently active game:\n" + displayGame(game.getHand(), game.getDealerHand(), "[?]")
-                + "\nUse `+hit` or `+stand` to play it out";
+            return new HBMain.SingleResponse("You have a currently active game:\n"
+                + displayGame(game.getHand(), game.getDealerHand(), "[?]")
+                + "\nUse `+hit` or `+stand` to play it out", ButtonRows.BLACKJACK_BUTTONS);
         }
         long balance = Casino.checkBalance(uid);
         if (balance < 0) {
-            return "Unable to start game. Balance check failed or was negative (" + balance +")";
+            return new HBMain.SingleResponse("Unable to start game. Balance check failed or was negative (" + balance +")");
         } else if (balance < wager) {
-            return "Your current balance of " + balance + " is not enough to cover that";
+            return new HBMain.SingleResponse("Your current balance of " + balance + " is not enough to cover that");
         }
         int dealerCard = HBMain.RNG_SOURCE.nextInt(13) + 1;
         StringBuilder hand = new StringBuilder();
@@ -86,15 +87,15 @@ class Blackjack {
         String completeHand = hand.toString();
         Casino.takeMoney(uid, wager);
         newBlackjackGame(uid, completeHand, value, hasAce, dealerCard, wager);
-        return "Bid " + wager + " on Blackjack\n" + displayGame(completeHand, dealerCard, "[?]");
+        return new HBMain.SingleResponse("Bid " + wager + " on Blackjack\n"
+            + displayGame(completeHand, dealerCard, "[?]"), ButtonRows.BLACKJACK_BUTTONS);
     }
 
-    static List<String> handleStand(long uid) {
+    static HBMain.MultistepResponse handleStand(long uid) {
         List<String> response = new ArrayList<>();
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
-            response.add("No active game found. Use `/blackjack new` to start a new game");
-            return response;
+            return new HBMain.MultistepResponse("No active game found. Use `/blackjack new` to start a new game");
         }
         String playerHand = "Your hand:    " + game.getHand();
         StringBuilder dealerHand = new StringBuilder("\nDealer's hand: " + cardLetters[game.getDealerHand()]);
@@ -139,13 +140,13 @@ class Blackjack {
                     + blackjackTie(uid, game.getWager());
         }
         response.add(playerHand + dealerHand + resolution);
-        return response;
+        return new HBMain.MultistepResponse(response);
     }
 
-    static String handleHit(long uid) {
+    static HBMain.SingleResponse handleHit(long uid) {
         BlackJackGame game = getBlackjackGame(uid);
         if (game == null || game.getWager() == -1) {
-            return "No active game found. Type `/blackjack new` to start a new game";
+            return new HBMain.SingleResponse("No active game found. Type `/blackjack new` to start a new game");
         }
         boolean hasAce = game.hasAce();
         int value = game.getSum();
@@ -162,11 +163,12 @@ class Blackjack {
             value += cardValues[card];
         }
         if ((hasAce && value > 31) || (!hasAce && value > 21)) {
-            return displayGame(hand, game.getDealerHand(), cardLetters[HBMain.RNG_SOURCE.nextInt(13) + 1])
-                + "\nBust! Your new balance is " + blackjackBust(uid);
+            return new HBMain.SingleResponse(displayGame(hand, game.getDealerHand(), cardLetters[HBMain.RNG_SOURCE.nextInt(13) + 1])
+                + "\nBust! Your new balance is " + blackjackBust(uid));
         } else {
             updateBlackjackGame(uid, hand, value, hasAce);
-            return displayGame(hand, game.getDealerHand(), "[?]");
+            return new HBMain.SingleResponse(displayGame(hand, game.getDealerHand(), "[?]"),
+                ButtonRows.BLACKJACK_BUTTONS);
         }
     }
 

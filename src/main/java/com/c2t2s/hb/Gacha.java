@@ -1,10 +1,12 @@
 package com.c2t2s.hb;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 class Gacha {
 
@@ -192,8 +194,7 @@ class Gacha {
 
     static class GachaResponse {
         private String partialMessage = "";
-        private List<String> messageParts = new ArrayList<>();
-        private Map<Integer, String> images = new HashMap<>();
+        private HBMain.MultistepResponse messages = new HBMain.MultistepResponse();
 
         private long coinsAwarded = 0;
         private long coinBalance = 0;
@@ -203,22 +204,29 @@ class Gacha {
 
         private void addMessagePart(String message) {
             partialMessage += (!partialMessage.isEmpty() ? "\n" : "") + message;
-            messageParts.add(partialMessage);
+            messages.addMessage(partialMessage);
         }
 
-        private void addCharacterMessagePart(String message, int rarity) {
+        private void addCharacterMessagePart(String message, int rarity, String pictureUrl) {
             if (rarity > highestCharacterAwarded) {
                 highestCharacterAwarded = rarity;
+            }
+            try {
+                messages.images.put(messages.messages.size(), new URL(pictureUrl));
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
             }
             addMessagePart(message);
         }
 
         private void addAnimation(List<String> frames) {
-            messageParts.addAll(0, frames);
-        }
-
-        List<String> getMessageParts() {
-            return messageParts;
+            int size = frames.size();
+            Map<Integer, URL> adjustedImages = new HashMap<>();
+            for (int key: messages.images.keySet()) {
+                adjustedImages.put(key + size, messages.images.get(key));
+            }
+            messages.images = adjustedImages;
+            messages.addAllToStart(frames);
         }
     }
 
@@ -236,31 +244,27 @@ class Gacha {
     private static final double SHINY_CHANCE = 0.05;
     private static final List<Long> MAXED_CHARACTER_COIN_VALUES = Arrays.asList(0L, 100L, 500L, 1000L);
 
-    static GachaResponse handleGachaPull(long uid, boolean onBanner, long pulls) {
-        GachaResponse response = new GachaResponse();
+    static HBMain.MultistepResponse handleGachaPull(long uid, boolean onBanner, long pulls) {
         GachaUser user = getGachaUser(uid);
         if (user == null) {
-            response.addMessagePart(Casino.USER_NOT_FOUND_MESSAGE);
-            return response;
+            return new HBMain.MultistepResponse(Casino.USER_NOT_FOUND_MESSAGE);
         }
 
         Events.EventUser eventUser = Events.getEventUser(uid);
         if (eventUser == null) {
-            response.addMessagePart("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
-            return response;
+            return new HBMain.MultistepResponse("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
         }
 
         if (user.pulls < 1) {
-            response.addMessagePart("No pulls remaining. " + eventUser.getAvailablePullSources());
-            return response;
+            return new HBMain.MultistepResponse("No pulls remaining. " + eventUser.getAvailablePullSources());
         } else if (user.pulls < pulls) {
-            response.addMessagePart("Insufficient pulls, you have " + user.pulls + " pulls remaining. "
+            return new HBMain.MultistepResponse("Insufficient pulls, you have " + user.pulls + " pulls remaining. "
                 + eventUser.getAvailablePullSources());
-            return response;
         }
 
         boolean useBriefResponse = (pulls != 1);
         GachaUser updatedUser;
+        GachaResponse response = new GachaResponse();
 
         for (int i = 0; i < pulls; ++i) {
             if (HBMain.RNG_SOURCE.nextDouble() <= user.getThreeStarChance()) {
@@ -303,7 +307,7 @@ class Gacha {
             + (user.pulls != 1 ? "s" : "") + " remaining";
         response.addMessagePart(balances);
 
-        return response;
+        return response.messages;
     }
 
     private static GachaUser awardOneStar(long uid, boolean fromBanner, boolean useBriefResponse,
@@ -418,7 +422,8 @@ class Gacha {
         if (alreadyMaxed) {
             awardMaxedCharacter(uid, character.getMaxedCharacterCoinEquivalent());
         }
-        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse, alreadyMaxed), character.rarity);
+        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse, alreadyMaxed), character.rarity,
+            character.getPictureLink());
         return logCharacterAward(uid, character.rarity, fromBanner, isBannerFlop);
     }
 

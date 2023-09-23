@@ -485,17 +485,14 @@ class Casino {
 //  4 diamonds:  1/20 000 000       1000:1
 //  5 diamonds:  1/10 000 000 000   10000:1
 
-    static List<String> handleSlots(long uid, long amount) {
-        List<String> responseSteps = new ArrayList<>();
+    static HBMain.MultistepResponse handleSlots(long uid, long amount) {
         User user = getUser(uid);
         if (user == null) {
-            responseSteps.add(USER_NOT_FOUND_MESSAGE);
-            return responseSteps;
+            return new HBMain.MultistepResponse(USER_NOT_FOUND_MESSAGE);
         }
         long balance = user.getBalance();
         if (balance < amount) {
-            responseSteps.add(insuffientBalanceMessage(balance));
-            return responseSteps;
+            return new HBMain.MultistepResponse(insuffientBalanceMessage(balance));
         }
         int cherries = 0;
         int oranges = 0;
@@ -506,6 +503,7 @@ class Casino {
         StringBuilder output = new StringBuilder("Bid " + amount + " on slots\n");
         String placeholder = ":blue_square:";
         int winnings = 0;
+        List<String> responseSteps = new ArrayList<>();
         responseSteps.add(output + repeatString(placeholder, 5) + PLACEHOLDER_NEWLINE_STRING);
         for (int i = 0; i < 5; ++i) {
             switch (HBMain.RNG_SOURCE.nextInt(5)) {
@@ -575,7 +573,7 @@ class Casino {
         output.append("New balance: " + balance);
         logSlots(uid, amount, winnings, diamonds, winCondition);
         responseSteps.add(output.toString());
-        return responseSteps;
+        return new HBMain.MultistepResponse(responseSteps);
     }
 
 // Minislots Payout
@@ -585,17 +583,14 @@ class Casino {
 //  2 diamonds:  3/10000   10:1
 //  3 diamonds:  1/1000000 100:1
 
-    static List<String> handleMinislots(long uid, long amount) {
-        List<String> responseSteps = new ArrayList<>();
+    static HBMain.MultistepResponse handleMinislots(long uid, long amount) {
         User user = getUser(uid);
         if (user == null) {
-            responseSteps.add(USER_NOT_FOUND_MESSAGE);
-            return responseSteps;
+            return new HBMain.MultistepResponse(USER_NOT_FOUND_MESSAGE);
         }
         long balance = user.getBalance();
         if (balance < amount) {
-            responseSteps.add(insuffientBalanceMessage(balance));
-            return responseSteps;
+            return new HBMain.MultistepResponse(insuffientBalanceMessage(balance));
         }
         int cherries = 0;
         int oranges = 0;
@@ -606,6 +601,7 @@ class Casino {
         StringBuilder output = new StringBuilder("Bid " + amount + " on mini slots\n");
         String placeholder = ":blue_square:";
         int winnings = 0;
+        List<String> responseSteps = new ArrayList<>();
         responseSteps.add(output + repeatString(placeholder, 3) + PLACEHOLDER_NEWLINE_STRING);
         for (int i = 0; i < 3; i++) {
             switch (HBMain.RNG_SOURCE.nextInt(5)) {
@@ -666,47 +662,49 @@ class Casino {
         output.append("New balance: " + balance);
         logMinislots(uid, amount, winnings, diamonds);
         responseSteps.add(output.toString());
-        return responseSteps;
+        return new HBMain.MultistepResponse(responseSteps);
     }
 
 // OverUnder Payout:
 //  2 correct then 1 wrong: ~2/11 1:1
 //  3 correct:              ~3/11 3:1
 
-    static String handleOverUnderInitial(long uid, long amount) {
+    static HBMain.SingleResponse handleOverUnderInitial(long uid, long amount) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game != null && game.getRound() != -1) {
-            return "You already have an active game: Round " + game.getRound() + " with the current value "
-                + game.getTarget() + ".\nUse `over`, `under`, or `same` to predict which the next value will be";
+            return new HBMain.SingleResponse("You already have an active game: Round " + game.getRound()
+                + " with the current value " + game.getTarget()
+                + ".\nUse `over`, `under`, or `same` to predict which the next value will be",
+                ButtonRows.OVERUNDER_BUTTONS);
         }
         long balance = checkBalance(uid);
         if (balance < 0) {
-            return "Unable to start game. Balance check failed or was negative (" + balance +")";
+            return new HBMain.SingleResponse("Unable to start game. Balance check failed or was negative (" + balance +")");
         } else if (balance < amount) {
-            return "Your current balance of " + balance + " is not enough to cover that";
+            return new HBMain.SingleResponse("Your current balance of " + balance + " is not enough to cover that");
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
-        return "Bid " + amount + " on overunder\nYour initial value is " + target
-            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`";
+        return new HBMain.SingleResponse("Bid " + amount + " on overunder\nYour initial value is " + target
+            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`", ButtonRows.OVERUNDER_BUTTONS);
     }
 
-    static String handleOverUnderFollowup(long uid, int prediction) {
+    static HBMain.SingleResponse handleOverUnderFollowup(long uid, int prediction) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game == null || game.getRound() == -1) {
-            return "No active game found. Use `/overunder new` to start a new game";
+            return new HBMain.SingleResponse("No active game found. Use `/overunder new` to start a new game");
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         if ((prediction == PREDICTION_OVER && target > game.getTarget())
                 || (prediction == PREDICTION_UNDER && target < game.getTarget())
                 || (prediction == PREDICTION_SAME && target == game.getTarget())) { // Correct
             if (game.getRound() == 3) {
-                return "Correct! The value was " + target + ". You win " + (3 * game.getWager())
-                    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true, game.getWager());
+                return new HBMain.SingleResponse("Correct! The value was " + target + ". You win " + (3 * game.getWager())
+                    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true, game.getWager()));
             } else {
                 logOverUnderProgress(uid, game.getRound() + 1, target);
-                return "Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
-                    + " round is " + target; 
+                return new HBMain.SingleResponse("Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
+                    + " round is " + target, ButtonRows.OVERUNDER_BUTTONS); 
             }
         } else { // Loss
             String correct = "";
@@ -719,11 +717,11 @@ class Casino {
             }
             String response = "The answer was " + correct + ": " + target + ".";
             if (game.getRound() == 3) {
-                return response + " With 2 correct your " + game.getWager()
-                    + " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager());
+                return new HBMain.SingleResponse(response + " With 2 correct your " + game.getWager()
+                    + " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager()));
             } else {
                 logOverUnderLoss(uid);
-                return response + " Your current balance is " + checkBalance(uid);
+                return new HBMain.SingleResponse(response + " Your current balance is " + checkBalance(uid));
             }
         }
     }
