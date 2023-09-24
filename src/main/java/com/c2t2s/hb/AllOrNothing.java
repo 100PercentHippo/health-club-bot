@@ -75,7 +75,7 @@ class AllOrNothing {
             StringBuilder response = new StringBuilder();
             response.append(checkRollRecord(uid, entry, activeGame));
             response.append(checkPotRecord(uid, entry, activeGame));
-            if (!response.isEmpty()) {
+            if (response.length() > 0) {
                 response.insert(0, '\n');
             }
             return response.toString();
