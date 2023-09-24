@@ -304,9 +304,11 @@ class AllOrNothing {
                 + "\nBust! Your new balance is " + balance);
             return new HBMain.MultistepResponse(response);
         } else {
+            // Ensure cache is populated before we register this entry, but check for records after updating the DB
+            RecordCache cache = getRecordCache(activeGame.difficulty);
             ++activeGame.rolls;
             activeGame = logRoll(uid, activeGame.difficulty, activeGame.getPotentialPayout());
-            String recordString = getRecordCache(activeGame.difficulty).checkActiveGameRecords(uid, activeGame);
+            String recordString = cache.checkActiveGameRecords(uid, activeGame);
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + ")"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
@@ -326,8 +328,10 @@ class AllOrNothing {
             return "No active game found. Use `/allornothing new` to start a new game";
         }
 
+        // Ensure cache is populated before we register this entry, but check for records after updating the DB
+        RecordCache cache = getRecordCache(activeGame.difficulty);
         long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
-        String recordString = getRecordCache(activeGame.difficulty).checkCashoutRecord(uid, activeGame);
+        String recordString = cache.checkCashoutRecord(uid, activeGame);
         return "Cashed out for " + activeGame.getPotentialPayout() + ". Your new balance is " + balance
             + recordString;
     }

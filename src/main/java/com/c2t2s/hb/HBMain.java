@@ -463,9 +463,9 @@ public class HBMain {
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got"))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
-            .addOption(new SlashCommandOptionBuilder().setName("odds").setDescription("Chance to win each roll").setRequired(true)
-                .setChoices(Arrays.asList(SlashCommandOptionChoice.create("70%", 70), SlashCommandOptionChoice.create("80%", 80),
-                    SlashCommandOptionChoice.create("90%", 90), SlashCommandOptionChoice.create("95%", 95))).build())
+            .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
+                Arrays.asList(SlashCommandOptionChoice.create("70%", 2), SlashCommandOptionChoice.create("80%", 3),
+                    SlashCommandOptionChoice.create("90%", 7))))
             .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("stats").setDescription("Check the odds of a given game")
