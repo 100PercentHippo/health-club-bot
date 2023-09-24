@@ -370,9 +370,10 @@ public class HBMain {
             AutocompleteInteraction interaction = event.getAutocompleteInteraction();
             switch (interaction.getFullCommandName()) {
                 case "stats":
-                    interaction.respondWithChoices(Arrays.asList(SlashCommandOptionChoice.create("Work [Text]", "work"),
-                        SlashCommandOptionChoice.create("Fish [Text]", "fish"), SlashCommandOptionChoice.create("Rob [Text]", "rob"),
-                        SlashCommandOptionChoice.create("Pickpocket [Text]", "pickpocket")));
+                    List<SlashCommandOptionChoice> choices = new ArrayList<>();
+                    Arrays.stream(Stats.StatsOption.values())
+                        .forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getName())));
+                    interaction.respondWithChoices(choices);
                     break;
                 default:
                     return;

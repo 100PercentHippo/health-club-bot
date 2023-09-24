@@ -285,7 +285,7 @@ class AllOrNothing {
         String rollString = rollFormat.format(roll);
         String targetRollString = rollTargetFormat.format(activeGame.getMinimumSuccessfulRoll());
 
-        String obscuredRoll = "Roll: `??.???";
+        String obscuredRoll = "Roll: `  .   ";
         String initialSuffix = "` (Target: " + targetRollString + " or higher)"
             + "\nCurrent payout: " + activeGame.getPotentialPayout()
             + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
@@ -309,7 +309,7 @@ class AllOrNothing {
             ++activeGame.rolls;
             activeGame = logRoll(uid, activeGame.difficulty, activeGame.getPotentialPayout());
             String recordString = cache.checkActiveGameRecords(uid, activeGame);
-            response.add("Roll: `" + rollString + "` (Target: " + targetRollString + ")"
+            response.add("Roll: `" + rollString + "` (Target: " + targetRollString + " or higher)"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
                 + recordString);
