@@ -273,7 +273,7 @@ public class HBMain {
                         Stats.handleStats(interaction.getArgumentStringValueByIndex(0).orElse(""),
                         interaction.getUser().getId())).respond();
                     break;
-                case "allornothing new":
+                case "allornothing":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(AllOrNothing.handleNew(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get(),
@@ -462,11 +462,10 @@ public class HBMain {
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got"))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
-            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of over-under",
-                Arrays.asList(new SlashCommandOptionBuilder().setName("odds").setDescription("Chance to win each roll").setRequired(true)
+            .addOption(new SlashCommandOptionBuilder().setName("odds").setDescription("Chance to win each roll").setRequired(true)
                 .setChoices(Arrays.asList(SlashCommandOptionChoice.create("70%", 70), SlashCommandOptionChoice.create("80%", 80),
-                    SlashCommandOptionChoice.create("90%", 90), SlashCommandOptionChoice.create("95%", 95))).build(),
-                SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000))))
+                    SlashCommandOptionChoice.create("90%", 90), SlashCommandOptionChoice.create("95%", 95))).build())
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("stats").setDescription("Check the odds of a given game")
             .addOption(new SlashCommandOptionBuilder().setName("Game").setDescription("Which game to display associated stats")
@@ -506,7 +505,7 @@ public class HBMain {
             + "\n\t`/blackjack` Play a hand of blackjack"
             + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
             + "\n\t`/allornothing` Push your luck and go for a new record!"
-            + "\n\t\tStart or resume a game with `/allornothing new`, play with the buttons"
+            + "\n\t\tStart or resume a game with `/allornothing`, play with the buttons"
             + "\nGacha Commands:"
             + "\n\t`/pull` Pull for gacha characters!"
             + "\n\t`/pulls` Check your available pulls"
