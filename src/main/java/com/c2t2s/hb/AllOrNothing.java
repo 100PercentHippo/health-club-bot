@@ -12,13 +12,13 @@ class AllOrNothing {
     static final int ROLLS_TO_DOUBLE_EIGHTY = 3;
     static final int ROLLS_TO_DOUBLE_NINETY = 7;
 
-    private static enum Difficulty {
+    static enum Difficulty {
         SEVENTY(ROLLS_TO_DOUBLE_SEVENTY, "70%", 0.3),
         EIGHTY(ROLLS_TO_DOUBLE_EIGHTY, "80%", 0.2),
         NINETY(ROLLS_TO_DOUBLE_NINETY, "90%", 0.1);
 
-        private final int rollsToDouble;
-        private final String description;
+        final int rollsToDouble;
+        final String description;
         private final double minimumSuccessfulRoll;
 
         Difficulty(int rollsToDouble, String description, double minimumSuccessfulRoll) {
@@ -157,6 +157,10 @@ class AllOrNothing {
         double getPayoutMultiplier() {
             return Math.pow(2, rolls / difficulty.rollsToDouble);
         }
+
+        boolean isClaimable() {
+            return rolls >= difficulty.rollsToDouble;
+        }
     }
 
     private static Map<Difficulty, RecordCache> records = initializeRecords();
@@ -188,60 +192,48 @@ class AllOrNothing {
     // Hide default constructor
     private AllOrNothing() {}
 
-    static List<String> handleNew(long uid, long rollsToDouble, long wager) {
+    static HBMain.MultistepResponse handleNew(long uid, long rollsToDouble, long wager) {
         Difficulty difficulty = Difficulty.getConstant((int)rollsToDouble);
         if (difficulty == null) {
-            List<String> response = new ArrayList<>();
-            response.add("Unrecognized odds (" + rollsToDouble + "), supported values: " + Difficulty.values().toString());
-            return response;
+            return new HBMain.MultistepResponse("Unrecognized odds (" + rollsToDouble
+                + "), supported values: " + Difficulty.values().toString());
         }
 
         ActiveGame activeGame = fetchActiveGame(uid, difficulty);
         if (activeGame.rolls >= 0) {
-            List<String> response = new ArrayList<>();
-            response.add("Existing game found:"
+            return new HBMain.MultistepResponse("Existing game found:"
                 + "Current payout: " + activeGame.getPotentialPayout()
-                + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier()));
-            return response;
-            // TODO: Add buttons
+                + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier()),
+                ButtonRows.makeAllOrNothing(activeGame.isClaimable(), difficulty));
         }
 
         long balance = Casino.checkBalance(uid);
         if (balance < 0) {
-            List<String> response = new ArrayList<>();
-            response.add("Unable to start new game. Balance check failed or was negative (" + balance + ")");
-            return response;
+            return new HBMain.MultistepResponse("Unable to start new game. Balance check failed or was negative (" + balance + ")");
         } else if (balance < wager) {
-            List<String> response = new ArrayList<>();
-            response.add("Your current balance of " + balance + " is not enough to cover that");
-            return response;
+            return new HBMain.MultistepResponse("Your current balance of " + balance + " is not enough to cover that");
         }
 
         activeGame = logNewGame(uid, difficulty, wager);
         return handleRoll(uid, activeGame);
-        // TODO: Add buttons
     }
 
-    static List<String> handleRoll(long uid, long rollsToDouble) {
+    static HBMain.MultistepResponse handleRoll(long uid, long rollsToDouble) {
         Difficulty difficulty = Difficulty.getConstant((int)rollsToDouble);
         if (difficulty == null) {
-            List<String> response = new ArrayList<>();
-            response.add("Unrecognized odds (" + rollsToDouble + "), supported values: " + Difficulty.values().toString());
-            return response;
+            return new HBMain.MultistepResponse("Unrecognized odds (" + rollsToDouble
+                + "), supported values: " + Difficulty.values().toString());
         }
 
         ActiveGame activeGame = fetchActiveGame(uid, difficulty);
         if (activeGame.rolls < 0) {
-            List<String> response = new ArrayList<>();
-            response.add("No active game found. Use `/allornothing new` to start a new game");
-            return response;
+            return new HBMain.MultistepResponse("No active game found. Use `/allornothing new` to start a new game");
         }
 
         return handleRoll(uid, activeGame);
-        // TODO: Add buttons
     }
 
-    private static List<String> handleRoll(long uid, ActiveGame activeGame) {
+    private static HBMain.MultistepResponse handleRoll(long uid, ActiveGame activeGame) {
         List<String> response = new ArrayList<>();
         double roll = HBMain.RNG_SOURCE.nextDouble() * 100;
         String rollString = rollFormat.format(roll);
@@ -264,6 +256,7 @@ class AllOrNothing {
                 + "\nCurrent payout: 0"
                 + "\nCurrent multiplier: 0"
                 + "\nBust! Your new balance is " + balance);
+            return new HBMain.MultistepResponse(response);
         } else {
             String recordString = getRecordCache(activeGame.difficulty).checkPotRecord(uid, activeGame);
             activeGame = logRoll(uid, activeGame.difficulty);
@@ -271,8 +264,8 @@ class AllOrNothing {
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
                 + "\n" + recordString);
+            return new HBMain.MultistepResponse(response, ButtonRows.makeAllOrNothing(activeGame.isClaimable(), activeGame.difficulty));
         }
-        return response;
     }
 
     static String handleCashOut(long uid, long rollsToDouble) {
@@ -290,6 +283,10 @@ class AllOrNothing {
         long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
         return "Cashed out for " + activeGame.getPotentialPayout() + ". Your new balance is " + balance
             + "\n" + recordString;
+    }
+
+    static String handlePrematureCashOut() {
+        return "Unable to claim until multiplier reaches x2";
     }
 
     //////////////////////////////////////////////////////////
@@ -404,5 +401,13 @@ class AllOrNothing {
         String query = "UPDATE allornothing_user SET " + field + " = GREATEST(" + field + ", " + newRecord
             + ") WHERE uid = " + uid + " AND rolls_to_double = " + difficulty.rollsToDouble + " RETURNING " + field + ";";
         return CasinoDB.executeLongQuery(query);
+    }
+
+    static void addUserToCache(long uid) {
+        for (Difficulty difficulty: Difficulty.values()) {
+            if (records != null && !records.get(difficulty).personalBests.containsKey(uid)) {
+                records.get(difficulty).personalBests.put(uid, new RecordEntry(0, 0, 0));
+            }
+        }
     }
 }

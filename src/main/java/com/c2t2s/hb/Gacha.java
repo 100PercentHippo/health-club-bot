@@ -160,12 +160,12 @@ class Gacha {
             }
             if (useBriefResponse) {
                 return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
-                    + duplicateString + getPictureLink()
+                    + duplicateString //+ getPictureLink()
                     + (!description.isEmpty() ? "\n\tThis character has a unique ability" : "");
             } else {
                 return stars + " " + getDisplayName() + " " + stars
                     + "\n" + rarity + " Star " + type
-                    + duplicateString + getPictureLink()
+                    + duplicateString // + getPictureLink()
                     + (!description.isEmpty() ? "\n\tUnique Ability:" + description : "");
             }
         }

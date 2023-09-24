@@ -4,9 +4,7 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
-import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.interaction.AutocompleteInteraction;
-import org.javacord.api.interaction.Interaction;
 import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.SlashCommandBuilder;
@@ -77,6 +75,12 @@ public class HBMain {
         MultistepResponse(String message) {
             messages = new ArrayList<>();
             messages.add(message);
+        }
+
+        MultistepResponse(String message, ActionRow buttons) {
+            messages = new ArrayList<>();
+            messages.add(message);
+            this.buttons = buttons;
         }
 
         MultistepResponse(List<String> messages) {
@@ -247,7 +251,7 @@ public class HBMain {
                 case "pull":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Gacha.handleGachaPull(interaction.getUser().getId(), false,
-                            interaction.getArgumentLongValueByIndex(0).orElse(1L)).getMessageParts(),
+                            interaction.getArgumentLongValueByIndex(0).orElse(1L)),
                         updater);
                     });
                     break;
@@ -282,33 +286,83 @@ public class HBMain {
         });
         api.addMessageComponentCreateListener(event -> {
             MessageComponentInteraction interaction = event.getMessageComponentInteraction();
-            String response = "";
-            int prediction = 0;
-            if (interaction.getCustomId().contains("overunder")) {
-                switch (interaction.getCustomId()) {
-                    case "overunder.over":
-                        prediction = Casino.PREDICTION_OVER;
-                        break;
-                    case "overunder.under":
-                        prediction = Casino.PREDICTION_UNDER;
-                        break;
-                    case "overunder.same":
-                        prediction = Casino.PREDICTION_SAME;
-                        break;
-                    default:
-                        System.out.println("Encountered unexpected overunder interaction: "
-                            + interaction.getCustomId());
-                }
-                respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction), interaction);
-            } else if (interaction.getCustomId().contains("blackjack")) {
-                if (interaction.getCustomId().equals("blackjack.hit")) {
-                    respondImmediately(Blackjack.handleHit(interaction.getUser().getId()), interaction);
-                } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                    interaction.respondLater().thenAccept(updater -> {
-                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                        updater);
-                    });
-                }
+            String prefix = interaction.getCustomId();
+            int seperator = prefix.indexOf('.');
+            if (seperator > 0) {
+                prefix = prefix.substring(0, seperator);
+            }
+            switch (prefix) {
+                case "overunder":
+                    int prediction = 0;
+                    switch (interaction.getCustomId()) {
+                        case "overunder.over":
+                            prediction = Casino.PREDICTION_OVER;
+                            break;
+                        case "overunder.under":
+                            prediction = Casino.PREDICTION_UNDER;
+                            break;
+                        case "overunder.same":
+                            prediction = Casino.PREDICTION_SAME;
+                            break;
+                        default:
+                            System.out.println("Encountered unexpected overunder interaction: "
+                                + interaction.getCustomId());
+                    }
+                    respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction), interaction);
+                    break;
+                case "blackjack":
+                    if (interaction.getCustomId().equals("blackjack.hit")) {
+                        respondImmediately(Blackjack.handleHit(interaction.getUser().getId()), interaction);
+                    } else if (interaction.getCustomId().equals("blackjack.stand")) {
+                        interaction.respondLater().thenAccept(updater -> {
+                            makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                            updater);
+                        });
+                    }
+                    break;
+                case "allornothing":
+                    String[] parts = interaction.getCustomId().split("\\|");
+                    if (parts.length < 1) {
+                        System.out.println("Encountered unexpected allornothing interaction: "
+                            + interaction.getCustomId() + " (split into " + parts.toString() + ")");
+                        return;
+                    }
+                    String command = parts[0];
+                    int rollsToDouble;
+                    try {
+                        if (parts.length > 1) {
+                            rollsToDouble = Integer.parseInt(parts[1]);
+                        } else {
+                            rollsToDouble = 0;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Unable to parse allornothing odds as int: " + parts[1]
+                            + " (full command " + interaction.getCustomId() + ")");
+                        return;
+                    }
+                    switch (command) {
+                        case "allornothing.prematureclaim":
+                            interaction.createImmediateResponder().setContent(AllOrNothing.handlePrematureCashOut())
+                                .setFlags(MessageFlag.EPHEMERAL).respond();
+                            break;
+                        case "allornothing.claim":
+                            respondImmediately(new SingleResponse(AllOrNothing.handleCashOut(interaction.getUser().getId(), rollsToDouble)),
+                                interaction);
+                            break;
+                        case "allornothing.roll":
+                            interaction.respondLater().thenAccept(updater -> {
+                                makeMultiStepResponse(AllOrNothing.handleRoll(interaction.getUser().getId(), rollsToDouble),
+                                updater);
+                            });
+                            break;
+                        default:
+                            System.out.println("Encountered unexpected allornothing command: "
+                                + command + " (full command " + interaction.getCustomId() + ")");
+                            return;
+                    }
+                    break;
+                default:
+                    System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
         });
         api.addAutocompleteCreateListener(event -> {
