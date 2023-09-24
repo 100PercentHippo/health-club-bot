@@ -522,8 +522,10 @@ public class HBMain {
     private static String getLatestReleaseString() {
         return "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message"
             + "\n- Adds `/allornothing` - push your luck and try to set a new record"
+            + "\n- Adds `/stats` to see game odds"
             + "\n- Animated responses should respond slightly faster"
-            + "\n- Blackjack and overunder buttons will no longer be appended to some error messages";
+            + "\n- Blackjack and overunder buttons will no longer be appended to some error messages"
+            + "\n- Character images are now attached to `/pull` output as attachments";
     }
 
     private static String getChangelog() {
