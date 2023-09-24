@@ -503,6 +503,8 @@ public class HBMain {
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
             + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
+            + "\n\t`/allornothing` Push your luck and go for a new record!"
+            + "\n\t\tStart or resume a game with `/allornothing new`, play with the buttons"
             + "\nGacha Commands:"
             + "\n\t`/pull` Pull for gacha characters!"
             + "\n\t`/pulls` Check your available pulls"
@@ -516,7 +518,10 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message";
+        return "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message"
+            + "\n- Adds `/allornothing` - push your luck and try to set a new record"
+            + "\n- Animated responses should respond slightly faster"
+            + "\n- Blackjack and overunder buttons will no longer be appended to some error messages";
     }
 
     private static String getChangelog() {
