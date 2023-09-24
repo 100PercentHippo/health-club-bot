@@ -286,7 +286,7 @@ class AllOrNothing {
         String targetRollString = rollTargetFormat.format(activeGame.getMinimumSuccessfulRoll());
 
         String obscuredRoll = "Roll: `??.???";
-        String initialSuffix = "` (Target: " + targetRollString + ")"
+        String initialSuffix = "` (Target: " + targetRollString + " or higher)"
             + "\nCurrent payout: " + activeGame.getPotentialPayout()
             + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
             + Casino.PLACEHOLDER_NEWLINE_STRING;
@@ -298,7 +298,7 @@ class AllOrNothing {
 
         if (roll < activeGame.getMinimumSuccessfulRoll()) {
             long balance = logBust(uid, activeGame.difficulty);
-            response.add("Roll: `" + rollString + "` (Target: " + targetRollString + ")"
+            response.add("Roll: `" + rollString + "` (Target: " + targetRollString + " or higher)"
                 + "\nCurrent payout: 0"
                 + "\nCurrent multiplier: 0"
                 + "\nBust! Your new balance is " + balance);
