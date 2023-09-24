@@ -304,6 +304,7 @@ class AllOrNothing {
                 + "\nBust! Your new balance is " + balance);
             return new HBMain.MultistepResponse(response);
         } else {
+            ++activeGame.rolls;
             activeGame = logRoll(uid, activeGame.difficulty, activeGame.getPotentialPayout());
             String recordString = getRecordCache(activeGame.difficulty).checkActiveGameRecords(uid, activeGame);
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + ")"
