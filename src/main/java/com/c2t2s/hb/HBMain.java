@@ -466,7 +466,8 @@ public class HBMain {
                 Arrays.asList(new SlashCommandOptionBuilder().setName("odds").setDescription("Chance to win each roll").setRequired(true)
                 .setChoices(Arrays.asList(SlashCommandOptionChoice.create("70%", 70), SlashCommandOptionChoice.create("80%", 80),
                     SlashCommandOptionChoice.create("90%", 90), SlashCommandOptionChoice.create("95%", 95))).build(),
-                SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000)))));
+                SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000))))
+            .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("stats").setDescription("Check the odds of a given game")
             .addOption(new SlashCommandOptionBuilder().setName("Game").setDescription("Which game to display associated stats")
                 .setAutocompletable(true).build())

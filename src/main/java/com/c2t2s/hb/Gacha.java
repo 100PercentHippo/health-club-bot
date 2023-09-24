@@ -123,7 +123,7 @@ class Gacha {
         }
 
         private String getPictureLink() {
-            return " [.](" + (foil == 1 ? shinyUrl : pictureUrl) + ")";
+            return (foil == 1 ? shinyUrl : pictureUrl);
         }
 
         private String toAbbreviatedString() {
