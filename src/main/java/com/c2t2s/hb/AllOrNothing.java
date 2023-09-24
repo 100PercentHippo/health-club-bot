@@ -291,7 +291,7 @@ class AllOrNothing {
             + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
             + Casino.PLACEHOLDER_NEWLINE_STRING;
 
-        for (int i = 1; i < 7; i += (i != 3 ? 1 : 2)) {
+        for (int i = 0; i < 7; i += (i != 3 ? 1 : 2)) {
             response.add(obscuredRoll.substring(0, obscuredRoll.length() - i)
                 + rollString.substring(rollString.length() - i) + initialSuffix);
         }
