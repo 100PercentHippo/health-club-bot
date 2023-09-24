@@ -94,22 +94,22 @@ class AllOrNothing {
             StringBuilder response = new StringBuilder();
             if (rolls > globalRollRecord) {
                 globalRollRecord = rolls;
-                response.append("\n:tada: New Global "
-                    + activeGame.difficulty.description + " Multiplier Record: "
+                response.append("\n:tada: New World Record Multiplier in the "
+                    + activeGame.difficulty.description + " bracket: "
                     + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!");
             } else if (rolls == globalRollRecord) {
-                response.append("\nTied for Global "
-                    + activeGame.difficulty.description + " Multiplier Record: "
+                response.append("\nTied for World Record Multiplier in the "
+                    + activeGame.difficulty.description + " bracket: "
                     + payoutPercentFormat.format(activeGame.getPayoutMultiplier()));
             }
             if (rolls > entry.rolls) {
                 entry.rolls = rolls;
-                response.append("\n:tada: New Personal "
-                    + activeGame.difficulty.description + " Best Multiplier: "
+                response.append("\n:tada: New Personal Best Multiplier in the "
+                    + activeGame.difficulty.description + " bracket: "
                     + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!");
             } else if (rolls == entry.rolls) {
-                response.append("\nTied for Personal "
-                    + activeGame.difficulty.description + " Best Multiplier: "
+                response.append("\nTied for Personal Best Multiplier in the "
+                    + activeGame.difficulty.description + " bracket: "
                     + payoutPercentFormat.format(activeGame.getPayoutMultiplier()));
             }
             return response.toString();
@@ -128,19 +128,19 @@ class AllOrNothing {
             StringBuilder response = new StringBuilder();
             if (pot > globalPotRecord) {
                 globalPotRecord = pot;
-                response.append("\n:tada: New Global " + activeGame.difficulty.description
-                    + " Pot Record: " + pot + "!");
+                response.append("\n:tada: New World Record Potential Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + pot + "!");
             } else if (pot == globalPotRecord) {
-                response.append("\nTied for Global " + activeGame.difficulty.description
-                    + " Pot Record: " + pot);
+                response.append("\nTied for World Record Potential Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + pot);
             }
             if (pot > entry.pot) {
                 entry.pot = pot;
-                response.append("\n:tada: New Personal " + activeGame.difficulty.description
-                    + " Best Pot: " + pot + "!");
+                response.append("\n:tada: New Personal Best Potential Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + pot + "!");
             } else if (pot == entry.pot) {
-                response.append("\nTied for Personal " + activeGame.difficulty.description
-                    + " Best Pot: " + pot);
+                response.append("\nTied for Personal Best Potential Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + pot);
             }
             return response.toString();
         }
@@ -163,19 +163,19 @@ class AllOrNothing {
             StringBuilder response = new StringBuilder();
             if (payout > globalCashoutRecord) {
                 globalCashoutRecord = payout;
-                response.append("\n:tada: New Global " + activeGame.difficulty.description
-                    + " Payout Record: " + payout);
+                response.append("\n:tada: New World Record Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + payout);
             } else if (payout == globalCashoutRecord) {
-                response.append("\nTied for Global " + activeGame.difficulty.description
-                    + " Payout Record: " + payout);
+                response.append("\nTied for World Record Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + payout);
             }
             if (payout > entry.cashout) {
                 entry.cashout = payout;
-                response.append("\n:tada: New Personal "
-                    + activeGame.difficulty.description + " Best Payout: " + payout);
+                response.append("\n:tada: New Personal Best Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + payout);
             } else if (payout == entry.cashout) {
-                response.append("\nTied for Personal "
-                    + activeGame.difficulty.description + "Best Payout: " + payout);
+                response.append("\nTied for Personal Best Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + payout);
             }
             return response.toString();
         }
@@ -304,8 +304,8 @@ class AllOrNothing {
                 + "\nBust! Your new balance is " + balance);
             return new HBMain.MultistepResponse(response);
         } else {
-            String recordString = getRecordCache(activeGame.difficulty).checkActiveGameRecords(uid, activeGame);
             activeGame = logRoll(uid, activeGame.difficulty, activeGame.getPotentialPayout());
+            String recordString = getRecordCache(activeGame.difficulty).checkActiveGameRecords(uid, activeGame);
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + ")"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
