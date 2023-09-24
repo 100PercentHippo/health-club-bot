@@ -15,18 +15,20 @@ class ButtonRows {
     static ActionRow BLACKJACK_BUTTONS = ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
         Button.secondary("blackjack.stand", "Stand"));
 
-    static ActionRow makeAllOrNothingUnclaimable(AllOrNothing.Difficulty difficulty) {
-        return ActionRow.of(Button.secondary("allornothing.prematureclaim", "Claim"),
-            Button.success("allornothing.roll|" + difficulty.rollsToDouble, "Roll (" + difficulty.description + ")"));
+    static ActionRow makeAllOrNothingUnclaimable(AllOrNothing.ActiveGame activeGame) {
+        return ActionRow.of(Button.secondary("allornothing.prematureclaim", "Claim " + activeGame.getPotentialPayout()),
+            Button.success("allornothing.roll|" + activeGame.difficulty.rollsToDouble, "Roll for " + activeGame.getNextRollPayout()
+                + " (" + activeGame.difficulty.description + ")"));
     }
 
-    static ActionRow makeAllOrNothingClaimable(AllOrNothing.Difficulty difficulty) {
-        return ActionRow.of(Button.success("allornothing.claim|" + difficulty.rollsToDouble, "Claim"),
-            Button.success("allornothing.roll|" + difficulty.rollsToDouble, "Roll (" + difficulty.description + ")"));
+    static ActionRow makeAllOrNothingClaimable(AllOrNothing.ActiveGame activeGame) {
+        return ActionRow.of(Button.success("allornothing.claim|" + activeGame.difficulty.rollsToDouble, "Claim " + activeGame.getPotentialPayout()),
+            Button.success("allornothing.roll|" + activeGame.difficulty.rollsToDouble, "Roll for " + activeGame.getNextRollPayout()
+                + " (" + activeGame.difficulty.description + ")"));
     }
 
-    static ActionRow makeAllOrNothing(boolean claimable, AllOrNothing.Difficulty difficulty) {
-        return claimable ? makeAllOrNothingClaimable(difficulty) : makeAllOrNothingUnclaimable(difficulty);
+    static ActionRow makeAllOrNothing(AllOrNothing.ActiveGame activeGame) {
+        return activeGame.isClaimable() ? makeAllOrNothingClaimable(activeGame) : makeAllOrNothingUnclaimable(activeGame);
     }
 
 }

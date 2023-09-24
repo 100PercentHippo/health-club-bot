@@ -181,7 +181,7 @@ class AllOrNothing {
         }
     }
 
-    private static class ActiveGame {
+    static class ActiveGame {
         int rolls;
         long wager;
         Difficulty difficulty;
@@ -197,10 +197,18 @@ class AllOrNothing {
         }
 
         long getPotentialPayout() {
-            return (long)(wager * getPayoutMultiplier());
+            return (long)(wager * getPayoutMultiplier(rolls));
+        }
+
+        long getNextRollPayout() {
+            return (long)(wager * getPayoutMultiplier(rolls + 1));
         }
 
         double getPayoutMultiplier() {
+            return getPayoutMultiplier(rolls);
+        }
+
+        private double getPayoutMultiplier(int rolls) {
             return Math.pow(2, ((double)rolls) / difficulty.rollsToDouble);
         }
 
@@ -250,7 +258,7 @@ class AllOrNothing {
             return new HBMain.MultistepResponse("Existing game found:"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier()),
-                ButtonRows.makeAllOrNothing(activeGame.isClaimable(), difficulty));
+                ButtonRows.makeAllOrNothing(activeGame));
         }
 
         long balance = Casino.checkBalance(uid);
@@ -313,7 +321,7 @@ class AllOrNothing {
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
                 + recordString);
-            return new HBMain.MultistepResponse(response, ButtonRows.makeAllOrNothing(activeGame.isClaimable(), activeGame.difficulty));
+            return new HBMain.MultistepResponse(response, ButtonRows.makeAllOrNothing(activeGame));
         }
     }
 
