@@ -256,8 +256,7 @@ class AllOrNothing {
         ActiveGame activeGame = fetchActiveGame(uid, difficulty);
         if (activeGame.rolls >= 0) {
             return new HBMain.MultistepResponse("Existing game found:"
-                + "\nCurrent payout: " + activeGame.getPotentialPayout()
-                + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier()),
+                + "\nCurrent payout: " + activeGame.getPotentialPayout(),
                 ButtonRows.makeAllOrNothing(activeGame));
         }
 
@@ -296,7 +295,6 @@ class AllOrNothing {
         String obscuredRoll = "Roll: `  .   ";
         String initialSuffix = "` (Target: " + targetRollString + " or higher)"
             + "\nCurrent payout: " + activeGame.getPotentialPayout()
-            + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
             + Casino.PLACEHOLDER_NEWLINE_STRING;
 
         for (int i = 0; i < 7; i += (i != 3 ? 1 : 2)) {
@@ -308,7 +306,6 @@ class AllOrNothing {
             long balance = logBust(uid, activeGame.difficulty);
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + " or higher)"
                 + "\nCurrent payout: 0"
-                + "\nCurrent multiplier: 0"
                 + "\nBust! Your new balance is " + balance);
             return new HBMain.MultistepResponse(response);
         } else {
@@ -319,7 +316,6 @@ class AllOrNothing {
             String recordString = cache.checkActiveGameRecords(uid, activeGame);
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + " or higher)"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
-                + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
                 + recordString);
             return new HBMain.MultistepResponse(response, ButtonRows.makeAllOrNothing(activeGame));
         }
@@ -336,16 +332,18 @@ class AllOrNothing {
             return "No active game found. Use `/allornothing new` to start a new game";
         }
 
+        if (activeGame.rolls < activeGame.difficulty.rollsToDouble) {
+            int rollsUntilClaimable = activeGame.difficulty.rollsToDouble - activeGame.rolls;
+            return "Unable to claim until multiplier reaches x2.0 (currently " + activeGame.getPayoutMultiplier()
+                + "). " + rollsUntilClaimable + " more roll" + Casino.getPluralSuffix(rollsUntilClaimable) + " needed.";
+        }
+
         // Ensure cache is populated before we register this entry, but check for records after updating the DB
         RecordCache cache = getRecordCache(activeGame.difficulty);
         long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
         String recordString = cache.checkCashoutRecord(uid, activeGame);
         return "Cashed out for " + activeGame.getPotentialPayout() + ". Your new balance is " + balance
             + recordString;
-    }
-
-    static String handlePrematureCashOut() {
-        return "Unable to claim until multiplier reaches x2";
     }
 
     //////////////////////////////////////////////////////////

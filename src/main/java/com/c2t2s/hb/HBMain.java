@@ -342,10 +342,6 @@ public class HBMain {
                         return;
                     }
                     switch (command) {
-                        case "allornothing.prematureclaim":
-                            interaction.createImmediateResponder().setContent(AllOrNothing.handlePrematureCashOut())
-                                .setFlags(MessageFlag.EPHEMERAL).respond();
-                            break;
                         case "allornothing.claim":
                             respondImmediately(new SingleResponse(AllOrNothing.handleCashOut(interaction.getUser().getId(), rollsToDouble)),
                                 interaction);

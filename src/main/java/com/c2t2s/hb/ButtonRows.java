@@ -16,7 +16,7 @@ class ButtonRows {
         Button.secondary("blackjack.stand", "Stand"));
 
     static ActionRow makeAllOrNothingUnclaimable(AllOrNothing.ActiveGame activeGame) {
-        return ActionRow.of(Button.secondary("allornothing.prematureclaim", "Claim " + activeGame.getPotentialPayout()),
+        return ActionRow.of(Button.secondary("allornothing.claim|" + activeGame.difficulty.rollsToDouble, "Claim " + activeGame.getPotentialPayout()),
             Button.success("allornothing.roll|" + activeGame.difficulty.rollsToDouble, "Roll for " + activeGame.getNextRollPayout()
                 + " (" + activeGame.difficulty.description + ")"));
     }
