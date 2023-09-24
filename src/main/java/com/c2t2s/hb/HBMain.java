@@ -378,6 +378,7 @@ public class HBMain {
                     return;
             }
         });
+        System.out.println("Server started");
     }
 
     private static void initCommands(DiscordApi api) {
