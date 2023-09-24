@@ -201,7 +201,7 @@ class AllOrNothing {
         }
 
         double getPayoutMultiplier() {
-            return Math.pow(2, rolls / difficulty.rollsToDouble);
+            return Math.pow(2, ((double)rolls) / difficulty.rollsToDouble);
         }
 
         boolean isClaimable() {
