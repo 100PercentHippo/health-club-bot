@@ -334,8 +334,9 @@ class AllOrNothing {
 
         if (activeGame.rolls < activeGame.difficulty.rollsToDouble) {
             int rollsUntilClaimable = activeGame.difficulty.rollsToDouble - activeGame.rolls;
-            return "Unable to claim until multiplier reaches x2.0 (currently " + activeGame.getPayoutMultiplier()
-                + "). " + rollsUntilClaimable + " more roll" + Casino.getPluralSuffix(rollsUntilClaimable) + " needed.";
+            return "Unable to claim until multiplier reaches x2.0 (currently "
+                + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "). "
+                + rollsUntilClaimable + " more roll" + Casino.getPluralSuffix(rollsUntilClaimable) + " needed.";
         }
 
         // Ensure cache is populated before we register this entry, but check for records after updating the DB
