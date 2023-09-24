@@ -326,8 +326,8 @@ class AllOrNothing {
             return "No active game found. Use `/allornothing new` to start a new game";
         }
 
-        String recordString = getRecordCache(activeGame.difficulty).checkCashoutRecord(uid, activeGame);
         long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
+        String recordString = getRecordCache(activeGame.difficulty).checkCashoutRecord(uid, activeGame);
         return "Cashed out for " + activeGame.getPotentialPayout() + ". Your new balance is " + balance
             + recordString;
     }
