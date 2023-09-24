@@ -13,9 +13,9 @@ class AllOrNothing {
     static final int ROLLS_TO_DOUBLE_NINETY = 7;
 
     static enum Difficulty {
-        SEVENTY(ROLLS_TO_DOUBLE_SEVENTY, "70%", 0.3),
-        EIGHTY(ROLLS_TO_DOUBLE_EIGHTY, "80%", 0.2),
-        NINETY(ROLLS_TO_DOUBLE_NINETY, "90%", 0.1);
+        SEVENTY(ROLLS_TO_DOUBLE_SEVENTY, "70%", 30),
+        EIGHTY(ROLLS_TO_DOUBLE_EIGHTY, "80%", 20),
+        NINETY(ROLLS_TO_DOUBLE_NINETY, "90%", 10);
 
         final int rollsToDouble;
         final String description;
@@ -248,7 +248,7 @@ class AllOrNothing {
         ActiveGame activeGame = fetchActiveGame(uid, difficulty);
         if (activeGame.rolls >= 0) {
             return new HBMain.MultistepResponse("Existing game found:"
-                + "Current payout: " + activeGame.getPotentialPayout()
+                + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier()),
                 ButtonRows.makeAllOrNothing(activeGame.isClaimable(), difficulty));
         }
@@ -273,7 +273,7 @@ class AllOrNothing {
 
         ActiveGame activeGame = fetchActiveGame(uid, difficulty);
         if (activeGame.rolls < 0) {
-            return new HBMain.MultistepResponse("No active game found. Use `/allornothing new` to start a new game");
+            return new HBMain.MultistepResponse("No active game found. Use `/allornothing` to start a new game");
         }
 
         return handleRoll(uid, activeGame);
@@ -288,12 +288,12 @@ class AllOrNothing {
         String obscuredRoll = "Roll: `??.???";
         String initialSuffix = "` (Target: " + targetRollString + ")"
             + "\nCurrent payout: " + activeGame.getPotentialPayout()
-            + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier()
-            + Casino.PLACEHOLDER_NEWLINE_STRING);
+            + "\nCurrent multiplier: " + payoutPercentFormat.format(activeGame.getPayoutMultiplier())
+            + Casino.PLACEHOLDER_NEWLINE_STRING;
 
-        for (int i = 1; i < 7; i += (i != 4 ? 1 : 2)) {
-            response.add(obscuredRoll.substring(obscuredRoll.length() - i)
-                + rollString.substring(0, i) + initialSuffix);
+        for (int i = 1; i < 7; i += (i != 3 ? 1 : 2)) {
+            response.add(obscuredRoll.substring(0, obscuredRoll.length() - i)
+                + rollString.substring(rollString.length() - i) + initialSuffix);
         }
 
         if (roll < activeGame.getMinimumSuccessfulRoll()) {
