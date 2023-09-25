@@ -239,7 +239,7 @@ class AllOrNothing {
         return cache;
     }
 
-    private static DecimalFormat payoutPercentFormat = new DecimalFormat("x##########0.00");
+    static DecimalFormat payoutPercentFormat = new DecimalFormat("x##########0.00");
     private static DecimalFormat rollFormat = new DecimalFormat("00.000");
     private static DecimalFormat rollTargetFormat = new DecimalFormat("00");
 

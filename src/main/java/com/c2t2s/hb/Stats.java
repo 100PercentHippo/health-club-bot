@@ -1,5 +1,12 @@
 package com.c2t2s.hb;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.postgresql.translation.messages_bg;
+
+import com.c2t2s.hb.AllOrNothing.ActiveGame;
+
 class Stats {
 
     static final String WORK_STRING = "work";
@@ -14,7 +21,9 @@ class Stats {
     static final String OVERUNDER_STRING = "overunder";
     static final String BLACKJACK_STRING = "blackjack";
     static final String GACHA_STRING = "gacha";
-    static final String ALLORNOTHING_STRING = "allornothing";
+    static final String ALLORNOTHING70_STRING = "allornothing|70";
+    static final String ALLORNOTHING80_STRING = "allornothing|80";
+    static final String ALLORNOTHING90_STRING = "allornothing|90";
 
     static enum StatsOption {
 
@@ -30,7 +39,9 @@ class Stats {
         OVERUNDER(OVERUNDER_STRING, "/overunder"),
         BLACKJACK(BLACKJACK_STRING, "/blackjack"),
         GACHA(GACHA_STRING, "Gacha Pulls"),
-        ALLORNOTHING(ALLORNOTHING_STRING, "/allornothing");
+        ALLORNOTHING70(ALLORNOTHING70_STRING, "/allornothing 70%"),
+        ALLORNOTHING80(ALLORNOTHING80_STRING, "/allornothing 80%"),
+        ALLORNOTHING90(ALLORNOTHING90_STRING, "/allornothing 90%");
 
         final String optionName;
         final String description;
@@ -83,8 +94,12 @@ class Stats {
                 return handleBlackjackStats(uid);
             case GACHA_STRING:
                 return handleGachaStats(uid);
-            case ALLORNOTHING_STRING:
-                return handleAllOrNothingStats(uid);
+            case ALLORNOTHING70_STRING:
+                return handleAllOrNothingStats(uid, 2);
+            case ALLORNOTHING80_STRING:
+                return handleAllOrNothingStats(uid, 3);
+            case ALLORNOTHING90_STRING:
+                return handleAllOrNothingStats(uid, 7);
             default:
                 return "Unrecognized Game argument. Supported values are the following:\n\t" + StatsOption.values().toString();
         }
@@ -180,11 +195,121 @@ class Stats {
             + "\n\tShiny Chance: 1/20 for any awarded character";
     }
 
-    static String handleAllOrNothingStats(long uid) {
-        return "`/allornothing` odds:"
-            + "\n\t70%: Payout increases by x1.41 per roll (70% chance)"
-            + "\n\t80%: Payout increases by x1.26 per roll (80% chance)"
-            + "\n\t90%: Payout increases by x1.10 per roll (90% chance)";
+    static String handleAllOrNothingStats(long uid, int rollsToDouble) {
+        StringBuilder output = new StringBuilder("`/allornothing` odds:");
+        String description = "";
+        switch (rollsToDouble) {
+            case 2:
+                output.append("\n\t70%: Payout increases by x1.41 per roll (70% chance)");
+                description = "70%";
+                break;
+            case 3:
+                output.append("\n\t80%: Payout increases by x1.26 per roll (80% chance)");
+                description = "80%";
+                break;
+            case 7:
+                output.append("\n\t90%: Payout increases by x1.10 per roll (90% chance)");
+                description = "90%";
+                break;
+        }
+        output.append("\n\nWorld Record holders for the " + description + " bracket:");
+        output.append(getAllOrNothingWorldRecordRolls(rollsToDouble));
+        output.append(getAllOrNothingWorldRecordPot(rollsToDouble));
+        output.append(getAllOrNothingWorldRecordCashout(rollsToDouble));
+        output.append("\n\nPersonal Bests for the " + description + " bracket:");
+        output.append(getAllOrNothingPersonalBests(rollsToDouble, uid));
+        return output.toString();
     }
 
+    static String formatNames(List<String> names) {
+        String formattedNames = "";
+        for(String name: names) {
+            formattedNames += name + ",";
+        }
+        if (formattedNames.length() > 1) {
+            formattedNames = formattedNames.substring(0, formattedNames.length() - 1);
+        }
+        return formattedNames;
+    }
+
+    static String formatWorldRecordRolls(int rolls, int rollsToDouble, List<String> names) {
+        // For calculating multiplier
+        AllOrNothing.ActiveGame game = new AllOrNothing.ActiveGame(rolls, 1, AllOrNothing.Difficulty.getConstant(rollsToDouble));
+        return "\n\tWorld Record Multiplier: " + AllOrNothing.payoutPercentFormat.format(game.getPayoutMultiplier())
+            + " (" + formatNames(names) + ")";
+    }
+
+    static String formatWorldRecordPot(long pot, List<String> names) {
+        return "\n\tWorld Record Potential Payout: " + pot + " (" + formatNames(names) + ")";
+    }
+
+    static String formatWorldRecordCashout(long cashout, List<String> names) {
+        return "\n\tWorld Record Payout: " + cashout + " (" + formatNames(names) + ")";
+    }
+
+    static String formatPersonalBests(int rolls, long pot, long payout, int rollsToDouble) {
+        // For calculating multiplier
+        AllOrNothing.ActiveGame game = new AllOrNothing.ActiveGame(rolls, 1, AllOrNothing.Difficulty.getConstant(rollsToDouble));
+        return "\n\tPersonal Best Multiplier: " + AllOrNothing.payoutPercentFormat.format(game.getPayoutMultiplier())
+            + "\n\tPersonal Best Potential Payout: " + pot
+            + "\n\tPersonal best Payout: " + payout;
+    }
+
+    //////////////////////////////////////////////////////////
+
+    private static String getAllOrNothingWorldRecordRolls(int rollsToDouble) {
+        String query = "SELECT record_rolls, nickname FROM allornothing_user NATURAL JOIN money_user WHERE record_rolls = "
+            + "(SELECT MAX(record_rolls) FROM allornothing_user WHERE rolls_to_double = " + rollsToDouble + ") AND rolls_to_double = "
+            + rollsToDouble + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            int rollRecord = 0;
+            List<String> recordHolders = new ArrayList<>();
+            while (results.next()) {
+                rollRecord = results.getInt(1);
+                recordHolders.add(results.getString(2));
+            }
+            return formatWorldRecordRolls(rollRecord, rollsToDouble, recordHolders);
+        }, "Unable to fetch roll record holder(s)");
+    }
+
+    private static String getAllOrNothingWorldRecordPot(int rollsToDouble) {
+        String query = "SELECT record_pot, nickname FROM allornothing_user NATURAL JOIN money_user WHERE record_pot = "
+            + "(SELECT MAX(record_pot) FROM allornothing_user WHERE rolls_to_double = " + rollsToDouble + ") AND rolls_to_double = "
+            + rollsToDouble + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            long potRecord = 0;
+            List<String> recordHolders = new ArrayList<>();
+            while (results.next()) {
+                potRecord = results.getLong(1);
+                recordHolders.add(results.getString(2));
+            }
+            return formatWorldRecordPot(potRecord, recordHolders);
+        }, "Unable to fetch pot record holder(s)");
+    }
+
+    private static String getAllOrNothingWorldRecordCashout(int rollsToDouble) {
+        String query = "SELECT record_cashout, nickname FROM allornothing_user NATURAL JOIN money_user WHERE record_cashout = "
+            + "(SELECT MAX(record_cashout) FROM allornothing_user WHERE rolls_to_double = " + rollsToDouble + ") AND rolls_to_double = "
+            + rollsToDouble + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            long cashoutRecord = 0;
+            List<String> recordHolders = new ArrayList<>();
+            while (results.next()) {
+                cashoutRecord = results.getLong(1);
+                recordHolders.add(results.getString(2));
+            }
+            return formatWorldRecordCashout(cashoutRecord, recordHolders);
+        }, "Unable to fetch cashout record holder(s)");
+    }
+
+    private static String getAllOrNothingPersonalBests(int rollsToDouble, long uid) {
+        String query = "SELECT record_rolls, record_pot, record_cashout FROM allornothing_user WHERE uid = " + uid
+            + " AND rolls_to_double = " + rollsToDouble + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return formatPersonalBests(results.getInt(1), results.getLong(2), results.getLong(3), rollsToDouble);
+            }
+            return "Unable to fetch personal bests";
+        }, "Unable to fetch personal bests");
+    }
 }

@@ -21,6 +21,13 @@ class CasinoDB {
 
     static boolean addUser(long uid, String name) {
         boolean error = false;
+        int index = name.indexOf('#');
+        String nickname;
+        if (index > 0) {
+            nickname = name.substring(0, index);
+        } else {
+            nickname = name;
+        }
         String query = "INSERT INTO money_user (uid, name, balance) VALUES(" + uid + ", '" + name +"', 1000) ON CONFLICT (uid) DO NOTHING;";
         String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
