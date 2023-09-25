@@ -169,9 +169,9 @@ class Casino {
             }
         } else if (roll < 50) {
             if (user.getMorality() > 5 && HBMain.RNG_SOURCE.nextInt(2) == 0) {
-                output = ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 300);
+                output = ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 300 coins! Your new balance is " + logWork(uid, 300);
             } else {
-                output = ":farmer: You work hard in a field for 2 hours and make 150 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 200);
+                output = ":farmer: You work hard in a field for 2 hours and make 200 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 200);
             }
         } else if (roll < 70) {
             output = ":cook: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
@@ -270,7 +270,7 @@ class Casino {
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 5) {
             if (user.getMorality() < -10) {
-                output = ":slot_machine: You use your criminal knowledge and rob the slot machine of 400 coins! Your new balance is "
+                output = ":slot_machine: You use your criminal knowledge and rob the slot machine of 500 coins! Your new balance is "
                     + logRob(uid, true, 500) + "\nWait! Get away from that!";
             } else if (user.getBalance() > 10) {
                 output = ":book: You rob The Bank! Wait, that's not The Bank, that's The Library. You pay the late fee of 10 coins for your overdue books and leave before the cops arrive. Your new balance is "
@@ -289,7 +289,7 @@ class Casino {
             output = ":house: You rob a rich looking house and get away with 200 coins. Your new balance is "
                 + logRob(uid, false, 200);
         } else if (roll < 75) {
-            output = ":convenience_store: You rob a convenience store and grab 300 coins from the register! Your new balance is "
+            output = ":convenience_store: You rob a convenience store and grab 250 coins from the register! Your new balance is "
                 + logRob(uid, true, 250);
         } else if (roll < 80) {
             output = ":full_moon: With the help of some funny friends in overalls you steal THE MOON. The UN pays you 350 coins in ransom. Your new balance is "
