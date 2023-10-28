@@ -30,7 +30,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.8"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.9"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     static class SingleResponse {
@@ -516,17 +516,20 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message"
-            + "\n- Adds `/allornothing` - push your luck and try to set a new record"
-            + "\n- Adds `/stats` to see game odds"
-            + "\n- Animated responses should respond slightly faster"
-            + "\n- Blackjack and overunder buttons will no longer be appended to some error messages"
-            + "\n- Character images are now attached to `/pull` output as attachments";
+        return "\n- Fixed bug where it was sometime possible to get more gacha duplicates than intended"
+            + "\n- Gacha characters are now sorted by rarity, then alphabetically by name when listed";
     }
 
     private static String getChangelog() {
         return "Changelog:\n" + VERSION_STRING
             + getLatestReleaseString()
+            + "\n3.1.8"
+            + "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message"
+            + "\n- Adds `/allornothing` - push your luck and try to set a new record"
+            + "\n- Adds `/stats` to see game odds"
+            + "\n- Animated responses should respond slightly faster"
+            + "\n- Blackjack and overunder buttons will no longer be appended to some error messages"
+            + "\n- Character images are now attached to `/pull` output as attachments"
             + "\n3.1.7"
             + "\n- Gacha character pull rates are now increased at high pity"
             + "\n- `/feed` now correctly increases the payout chance when the pot is large"

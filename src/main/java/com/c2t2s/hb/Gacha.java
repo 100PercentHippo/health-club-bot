@@ -640,7 +640,7 @@ class Gacha {
 
     private static List<GachaCharacter> getCharacters(long uid) {
         String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM " +
-                "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC;";
+                "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, name ASC;";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
@@ -689,7 +689,7 @@ class Gacha {
             return -1;
         } else {
             return CasinoDB.executeIntQuery("SELECT duplicates FROM gacha_user_character WHERE uid = "
-                    + uid + " AND cid = " + cid + ";");
+                    + uid + " AND cid = " + cid + "AND foil = " + (shiny ? 1 : 0) + ";");
         }
     }
 
