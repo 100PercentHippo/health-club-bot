@@ -4,29 +4,127 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
-import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.interaction.AutocompleteInteraction;
+import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionChoice;
+import org.javacord.api.interaction.SlashCommandOptionType;
+import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Set;
 
-// Used when initializing commands
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
-
-import java.util.Arrays;
-
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.7"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.9"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
+
+    static class SingleResponse {
+        String message;
+        ActionRow buttons;
+
+        SingleResponse() {
+            message = "";
+            buttons = null;
+        }
+
+        SingleResponse(String message) {
+            this.message = message;
+            buttons = null;
+        }
+
+        SingleResponse(String message, ActionRow buttons) {
+            this.message = message;
+            this.buttons = buttons;
+        }
+
+        void setMessage(String message) {
+            this.message = message;
+        }
+
+        void setButtons(ActionRow buttons) {
+            this.buttons = buttons;
+        }
+    }
+
+    static class MultistepResponse {
+        List<String> messages;
+        ActionRow buttons = null;
+        long delay = 1000; // milliseconds
+        int index = -1; // Initially before first message
+        Map<Integer, URL> images = new HashMap<>();
+
+        MultistepResponse() {
+            messages = new ArrayList<>();
+        }
+
+        MultistepResponse(String message) {
+            messages = new ArrayList<>();
+            messages.add(message);
+        }
+
+        MultistepResponse(String message, ActionRow buttons) {
+            messages = new ArrayList<>();
+            messages.add(message);
+            this.buttons = buttons;
+        }
+
+        MultistepResponse(List<String> messages) {
+            this.messages = messages;
+            this.buttons = null;
+        }
+
+        MultistepResponse(List<String> messages, ActionRow buttons) {
+            this.messages = messages;
+            this.buttons = buttons;
+        }
+
+        void addMessage(String message) {
+            messages.add(message);
+        }
+
+        void addAllToStart(List<String> messages) {
+            this.messages.addAll(0, messages);
+        }
+
+        boolean isAtEnd() {
+            return index + 1 >= messages.size();
+        }
+
+        boolean next() {
+            return ++index < messages.size();
+        }
+
+        boolean hasMessages() {
+            return messages != null;
+        }
+
+        String getMessage() {
+            return messages.get(index);
+        }
+
+        boolean hasAttachment() {
+            return images.containsKey(index);
+        }
+
+        URL getAttachment() {
+            return images.get(index);
+        }
+    }
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -34,6 +132,7 @@ public class HBMain {
             return;
         }
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
+        api.setMessageCacheSize(0, 0);
         if (args.length > 1 && args[1].equalsIgnoreCase("init")) {
             initCommands(api);
         }
@@ -108,58 +207,53 @@ public class HBMain {
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Casino.handleSlots(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).orElse(100L)),
-                        1000,  updater);
+                        updater);
                     });
                     break;
                 case "minislots":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Casino.handleMinislots(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).orElse(100L)),
-                        1000,  updater);
+                        updater);
                     });
                     break;
                 case "overunder new":
-                    interaction.createImmediateResponder().setContent(
-                        Casino.handleOverUnderInitial(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(100L)))
-                        .addComponents(ActionRow.of(Button.secondary("overunder.over", "Over"),
-                            Button.secondary("overunder.under", "Under"),
-                            Button.secondary("overunder.same", "Same")))
-                        .respond();
+                    respondImmediately(Casino.handleOverUnderInitial(interaction.getUser().getId(),
+                        interaction.getArgumentLongValueByIndex(0).orElse(100L)),
+                        interaction);
                     break;
                 case "overunder over":
-                    interaction.createImmediateResponder().setContent(
-                        Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_OVER)).respond();
+                    respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_OVER),
+                        interaction);
                     break;
                 case "overunder under":
-                    interaction.createImmediateResponder().setContent(
-                        Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_UNDER)).respond();
+                    respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_UNDER),
+                        interaction);
                     break;
                 case "overunder same":
-                    interaction.createImmediateResponder().setContent(
-                        Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_SAME)).respond();
+                    respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_SAME),
+                        interaction);
                     break;
                 case "blackjack new":
-                    interaction.createImmediateResponder().setContent(
-                        Blackjack.handleBlackjack(interaction.getUser().getId(), interaction.getArgumentLongValueByIndex(0).orElse(100L)))
-                        .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
-                            Button.secondary("blackjack.stand", "Stand")))
-                        .respond();
+                    respondImmediately(Blackjack.handleBlackjack(interaction.getUser().getId(),
+                        interaction.getArgumentLongValueByIndex(0).orElse(100L)),
+                        interaction);
                     break;
                 case "blackjack hit":
-                    interaction.createImmediateResponder().setContent(
-                        Blackjack.handleHit(interaction.getUser().getId())).respond();
+                    respondImmediately(Blackjack.handleHit(interaction.getUser().getId()),
+                        interaction);
                     break;
                 case "blackjack stand":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                        1000,  updater);
+                        updater);
                     });
                     break;
                 case "pull":
                     interaction.respondLater().thenAccept(updater -> {
                         makeMultiStepResponse(Gacha.handleGachaPull(interaction.getUser().getId(), false,
-                            interaction.getArgumentLongValueByIndex(0).orElse(1L)).getMessageParts(),
-                        1000,  updater);
+                            interaction.getArgumentLongValueByIndex(0).orElse(1L)),
+                        updater);
                     });
                     break;
                 case "gacha character list":
@@ -174,58 +268,114 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Gacha.handlePity(interaction.getUser().getId())).respond();
                     break;
+                case "stats":
+                    interaction.createImmediateResponder().setContent(
+                        Stats.handleStats(interaction.getArgumentStringValueByIndex(0).orElse(""),
+                        interaction.getUser().getId())).respond();
+                    break;
+                case "allornothing":
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(AllOrNothing.handleNew(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get(),
+                            interaction.getArgumentLongValueByIndex(1).orElse(500L)),
+                        updater);
+                    });
+                    break;
                 default:
                     return;
             }
         });
         api.addMessageComponentCreateListener(event -> {
             MessageComponentInteraction interaction = event.getMessageComponentInteraction();
-            String response = "";
-            int prediction = 0;
-            if (interaction.getCustomId().contains("overunder")) {
-                switch (interaction.getCustomId()) {
-                    case "overunder.over":
-                        prediction = Casino.PREDICTION_OVER;
-                        break;
-                    case "overunder.under":
-                        prediction = Casino.PREDICTION_UNDER;
-                        break;
-                    case "overunder.same":
-                        prediction = Casino.PREDICTION_SAME;
-                        break;
-                    default:
-                        System.out.println("Encountered unexpected overunder interaction: "
-                            + interaction.getCustomId());
-                }
-                response = Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction);
-                if (response.contains("balance")) {
-                    interaction.createImmediateResponder().setContent(response).respond();
-                } else {
-                    interaction.createImmediateResponder().setContent(response)
-                    .addComponents(ActionRow.of(Button.secondary("overunder.over", "Over"),
-                        Button.secondary("overunder.under", "Under"),
-                        Button.secondary("overunder.same", "Same")))
-                    .respond();
-                }
-            } else if (interaction.getCustomId().contains("blackjack")) {
-                if (interaction.getCustomId().equals("blackjack.hit")) {
-                    response = Blackjack.handleHit(interaction.getUser().getId());
-                    if (response.contains("balance")) {
-                        interaction.createImmediateResponder().setContent(response).respond();
-                    } else {
-                        interaction.createImmediateResponder().setContent(response)
-                        .addComponents(ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
-                            Button.secondary("blackjack.stand", "Stand")))
-                        .respond();
+            String prefix = interaction.getCustomId();
+            int seperator = prefix.indexOf('.');
+            if (seperator > 0) {
+                prefix = prefix.substring(0, seperator);
+            }
+            switch (prefix) {
+                case "overunder":
+                    int prediction = 0;
+                    switch (interaction.getCustomId()) {
+                        case "overunder.over":
+                            prediction = Casino.PREDICTION_OVER;
+                            break;
+                        case "overunder.under":
+                            prediction = Casino.PREDICTION_UNDER;
+                            break;
+                        case "overunder.same":
+                            prediction = Casino.PREDICTION_SAME;
+                            break;
+                        default:
+                            System.out.println("Encountered unexpected overunder interaction: "
+                                + interaction.getCustomId());
                     }
-                } else if (interaction.getCustomId().equals("blackjack.stand")) {
-                    interaction.respondLater().thenAccept(updater -> {
-                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                        1000,  updater);
-                    });
-                }
+                    respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction), interaction);
+                    break;
+                case "blackjack":
+                    if (interaction.getCustomId().equals("blackjack.hit")) {
+                        respondImmediately(Blackjack.handleHit(interaction.getUser().getId()), interaction);
+                    } else if (interaction.getCustomId().equals("blackjack.stand")) {
+                        interaction.respondLater().thenAccept(updater -> {
+                            makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                            updater);
+                        });
+                    }
+                    break;
+                case "allornothing":
+                    String[] parts = interaction.getCustomId().split("\\|");
+                    if (parts.length < 1) {
+                        System.out.println("Encountered unexpected allornothing interaction: "
+                            + interaction.getCustomId() + " (split into " + parts.toString() + ")");
+                        return;
+                    }
+                    String command = parts[0];
+                    int rollsToDouble;
+                    try {
+                        if (parts.length > 1) {
+                            rollsToDouble = Integer.parseInt(parts[1]);
+                        } else {
+                            rollsToDouble = 0;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Unable to parse allornothing odds as int: " + parts[1]
+                            + " (full command " + interaction.getCustomId() + ")");
+                        return;
+                    }
+                    switch (command) {
+                        case "allornothing.claim":
+                            respondImmediately(new SingleResponse(AllOrNothing.handleCashOut(interaction.getUser().getId(), rollsToDouble)),
+                                interaction);
+                            break;
+                        case "allornothing.roll":
+                            interaction.respondLater().thenAccept(updater -> {
+                                makeMultiStepResponse(AllOrNothing.handleRoll(interaction.getUser().getId(), rollsToDouble),
+                                updater);
+                            });
+                            break;
+                        default:
+                            System.out.println("Encountered unexpected allornothing command: "
+                                + command + " (full command " + interaction.getCustomId() + ")");
+                            return;
+                    }
+                    break;
+                default:
+                    System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
         });
+        api.addAutocompleteCreateListener(event -> {
+            AutocompleteInteraction interaction = event.getAutocompleteInteraction();
+            switch (interaction.getFullCommandName()) {
+                case "stats":
+                    List<SlashCommandOptionChoice> choices = new ArrayList<>();
+                    Arrays.stream(Stats.StatsOption.values())
+                        .forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getName())));
+                    interaction.respondWithChoices(choices);
+                    break;
+                default:
+                    return;
+            }
+        });
+        System.out.println("Server started");
     }
 
     private static void initCommands(DiscordApi api) {
@@ -299,7 +449,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createLongOption("amount", "Amount to transfer", true, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pull").setDescription("Try to win a gacha character!")
-            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 1000))
+            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 25))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pulls").setDescription("Check how many gacha pulls you have")
             .setEnabledInDms(false));
@@ -308,6 +458,15 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got"))))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
+            .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
+                Arrays.asList(SlashCommandOptionChoice.create("70%", 2), SlashCommandOptionChoice.create("80%", 3),
+                    SlashCommandOptionChoice.create("90%", 7))))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 500", false, 500, 100000))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName("stats").setDescription("Check the odds of a given game")
+            .addOption(SlashCommandOption.createStringOption("Game", "Which game to display associated stats", true, true))
             .setEnabledInDms(false));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
@@ -342,6 +501,8 @@ public class HBMain {
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
             + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
+            + "\n\t`/allornothing` Push your luck and go for a new record!"
+            + "\n\t\tStart or resume a game with `/allornothing`, play with the buttons"
             + "\nGacha Commands:"
             + "\n\t`/pull` Pull for gacha characters!"
             + "\n\t`/pulls` Check your available pulls"
@@ -355,35 +516,45 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n\tGacha character pull rates are now increased at high pity"
-            + "\n\t`/feed` now correctly increases the payout chance when the pot is large"
-            + "\n\t`/pull` will no longer timeout when using many pulls at once"
-            + "\n\tDefault wager on all games is now 100"
-            + "\n\t`/roll` should no properly handle negatives when using RPG style input";
+        return "\n- Fixed bug where it was sometime possible to get more gacha duplicates than intended"
+            + "\n- Gacha characters are now sorted by rarity, then alphabetically by name when listed";
     }
 
     private static String getChangelog() {
         return "Changelog:\n" + VERSION_STRING
             + getLatestReleaseString()
+            + "\n3.1.8"
+            + "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message"
+            + "\n- Adds `/allornothing` - push your luck and try to set a new record"
+            + "\n- Adds `/stats` to see game odds"
+            + "\n- Animated responses should respond slightly faster"
+            + "\n- Blackjack and overunder buttons will no longer be appended to some error messages"
+            + "\n- Character images are now attached to `/pull` output as attachments"
+            + "\n3.1.7"
+            + "\n- Gacha character pull rates are now increased at high pity"
+            + "\n- `/feed` now correctly increases the payout chance when the pot is large"
+            + "\n- `/pull` will no longer timeout when using many pulls at once"
+            + "\n- Default wager on all games is now 100"
+            + "\n- `/roll` should no properly handle negatives when using RPG style input"
             + "\n3.1.6"
-            + "\n\tAdds the abillity to perform multiple pulls at once"
+            + "\n- Adds the abillity to perform multiple pulls at once"
             + "\n3.1.5"
-            + "\n\tFirst pull check after a user's daily reset will now correctly have the reset applied"
+            + "\n- First pull check after a user's daily reset will now correctly have the reset applied"
             + "\n3.1.4"
-            + "\n\t`/pulls` now lists available pull sources or remaining timer"
-            + "\n\tPity now remains unchanged when pulling a character of a higher rarity"
-            + "\n\tCharacters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
-            + "\n\tShiny Characters are now less likely (1/8 -> 1/20)"
-            + "\n\tTest Character B has been temporarily disabled for balance reasons"
+            + "\n- `/pulls` now lists available pull sources or remaining timer"
+            + "\n- Pity now remains unchanged when pulling a character of a higher rarity"
+            + "\n- Characters are now half as likely (1/4 -> 1/8 for 1 Stars, 1/16 -> 1/32 for 2 Stars, 1/64 -> 1/128 for 3 Stars)"
+            + "\n- Shiny Characters are now less likely (1/8 -> 1/20)"
+            + "\n- Test Character B has been temporarily disabled for balance reasons"
             + "\n3.1.3"
-            + "\n\t`/give` now pings the recipient"
-            + "\n\t`/blackjack` now resolves incrementally"
+            + "\n- `/give` now pings the recipient"
+            + "\n- `/blackjack` now resolves incrementally"
             + "\n3.1.2"
-            + "\n\tAdds `/pity` and `/pulls`"
+            + "\n- Adds `/pity` and `/pulls`"
             + "\n3.1.1"
-            + "\n\tFirst 2h and 30m income command per day now award Gacha pulls"
+            + "\n- First 2h and 30m income command per day now award Gacha pulls"
             + "\n3.1.0"
-            + "\n\tAdds `/pull` to test the gacha system";
+            + "\n- Adds `/pull` to test the gacha system";
     }
 
     //TODO: Handle negative modifiers in dice rolls
@@ -443,22 +614,46 @@ public class HBMain {
         }
     }
 
-    private static void makeMultiStepResponse(List<String> responseSteps,
-            long delay /* milliseconds */, InteractionOriginalResponseUpdater updater) {
+    private static <T extends InteractionBase> void respondImmediately(SingleResponse singleResponse, T interaction) {
+        InteractionImmediateResponseBuilder builder = interaction.createImmediateResponder().setContent(singleResponse.message);
+        if (singleResponse.buttons != null) {
+            builder = builder.addComponents(singleResponse.buttons);
+        }
+        builder.respond();
+    }
+
+    private static void makeMultiStepResponse(MultistepResponse multistepResponse,
+            InteractionOriginalResponseUpdater updater) {
         if (updater == null) {
             throw new IllegalArgumentException("Updater was null");
         }
-        if (!responseSteps.isEmpty()) {
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    updater.setContent(responseSteps.remove(0)).update();
-                    if (responseSteps.isEmpty()) {
-                        timer.cancel();
+        if (!multistepResponse.hasMessages()) {
+            return;
+        }
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                boolean finished = false;
+                if (!multistepResponse.next()) {
+                    finished = true;
+                } else {
+                    updater.setContent(multistepResponse.getMessage());
+                    if (multistepResponse.hasAttachment()) {
+                        updater.addAttachment(multistepResponse.getAttachment());
+                    }
+                    finished = multistepResponse.isAtEnd();
+                }
+
+                if (finished) {
+                    timer.cancel();
+                    if (multistepResponse.buttons != null) {
+                        updater.addComponents(multistepResponse.buttons);
                     }
                 }
-            }, delay, delay);
-        }
+
+                updater.update();
+            }
+        }, 0, multistepResponse.delay);
     }
 }

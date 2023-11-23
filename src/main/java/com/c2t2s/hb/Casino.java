@@ -1,10 +1,5 @@
 package com.c2t2s.hb;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
@@ -143,13 +138,12 @@ class Casino {
     }
 
 // Payout:
-//  :mechanic:     25% 150
-//   (:scientist:)     250 (50% if high morality)
-//  :farmer:       25% 250
-//   (:firefighter:)   250 (50% if high morality)
-//  :chef:         20% 200
-//  :detective:     5% 200
-//  :artist:       25% 250
+// 25% 150
+//     250 instead (50% if high morality)
+// 25% 200
+//     300 instead (50% if high morality)
+// 25% 200
+// 25% 250
 
     static String handleWork(long uid) {
         User user = getUser(uid);
@@ -175,9 +169,9 @@ class Casino {
             }
         } else if (roll < 50) {
             if (user.getMorality() > 5 && HBMain.RNG_SOURCE.nextInt(2) == 0) {
-                output = ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 250 coins! Your new balance is " + logWork(uid, 250);
+                output = ":firefighter: You use your connections and put out fires and save kittens for 2 hours and make 300 coins! Your new balance is " + logWork(uid, 300);
             } else {
-                output = ":farmer: You work hard in a field for 2 hours and make 150 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 150);
+                output = ":farmer: You work hard in a field for 2 hours and make 200 coins. It ain't much, but it's honest work. Your new balance is " + logWork(uid, 200);
             }
         } else if (roll < 70) {
             output = ":cook: You work as a chef for 2 hours and make 200 coins. Your new balance is " + logWork(uid, 200);
@@ -246,11 +240,11 @@ class Casino {
 
 // Payout:
 //  :books:             5% -10
-//   (:slot_machine:)       400 (replaces books if bad)
+//   (:slot_machine:)       500 (replaces books if bad)
 //  :motorway:          10% 0
 //  :house_adandoned:   10% 5
 //  :house:             25% 200
-//  :convenience_store: 25% 300
+//  :convenience_store: 25% 250
 //  :bank:              25% 350
 
     static String handleRob(long uid) {
@@ -276,8 +270,8 @@ class Casino {
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 5) {
             if (user.getMorality() < -10) {
-                output = ":slot_machine: You use your criminal knowledge and rob the slot machine of 400 coins! Your new balance is "
-                    + logRob(uid, true, 400) + "\nWait! Get away from that!";
+                output = ":slot_machine: You use your criminal knowledge and rob the slot machine of 500 coins! Your new balance is "
+                    + logRob(uid, true, 500) + "\nWait! Get away from that!";
             } else if (user.getBalance() > 10) {
                 output = ":book: You rob The Bank! Wait, that's not The Bank, that's The Library. You pay the late fee of 10 coins for your overdue books and leave before the cops arrive. Your new balance is "
                     + logRob(uid, false, -10);
@@ -295,8 +289,8 @@ class Casino {
             output = ":house: You rob a rich looking house and get away with 200 coins. Your new balance is "
                 + logRob(uid, false, 200);
         } else if (roll < 75) {
-            output = ":convenience_store: You rob a convenience store and grab 300 coins from the register! Your new balance is "
-                + logRob(uid, true, 300);
+            output = ":convenience_store: You rob a convenience store and grab 250 coins from the register! Your new balance is "
+                + logRob(uid, true, 250);
         } else if (roll < 80) {
             output = ":full_moon: With the help of some funny friends in overalls you steal THE MOON. The UN pays you 350 coins in ransom. Your new balance is "
                 + logRob(uid, true, 350);
@@ -311,7 +305,7 @@ class Casino {
 //  :paperclip:         10% 0
 //  :satellite_orbital:  5% 0
 //  :lungs:              5% 0 (150 if low morality)
-//  :moneybag:          50% 50/70/90
+//  :moneybag:          50% 30/50/70
 //  :computer:          15% 100
 //  :medal:             10% 125
 //  :gem:                5% 250
@@ -352,7 +346,7 @@ class Casino {
             logPick(uid, false, 0);
             output = ":satellite_orbital: You pickpocket an orbital satellite???? Unsure what to do with it you ditch it in a nearby lake.";
         } else if (roll < 70) {
-            int haul = 50 + (HBMain.RNG_SOURCE.nextInt(3) * 20);
+            int haul = 30 + (HBMain.RNG_SOURCE.nextInt(3) * 20);
             output = ":moneybag: You successfully pickpocket " + haul + " coins. Your new balance is "
                 + logPick(uid, false, haul);
         } else if (roll < 85) {
@@ -373,7 +367,7 @@ class Casino {
         User user = getUser(uid);
         String response = "";
         if (user == null) {
-            boolean error = addUser(uid, name);
+            boolean error = CasinoDB.addUser(uid, name);
             if (!error) {
                 response += "Welcome! You have been given an initial balance of 1000 coins";
             } else {
@@ -491,17 +485,14 @@ class Casino {
 //  4 diamonds:  1/20 000 000       1000:1
 //  5 diamonds:  1/10 000 000 000   10000:1
 
-    static List<String> handleSlots(long uid, long amount) {
-        List<String> responseSteps = new ArrayList<>();
+    static HBMain.MultistepResponse handleSlots(long uid, long amount) {
         User user = getUser(uid);
         if (user == null) {
-            responseSteps.add(USER_NOT_FOUND_MESSAGE);
-            return responseSteps;
+            return new HBMain.MultistepResponse(USER_NOT_FOUND_MESSAGE);
         }
         long balance = user.getBalance();
         if (balance < amount) {
-            responseSteps.add(insuffientBalanceMessage(balance));
-            return responseSteps;
+            return new HBMain.MultistepResponse(insuffientBalanceMessage(balance));
         }
         int cherries = 0;
         int oranges = 0;
@@ -512,6 +503,7 @@ class Casino {
         StringBuilder output = new StringBuilder("Bid " + amount + " on slots\n");
         String placeholder = ":blue_square:";
         int winnings = 0;
+        List<String> responseSteps = new ArrayList<>();
         responseSteps.add(output + repeatString(placeholder, 5) + PLACEHOLDER_NEWLINE_STRING);
         for (int i = 0; i < 5; ++i) {
             switch (HBMain.RNG_SOURCE.nextInt(5)) {
@@ -581,7 +573,7 @@ class Casino {
         output.append("New balance: " + balance);
         logSlots(uid, amount, winnings, diamonds, winCondition);
         responseSteps.add(output.toString());
-        return responseSteps;
+        return new HBMain.MultistepResponse(responseSteps);
     }
 
 // Minislots Payout
@@ -591,17 +583,14 @@ class Casino {
 //  2 diamonds:  3/10000   10:1
 //  3 diamonds:  1/1000000 100:1
 
-    static List<String> handleMinislots(long uid, long amount) {
-        List<String> responseSteps = new ArrayList<>();
+    static HBMain.MultistepResponse handleMinislots(long uid, long amount) {
         User user = getUser(uid);
         if (user == null) {
-            responseSteps.add(USER_NOT_FOUND_MESSAGE);
-            return responseSteps;
+            return new HBMain.MultistepResponse(USER_NOT_FOUND_MESSAGE);
         }
         long balance = user.getBalance();
         if (balance < amount) {
-            responseSteps.add(insuffientBalanceMessage(balance));
-            return responseSteps;
+            return new HBMain.MultistepResponse(insuffientBalanceMessage(balance));
         }
         int cherries = 0;
         int oranges = 0;
@@ -612,6 +601,7 @@ class Casino {
         StringBuilder output = new StringBuilder("Bid " + amount + " on mini slots\n");
         String placeholder = ":blue_square:";
         int winnings = 0;
+        List<String> responseSteps = new ArrayList<>();
         responseSteps.add(output + repeatString(placeholder, 3) + PLACEHOLDER_NEWLINE_STRING);
         for (int i = 0; i < 3; i++) {
             switch (HBMain.RNG_SOURCE.nextInt(5)) {
@@ -672,47 +662,49 @@ class Casino {
         output.append("New balance: " + balance);
         logMinislots(uid, amount, winnings, diamonds);
         responseSteps.add(output.toString());
-        return responseSteps;
+        return new HBMain.MultistepResponse(responseSteps);
     }
 
 // OverUnder Payout:
 //  2 correct then 1 wrong: ~2/11 1:1
 //  3 correct:              ~3/11 3:1
 
-    static String handleOverUnderInitial(long uid, long amount) {
+    static HBMain.SingleResponse handleOverUnderInitial(long uid, long amount) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game != null && game.getRound() != -1) {
-            return "You already have an active game: Round " + game.getRound() + " with the current value "
-                + game.getTarget() + ".\nUse `over`, `under`, or `same` to predict which the next value will be";
+            return new HBMain.SingleResponse("You already have an active game: Round " + game.getRound()
+                + " with the current value " + game.getTarget()
+                + ".\nUse `over`, `under`, or `same` to predict which the next value will be",
+                ButtonRows.OVERUNDER_BUTTONS);
         }
         long balance = checkBalance(uid);
         if (balance < 0) {
-            return "Unable to start game. Balance check failed or was negative (" + balance +")";
+            return new HBMain.SingleResponse("Unable to start game. Balance check failed or was negative (" + balance +")");
         } else if (balance < amount) {
-            return "Your current balance of " + balance + " is not enough to cover that";
+            return new HBMain.SingleResponse("Your current balance of " + balance + " is not enough to cover that");
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
-        return "Bid " + amount + " on overunder\nYour initial value is " + target
-            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`";
+        return new HBMain.SingleResponse("Bid " + amount + " on overunder\nYour initial value is " + target
+            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`", ButtonRows.OVERUNDER_BUTTONS);
     }
 
-    static String handleOverUnderFollowup(long uid, int prediction) {
+    static HBMain.SingleResponse handleOverUnderFollowup(long uid, int prediction) {
         OverUnderGame game = getOverUnderRound(uid);
         if (game == null || game.getRound() == -1) {
-            return "No active game found. Use `/overunder new` to start a new game";
+            return new HBMain.SingleResponse("No active game found. Use `/overunder new` to start a new game");
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         if ((prediction == PREDICTION_OVER && target > game.getTarget())
                 || (prediction == PREDICTION_UNDER && target < game.getTarget())
                 || (prediction == PREDICTION_SAME && target == game.getTarget())) { // Correct
             if (game.getRound() == 3) {
-                return "Correct! The value was " + target + ". You win " + (3 * game.getWager())
-                    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true, game.getWager());
+                return new HBMain.SingleResponse("Correct! The value was " + target + ". You win " + (3 * game.getWager())
+                    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true, game.getWager()));
             } else {
                 logOverUnderProgress(uid, game.getRound() + 1, target);
-                return "Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
-                    + " round is " + target; 
+                return new HBMain.SingleResponse("Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
+                    + " round is " + target, ButtonRows.OVERUNDER_BUTTONS); 
             }
         } else { // Loss
             String correct = "";
@@ -725,11 +717,11 @@ class Casino {
             }
             String response = "The answer was " + correct + ": " + target + ".";
             if (game.getRound() == 3) {
-                return response + " With 2 correct your " + game.getWager()
-                    + " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager());
+                return new HBMain.SingleResponse(response + " With 2 correct your " + game.getWager()
+                    + " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager()));
             } else {
                 logOverUnderLoss(uid);
-                return response + " Your current balance is " + checkBalance(uid);
+                return new HBMain.SingleResponse(response + " Your current balance is " + checkBalance(uid));
             }
         }
     }
@@ -777,11 +769,6 @@ class Casino {
     }
 
     //////////////////////////////////////////////////////////
-
-    static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
-            System.getenv("JDBC_USERNAME"), System.getenv("JDBC_PASSWORD"));
-    }
 
     //CREATE TABLE IF NOT EXISTS money_user (
     //  uid bigint PRIMARY KEY,
@@ -876,97 +863,38 @@ class Casino {
     // );
 
     static long checkBalance(long uid) {
-        return executeBalanceQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
+        return CasinoDB.executeLongQuery("SELECT balance FROM money_user WHERE uid = " + uid + ";");
     }
 
     static long takeMoney(long uid, long amount) {
-        return executeBalanceQuery("UPDATE money_user SET balance = balance - "
+        return CasinoDB.executeLongQuery("UPDATE money_user SET balance = balance - "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
 
     static long addMoney(long uid, long amount) {
-        return executeBalanceQuery("UPDATE money_user SET balance = balance + "
+        return CasinoDB.executeLongQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
 
     private static long addWorkMoney(long uid, int amount, String delay) {
-        return executeBalanceQuery("UPDATE money_user SET (in_jail, balance, last_claim) = (false, balance + "
+        return CasinoDB.executeLongQuery("UPDATE money_user SET (in_jail, balance, last_claim) = (false, balance + "
             + amount + ", NOW() + INTERVAL '" + delay + "') WHERE uid = " + uid + " RETURNING balance;");
     }
 
     private static void setJailTime(long uid, String interval) {
-        executeUpdate("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
+        CasinoDB.executeUpdate("UPDATE money_user SET (in_jail, last_claim) = (true, NOW() + INTERVAL '"
             + interval + "') WHERE uid = " + uid + ";");
     }
 
     private static void setTimer2Time(long uid, String interval) {
-        executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
+        CasinoDB.executeUpdate("UPDATE money_user SET timestamp2 = NOW() + INTERVAL '"
             + interval + "' WHERE uid = " + uid + ";");
-    }
-
-    private static boolean addUser(long uid, String name) {
-        boolean error = false;
-        String query = "INSERT INTO money_user (uid, name, balance) VALUES(" + uid + ", '" + name +"', 1000) ON CONFLICT (uid) DO NOTHING;";
-        String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String event = "INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            error = statement.executeUpdate(query) < 1;
-            if (!error) {
-                statement.executeUpdate(job);
-                statement.executeUpdate(slots);
-                statement.executeUpdate(guess);
-                statement.executeUpdate(minislots);
-                statement.executeUpdate(hugeguess);
-                statement.executeUpdate(monemachine);
-                statement.executeUpdate(overunder);
-                statement.executeUpdate(blackjac);
-                statement.executeUpdate(gacha);
-                statement.executeUpdate(event);
-            }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return error;
     }
 
     private static String parseLeaderboard(long entries) {
         String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
-        Connection connection = null;
-        Statement statement = null;
-        StringBuilder leaderboard = new StringBuilder();
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            StringBuilder leaderboard = new StringBuilder();
             int place = 1;
             while (results.next()) {
                 leaderboard.append("#" + place++ + " ");
@@ -976,70 +904,45 @@ class Casino {
                 }
                 leaderboard.append(name + " " + results.getLong(2) + "\n");
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return leaderboard.toString();
+            return leaderboard.toString();
+        }, "");
     }
 
     private static void hugeGuessWin(long uid, long spent, long winnings) {
-        executeUpdate("UPDATE hugeguess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE hugeguess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
             + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
     private static void hugeGuessLoss(long uid, long spent) {
-        executeUpdate("UPDATE hugeguess_user SET (guesses, spent) = (guesses + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE hugeguess_user SET (guesses, spent) = (guesses + 1, spent + "
                 + spent + ") WHERE uid = " + uid + ";");
     }
 
     private static void guessWin(long uid, long spent, long winnings) {
-        executeUpdate("UPDATE guess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE guess_user SET (guesses, correct, spent, winnings) = (guesses + 1, correct + 1, spent + "
             + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
     private static void guessLoss(long uid, long spent) {
-        executeUpdate("UPDATE guess_user SET (guesses, spent) = (guesses + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE guess_user SET (guesses, spent) = (guesses + 1, spent + "
             + spent + ") WHERE uid = " + uid + ";");
     }
 
     private static void logSlots(long uid, long spent, long winnings, int diamonds, int winCondition) {
-        executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
+        CasinoDB.executeUpdate("UPDATE slots_user SET (pulls, diamonds, spent, winnings, threes, fours, fives, fruitsalads) = (pulls + 1, diamonds + "
             + diamonds + ", spent + " + spent + ", winnings + " + winnings + ", threes + "
             + (winCondition == 3 ? 1 : 0) + ", fours + " + (winCondition == 4 ? 1 : 0) + ", fives + "
             + (winCondition == 5 ? 1 : 0) + ", fruitsalads + " + (winCondition == 1 ? 1 : 0) + ") WHERE uid = " + uid + ";");
     }
 
     private static void logMinislots(long uid, long spent, long winnings, int diamonds) {
-        executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
+        CasinoDB.executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
             + diamonds + ", spent + " + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
     }
 
     private static User getUser(long uid) {
         String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim, timestamp2 FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
-        Connection connection = null;
-        Statement statement = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int work = results.getInt(1);
                 int fish = results.getInt(2);
@@ -1049,76 +952,57 @@ class Casino {
                 boolean isJail = results.getBoolean(6);
                 Timestamp time = results.getTimestamp(7);
                 Timestamp time2 = results.getTimestamp(8);
-                user = new Casino.User(work, fish, pick, rob, balance, isJail, time, time2);
+                return new Casino.User(work, fish, pick, rob, balance, isJail, time, time2);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return user;
+            return null;
+        }, null);
     }
 
     private static long logWork(long uid, int income) {
         long balance = addWorkMoney(uid, income, "2 hours");
-        executeUpdate("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
+        CasinoDB.executeUpdate("UPDATE job_user SET (work_count, work_profit) = (work_count + 1, "
             + "work_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static long logFish(long uid, boolean rare, int income) {
         long balance = addWorkMoney(uid, income, "30 minutes");
-        executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
+        CasinoDB.executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
             + (rare ? 1 : 0) + ", fish_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static void pickFailed(long uid) {
         setJailTime(uid, "30 minutes");
-        executeUpdate("UPDATE job_user SET (pick_count, pick_fails, jail_time) = (pick_count + 1, pick_fails + 1, jail_time + 30) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE job_user SET (pick_count, pick_fails, jail_time) = (pick_count + 1, pick_fails + 1, jail_time + 30) WHERE uid = "
             + uid + ";");
     }
 
     private static long logPick(long uid, boolean rare, int income) {
         long balance = addMoney(uid, income);
-        executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
+        CasinoDB.executeUpdate("UPDATE job_user SET (pick_count, pick_jackpots, pick_profit) = (pick_count + 1, pick_jackpots + "
             + (rare ? 1 : 0) + ", pick_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static void robFailed(long uid) {
         setJailTime(uid, "2 hours");
-        executeUpdate("UPDATE job_user SET (rob_count, rob_fails, jail_time) = (rob_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE job_user SET (rob_count, rob_fails, jail_time) = (rob_count + 1, rob_fails + 1, jail_time + 120) WHERE uid = "
                 + uid + ";");
     }
 
     private static long logRob(long uid, boolean rare, int income) {
         long balance = addMoney(uid, income);
-        executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
+        CasinoDB.executeUpdate("UPDATE job_user SET (rob_count, rob_jackpots, rob_profit) = (rob_count + 1, rob_jackpots + "
             + (rare ? 1 : 0) + ", rob_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static long moneyMachineWin(long uid, long winnings, long profit, long newPot) {
         long balance = addMoney(uid, profit);
-        executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+        CasinoDB.executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
         setTimer2Time(uid, "1 minute");
-        executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
+        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
             + winnings + ") WHERE uid = " + uid + ";");
         return balance;
     }
@@ -1127,30 +1011,30 @@ class Casino {
         long balance = takeMoney(uid, bet);
         addMoney(MONEY_MACHINE_UID, bet);
         setTimer2Time(uid, "1 minute");
-        executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
             + bet + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
     private static void logInitialOverUnder(long uid, long bet, int target) {
         takeMoney(uid, bet);
-        executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (round, played, spent, bet, target) = (1, played + 1, spent + "
             + bet + ", " + bet + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
     private static void logOverUnderProgress(long uid, int round, int target) {
-        executeUpdate("UPDATE overunder_user SET (round, target) = ("
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (round, target) = ("
             + round + ", " + target + ") WHERE uid = " + uid + ";");
     }
 
     private static void logOverUnderLoss(long uid) {
-        executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (bet, round, target) = (-1, -1, -1) WHERE uid = "
             + uid + ";");
     }
 
     private static long logOverUnderWin(long uid, long winnings, boolean thirdRound, long wager) {
         long balance = addMoney(uid, winnings);
-        executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
+        CasinoDB.executeUpdate("UPDATE overunder_user SET (bet, round, target, consolations, wins, winnings) = (-1, -1, -1, consolations + "
             + (thirdRound ? 0 : 1) + ", wins + " + (thirdRound ? 1 : 0) + ", winnings + "
             + (winnings - wager) + ") WHERE uid = " + uid + ";");
         return balance;
@@ -1158,211 +1042,15 @@ class Casino {
 
     private static OverUnderGame getOverUnderRound(long uid) {
         String query = "SELECT round, bet, target FROM overunder_user WHERE uid = " + uid + ";";
-        Connection connection = null;
-        Statement statement = null;
-        OverUnderGame game = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
+        return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 int round = results.getInt(1);
                 int wager = results.getInt(2);
                 int target = results.getInt(3);
-                game = new Casino.OverUnderGame(round, wager, target);
+                return new Casino.OverUnderGame(round, wager, target);
             }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return game;
-    }
-
-    static void executeUpdate(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            statement.executeUpdate(query);
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    // TODO: Migrate the queries that return a value to be generic
-    // and accept a lambda to run on the ResultSet
-    private static long executeBalanceQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        long balance = 0;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            if (results.next()) {
-                balance = results.getLong(1);
-            } else {
-                balance = -1;
-            }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return balance;
-    }
-
-    static int executeIntQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        int result = 0;
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            if (results.next()) {
-                result = results.getInt(1);
-            } else {
-                result = -1;
-            }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return result;
-    }
-
-    static Timestamp executeTimestampQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        Timestamp result = new Timestamp(0);
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            if (results.next()) {
-                result = results.getTimestamp(1);
-            }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return result;
-    }
-
-    static List<Long> executeListQuery(String query) {
-        Connection connection = null;
-        Statement statement = null;
-        List<Long> resultList = new ArrayList<>();
-        try {
-            connection = getConnection();
-            statement = connection.createStatement();
-            ResultSet results = statement.executeQuery(query);
-            while (results.next()) {
-                resultList.add(results.getLong(1));
-            }
-            statement.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return resultList;
+            return null;
+        }, null);
     }
 
 }
