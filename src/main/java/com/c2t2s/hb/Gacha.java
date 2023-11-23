@@ -536,7 +536,8 @@ class Gacha {
             return "Unable to fetch EventUser. Potentially bad DB state";
         }
         if (user.pulls > 0) {
-            return "You currently have " + user.pulls + " available pulls.\n"
+            return "You currently have " + user.pulls + " available pull"
+                + Casino.getPluralSuffix(user.pulls) + ".\n"
                 + eventUser.getAvailablePullSources();
         } else {
             return "No pulls remaining. " + eventUser.getAvailablePullSources();
@@ -549,17 +550,37 @@ class Gacha {
     //   uid bigint PRIMARY KEY,
     //   pulls integer DEFAULT 10,
     //   feed_coins bigint DEFAULT 0,
-    //   times_pulled_nonbanner bigint DEFAULT 0,
-    //   times_pulled_banner bigint DEFAULT 0,
-    //   primary_pity integer DEFAULT 0,
-    //   secondary_pity integer DEFAULT 0,
-    //   tertiary_pity integer DEFAULT 0,
-    //   banner_flops integer DEFAULT 0,
     //   CONSTRAINT gacha_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
+    // CREATE TABLE IF NOT EXISTS gacha_banner (
+    //   banner_id bigint PRIMARY KEY,
+    //   banner_name varchar(40),
+    //   one_star_chance float DEFAULT 0.125,
+    //   two_star_chance float DEFAULT 0.03125,
+    //   three_star_chance float DEFAULT 0.0078125,
+    //   four_star_chance float DEFAULT 0.0,
+    //   five_star_chance float DEFAULT 0.0,
+    //   shiny_chance float DEFAULT 0.05,
+    //   prismatic_chance float DEFAULT 0.0,
+    //   enabled boolean DEFAULT true
+    // );
+
+    // CREATE TABLE IF NOT EXISTS gacha_user_banner (
+    //   uid bigint,
+    //   banner_id bigint,
+    //   times_pulled bigint DEFAULT 0,
+    //   primary_pity integer DEFAULT 0,
+    //   secondary_pity integer DEFAULT 0,
+    //   tertiary_pity integer DEFAULT 0,
+    //   PRIMARY_KEY(uid, banner_id),
+    //   CONSTRAINT gacha_user_banner_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
+    //   CONSTRAINT gacha_user_banner_banner_id FOREIGN KEY(banner_id) REFERENCES gacha_banner(banner_id)
+    // )
+
     // CREATE TABLE IF NOT EXISTS gacha_character (
     //   cid bigint PRIMARY KEY,
+    //   banner_id bigint,
     //   name varchar(40),
     //   rarity integer DEFAULT 1,
     //   type varchar(40),
@@ -570,8 +591,9 @@ class Gacha {
     //   description varchar(200) DEFAULT '',
     //   picture_url varchar(100),
     //   shiny_picture_url varchar(100),
-    //   shinier_picture_url varchar(100) DEFAULT '',
-    //   enabled boolean DEFAULT true
+    //   prismatic_picture_url varchar(100) DEFAULT '',
+    //   enabled boolean DEFAULT true,
+    //   CONSTRAINT gacha_character_banner_id FOREIGN KEY(banner_id) REFERENCES gacha_banner(banner_id)
     // );
 
     // CREATE TABLE IF NOT EXISTS gacha_user_character (
@@ -581,24 +603,37 @@ class Gacha {
     //   duplicates integer DEFAULT 0,
     //   level integer DEFAULT 0,
     //   xp integer DEFAULT 0,
-    //   item_id bigint DEFAULT 0,
+    //   rob_modifier float DEFAULT 0.0,
+    //   pick_modifier float DEFAULT 0.0,
+    //   fish_modifier float DEFAULT 0.0,
+    //   work_modifier float DEFAULT 0.0,
     //   PRIMARY KEY(uid, cid, foil),
     //   CONSTRAINT gacha_user_character_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
     //   CONSTRAINT gacha_user_character_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid)
     // );
 
-    // CREATE TABLE IF NOT EXISTS gacha_banner (
-    //   banner_id bigint PRIMARY KEY,
-    //   slot1 bigint,
-    //   slot2 bigint,
-    //   slot3 bigint,
-    //   slot4 bigint,
-    //   start timestamp,
-    //   CONSTRAINT gacha_banner_cid1 FOREIGN KEY(slot1) REFERENCES gacha_character(cid),
-    //   CONSTRAINT gacha_banner_cid2 FOREIGN KEY(slot2) REFERENCES gacha_character(cid),
-    //   CONSTRAINT gacha_banner_cid3 FOREIGN KEY(slot3) REFERENCES gacha_character(cid),
-    //   CONSTRAINT gacha_banner_cid4 FOREIGN KEY(slot4) REFERENCES gacha_character(cid)
-    // );
+    // CREATE TABLE IF NOT EXISTS gacha_gem (
+    //   gid bigint PRIMARY KEY,
+    //   name varchar(40),
+    //   adjective varchar(40),
+    //   effect1 float DEFAULT 0.0,
+    //   effect2 float DEFAULT 0.0,
+    //   effect3 float DEFAULT 0.0,
+    //   effect4 float DEFAULT 0.0,
+    //   effect5 float DEFAULT 0.0,
+    //   is_special boolean DEFAULT false,
+    // )
+
+    // CREATE TABLE IF NOT EXISTS gacha_user_character_gem (
+    //   uid bigint,
+    //   cid bigint,
+    //   gid bigint,
+    //   times_used integer,
+    //   PRIMARY_KEY(uid, cid, gid),
+    //   CONSTRAINT gacha_user_character_gem_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
+    //   CONSTRAINT gacha_user_character_gem_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid),
+    //   CONSTRAINT gacha_user_character_gem_gid FOREIGN KEY(gid) REFERENCES gacha_gem(gid)
+    // )
 
     static final String GACHA_USER_COLUMNS = "primary_pity, secondary_pity, tertiary_pity, banner_flops, pulls, times_pulled_nonbanner + times_pulled_banner AS times_pulled";
 
