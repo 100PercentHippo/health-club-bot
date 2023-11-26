@@ -28,7 +28,8 @@ class CasinoDB {
         } else {
             nickname = name;
         }
-        String query = "INSERT INTO money_user (uid, name, balance) VALUES(" + uid + ", '" + name +"', 1000) ON CONFLICT (uid) DO NOTHING;";
+        String query = "INSERT INTO money_user (uid, name, nickname, balance) VALUES(" + uid + ", '" + name
+            + "', '" + nickname + "', 1000) ON CONFLICT (uid) DO NOTHING;";
         String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
@@ -192,6 +193,19 @@ class CasinoDB {
                 return results.getLong(1);
             }
             return defaultValue;
+        }, defaultValue);
+    }
+
+    static List<HBMain.AutocompleteIdOption> executeAutocompleteIdQuery(String query) {
+        List<HBMain.AutocompleteIdOption> defaultValue = new ArrayList<>();
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            List<HBMain.AutocompleteIdOption> output = defaultValue;
+            while (results.next()) {
+                long id = results.getLong(1);
+                String description = results.getString(2);
+                output.add(new HBMain.AutocompleteIdOption(id, description));
+            }
+            return output;
         }, defaultValue);
     }
 }
