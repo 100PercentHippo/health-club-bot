@@ -10,7 +10,6 @@ import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionChoice;
 import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
@@ -32,6 +31,14 @@ public class HBMain {
 
     private static final String VERSION_STRING = "3.1.9"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
+
+    static int generateBoundedNormal(int average, int stdDev, int min) {
+        int roll = (int)(HBMain.RNG_SOURCE.nextGaussian() * stdDev) + average;
+        if (roll < min) {
+            return min;
+        }
+        return roll;
+    }
 
     static class SingleResponse {
         String message;
@@ -123,6 +130,24 @@ public class HBMain {
 
         URL getAttachment() {
             return images.get(index);
+        }
+    }
+
+    static class AutocompleteIdOption {
+        long id;
+        String description;
+
+        AutocompleteIdOption(long id, String description) {
+            this.id = id;
+            this.description = description;
+        }
+
+        long getId() {
+            return id;
+        }
+
+        String getDescription() {
+            return description;
         }
     }
 
@@ -251,8 +276,9 @@ public class HBMain {
                     break;
                 case "pull":
                     interaction.respondLater().thenAccept(updater -> {
-                        makeMultiStepResponse(Gacha.handleGachaPull(interaction.getUser().getId(), false,
-                            interaction.getArgumentLongValueByIndex(0).orElse(1L)),
+                        makeMultiStepResponse(Gacha.handleGachaPull(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get(),
+                            interaction.getArgumentLongValueByIndex(1).orElse(1L)),
                         updater);
                     });
                     break;
@@ -266,7 +292,8 @@ public class HBMain {
                     break;
                 case "pity":
                     interaction.createImmediateResponder().setContent(
-                        Gacha.handlePity(interaction.getUser().getId())).respond();
+                        Gacha.handlePity(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get())).respond();
                     break;
                 case "stats":
                     interaction.createImmediateResponder().setContent(
@@ -364,16 +391,20 @@ public class HBMain {
         });
         api.addAutocompleteCreateListener(event -> {
             AutocompleteInteraction interaction = event.getAutocompleteInteraction();
+            List<SlashCommandOptionChoice> choices = new ArrayList<>();
             switch (interaction.getFullCommandName()) {
                 case "stats":
-                    List<SlashCommandOptionChoice> choices = new ArrayList<>();
                     Arrays.stream(Stats.StatsOption.values())
                         .forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getName())));
-                    interaction.respondWithChoices(choices);
+                    break;
+                case "pull":
+                case "pity":
+                    Gacha.getBanners().forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
                     break;
                 default:
                     return;
             }
+            interaction.respondWithChoices(choices);
         });
         System.out.println("Server started");
     }
@@ -449,11 +480,13 @@ public class HBMain {
             .addOption(SlashCommandOption.createLongOption("amount", "Amount to transfer", true, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pull").setDescription("Try to win a gacha character!")
+            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
             .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 25))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pulls").setDescription("Check how many gacha pulls you have")
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pity").setDescription("Check your gacha pity")
+            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
@@ -557,7 +590,7 @@ public class HBMain {
             + "\n- Adds `/pull` to test the gacha system";
     }
 
-    //TODO: Handle negative modifiers in dice rolls
+    //TODO: This doesn't always behave as expected with multiple arguments
     private static String handleRoll(String args) {
         int max = 0;
         try {

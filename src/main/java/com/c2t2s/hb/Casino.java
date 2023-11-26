@@ -842,6 +842,7 @@ class Casino {
 
     // CREATE TABLE IF NOT EXISTS moneymachine_user (
     //  uid bigint PRIMARY KEY,
+    //  chocolate_coins bigint DEFAULT 0,
     //  feeds integer DEFAULT 0,
     //  wins integer DEFAULT 0,
     //  spent integer DEFAULT 0,
