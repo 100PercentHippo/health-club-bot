@@ -634,8 +634,10 @@ public class HBMain {
             } else {
                 // Deathrolling
                 max = Integer.parseInt(args);
-                if (max < 1) {
+                if (max < 0) {
                     return "Negative numbers make me sad :slight_frown:";
+                } else if (max == 0) {
+                    return "Rolling 0-0\n0\n.-.";
                 }
                 int roll = RNG_SOURCE.nextInt(max) + 1;
                 return "Rolling 1-" + max + "\n" + roll
