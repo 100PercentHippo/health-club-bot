@@ -290,12 +290,15 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Gacha.handleCharacterInfo(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get())).respond();
+                    break;
                 case "gacha banner list":
                     interaction.createImmediateResponder().setContent(
                         Gacha.handleBannerList(interaction.getUser().getId())).respond();
+                    break;
                 case "gacha banner info":
                     interaction.createImmediateResponder().setContent(
                         Gacha.handleBannerInfo(interaction.getArgumentLongValueByIndex(0).get())).respond();
+                    break;
                 case "pulls":
                     interaction.createImmediateResponder().setContent(
                         Gacha.handlePulls(interaction.getUser().getId())).respond();
