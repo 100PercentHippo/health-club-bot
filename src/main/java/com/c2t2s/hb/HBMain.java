@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.9"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.10"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
@@ -286,6 +286,16 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(
                         Gacha.handleCharacterList(interaction.getUser().getId())).respond();
                     break;
+                case "gacha character info":
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handleCharacterInfo(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get())).respond();
+                case "gacha banner list":
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handleBannerList(interaction.getUser().getId())).respond();
+                case "gacha banner info":
+                    interaction.createImmediateResponder().setContent(
+                        Gacha.handleBannerInfo(interaction.getArgumentLongValueByIndex(0).get())).respond();
                 case "pulls":
                     interaction.createImmediateResponder().setContent(
                         Gacha.handlePulls(interaction.getUser().getId())).respond();
@@ -399,7 +409,12 @@ public class HBMain {
                     break;
                 case "pull":
                 case "pity":
+                case "gacha banner info":
                     Gacha.getBanners().forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+                    break;
+                case "gacha character info":
+                    Gacha.getCharacters(interaction.getUser().getId())
+                        .forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
                     break;
                 default:
                     return;
@@ -490,7 +505,13 @@ public class HBMain {
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
-                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List the characters you've got"))))
+                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your characters"),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single character",
+                        Arrays.asList(SlashCommandOption.createLongOption("character", "Which character to view", true, true))))))
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "banner", "View the available banners",
+                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your characters"),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single banner",
+                        Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
