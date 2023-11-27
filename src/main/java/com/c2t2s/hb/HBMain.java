@@ -561,7 +561,10 @@ public class HBMain {
             + "\n\t`/pull` Pull for gacha characters!"
             + "\n\t`/pulls` Check your available pulls"
             + "\n\t`/pity` Check your gacha pity"
-            + "\n\t`/gacha character list` List the characters you've pulled";
+            + "\n\t`/gacha character list` List the characters you've pulled"
+            + "\n\t`/gacha character info` View information about an owned character"
+            + "\n\t`/gacha banner list` List the available banners"
+            + "\n\t`/gacha banner info` View information about an available banner";
     }
 
     private static String getLatestRelease() {
@@ -570,13 +573,18 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Fixed bug where it was sometime possible to get more gacha duplicates than intended"
-            + "\n- Gacha characters are now sorted by rarity, then alphabetically by name when listed";
+        return "\n- Migrated gacha pulling to be banner-based"
+            + "\n- Added `/gacha banner list` and `/gacha banner info` to view banner information"
+            + "\n- Added `/gacha character info` to view information about an owned character"
+            + "\n- Reduced coins awarded for characters already maxed, as they are easier to target via banners";
     }
 
     private static String getChangelog() {
         return "Changelog:\n" + VERSION_STRING
             + getLatestReleaseString()
+            + "\n3.1.9"
+            + "\n- Fixed bug where it was sometime possible to get more gacha duplicates than intended"
+            + "\n- Gacha characters are now sorted by rarity, then alphabetically by name when listed"
             + "\n3.1.8"
             + "\n- Limit `/pull` to 25 pulls at once so response fits within a discord message"
             + "\n- Adds `/allornothing` - push your luck and try to set a new record"
