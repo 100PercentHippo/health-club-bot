@@ -654,6 +654,9 @@ class Gacha {
 
     static String handleBannerInfo(long bannerId) {
         GachaBanner banner = getGachaBanner(bannerId);
+        if (banner == null) {
+            return "Specified banner was not found";
+        }
         return banner.getInfoString();
     }
 
