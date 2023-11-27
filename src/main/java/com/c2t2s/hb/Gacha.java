@@ -121,7 +121,6 @@ class Gacha {
             return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
                     + "\n\t" + rarity + " Star " + type
                     + "\n\tLevel " + level + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
-                    + getPictureLink()
                     + "\n\t+" + getBuffPercent() + "% Bonus"
                     + (description.isEmpty() ? "" : "\n\t" + description);
         }
@@ -297,8 +296,9 @@ class Gacha {
         private String getInfoString() {
             StringBuilder output = new StringBuilder();
             output.append(name);
-            output.append(":\n");
+            output.append(":");
             if (!description.isEmpty()) {
+                output.append('\n');
                 output.append(description);
                 output.append('\n');
             }
@@ -355,8 +355,8 @@ class Gacha {
         }
 
         String getDisplayString() {
-            return name + " (" + ownedCharacters + "/" + totalCharacters + " owned)("
-                + maxedCharacters + "/" + totalCharacters + " maxed)";
+            return name + ": " + ownedCharacters + "/" + totalCharacters + " owned, "
+                + maxedCharacters + "/" + totalCharacters + " maxed";
         }
     }
 
@@ -626,19 +626,25 @@ class Gacha {
         return output.toString();
     }
 
-    static String handleCharacterInfo(long uid, long uniqueId) {
+    static HBMain.MultistepResponse handleCharacterInfo(long uid, long uniqueId) {
         long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
         SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
             long pullBalance = getPullCount(uid);
             if (pullBalance < 0) {
-                return Casino.USER_NOT_FOUND_MESSAGE;
+                return new HBMain.MultistepResponse(Casino.USER_NOT_FOUND_MESSAGE);
             } else {
-                return "Unable to fetch details for provided character";
+                return new HBMain.MultistepResponse("Unable to fetch details for provided character");
             }
         }
-        return character.toFullString();
+        HBMain.MultistepResponse response = new HBMain.MultistepResponse(character.toFullString());
+        try {
+            response.images.put(0, new URL(character.getPictureLink()));
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return response;
     }
 
     static String handleBannerList(long uid) {
