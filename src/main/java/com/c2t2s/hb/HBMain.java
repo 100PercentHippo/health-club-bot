@@ -287,9 +287,11 @@ public class HBMain {
                         Gacha.handleCharacterList(interaction.getUser().getId())).respond();
                     break;
                 case "gacha character info":
-                    interaction.createImmediateResponder().setContent(
-                        Gacha.handleCharacterInfo(interaction.getUser().getId(),
-                            interaction.getArgumentLongValueByIndex(0).get())).respond();
+                    interaction.respondLater().thenAccept(updater -> {
+                        makeMultiStepResponse(Gacha.handleCharacterInfo(interaction.getUser().getId(),
+                            interaction.getArgumentLongValueByIndex(0).get()),
+                        updater);
+                    });
                     break;
                 case "gacha banner list":
                     interaction.createImmediateResponder().setContent(
