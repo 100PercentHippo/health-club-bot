@@ -22,6 +22,10 @@ class Gacha {
         int fiveStarPity;
     }
 
+    private static final int SHINY_TYPE_NORMAL = 0;
+    private static final int SHINY_TYPE_SHINY = 1;
+    private static final int SHINY_TYPE_PRISMATIC = 2;
+
     private enum SHINY_TYPE {
         NORMAL(0),
         SHINY(1),
@@ -29,14 +33,27 @@ class Gacha {
 
         private int typeId;
         SHINY_TYPE(int id) { typeId = id; }
-        public int getId() { return typeId; }
+        int getId() { return typeId; }
+
+        static SHINY_TYPE fromId(int id) {
+            switch (id) {
+                case SHINY_TYPE_SHINY:
+                    return SHINY_TYPE.SHINY;
+                case SHINY_TYPE_PRISMATIC:
+                    return SHINY_TYPE.PRISMATIC;
+                case SHINY_TYPE_NORMAL:
+                default:
+                    return SHINY_TYPE.NORMAL;
+            }
+        }
     }
 
     private static class GachaCharacter {
 
+        private long id;
         private String name;
         private int rarity;
-        private int foil;
+        private SHINY_TYPE shiny;
         private String type;
         private int level;
         private int xp;
@@ -44,12 +61,15 @@ class Gacha {
         private String description;
         private String pictureUrl;
         private String shinyUrl;
+        private String prismaticUrl;
 
-        private GachaCharacter(String name, int rarity, int foil, String type, int level,
-                int xp, int duplicates, String description, String pictureUrl, String shinyUrl) {
+        private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny, String type, int level,
+                int xp, int duplicates, String description, String pictureUrl, String shinyUrl,
+                String prismaticUrl) {
+            this.id = id;
             this.name = name;
             this.rarity = rarity;
-            this.foil = foil;
+            this.shiny = shiny;
             this.type = type;
             this.level = level;
             this.xp = xp;
@@ -67,11 +87,27 @@ class Gacha {
         }
 
         private String getDisplayName() {
-            return (foil == 1 ? "Shiny " : "") + name;
+            switch (shiny.getId()) {
+                case SHINY_TYPE_SHINY:
+                    return "Shiny " + name;
+                case SHINY_TYPE_PRISMATIC:
+                    return "Prismatic " + name;
+                case SHINY_TYPE_NORMAL:
+                default:
+                    return name;
+            }
         }
 
         private String getPictureLink() {
-            return (foil == 1 ? shinyUrl : pictureUrl);
+            switch (shiny.getId()) {
+                case SHINY_TYPE_SHINY:
+                    return shinyUrl;
+                case SHINY_TYPE_PRISMATIC:
+                    return prismaticUrl;
+                case SHINY_TYPE_NORMAL:
+                default:
+                    return pictureUrl;
+            }
         }
 
         private String toAbbreviatedString() {
@@ -91,7 +127,7 @@ class Gacha {
         }
 
         private String generateAwardText(boolean useBriefResponse, boolean alreadyMaxed) {
-            String star = (foil == 1 ? ":star2:" : ":star:");
+            String star = (shiny.getId() > 0 ? ":star2:" : ":star:");
             String stars = "";
             if (rarity > 0) {
                 stars = Casino.repeatString(star, rarity);
@@ -138,6 +174,18 @@ class Gacha {
             }
             return 100L;
         }
+
+        private long getUniqueId() {
+            return (id << 2) + shiny.getId();
+        }
+
+        private static SHINY_TYPE parseUniqueIdShiny(long uniqueId) {
+            return SHINY_TYPE.fromId((int)(uniqueId % 4));
+        }
+
+        private static long parseUniqueIdCid(long uniqueId) {
+            return uniqueId >> 2;
+        }
     }
 
     private static class GachaBanner {
@@ -160,6 +208,8 @@ class Gacha {
         int maxFourStarPity;
         int maxFiveStarPity;
         boolean enabled;
+        String name;
+        String description;
 
         private double getOneStarChance(int pity) {
             return getPullChance(oneStarChance, pity, maxOneStarPity, scalingOneStarBonus);
@@ -191,14 +241,6 @@ class Gacha {
             }
             double bonus = (currentPity - avg_pulls) / (maxPity - avg_pulls) * scalingBonus;
             return baseChance + bonus;
-        }
-
-        private double getShinyChance() {
-            return shinyChance;
-        }
-
-        private double getPrismaticChance() {
-            return prismaticChance;
         }
 
         private String getPityString(GachaUser user, long pullBalance) {
@@ -250,6 +292,71 @@ class Gacha {
                 return SHINY_TYPE.SHINY;
             }
             return SHINY_TYPE.NORMAL;
+        }
+
+        private String getInfoString() {
+            StringBuilder output = new StringBuilder();
+            output.append(name);
+            output.append(":\n");
+            if (!description.isEmpty()) {
+                output.append(description);
+                output.append('\n');
+            }
+
+            List<GachaBannerCharacter> characters = getBannerCharacters(bannerId);
+            int currentRarity = 6;
+            for (GachaBannerCharacter c: characters) {
+                if (currentRarity > c.getRarity()) {
+                    currentRarity = c.getRarity();
+                    output.append('\n');
+                    output.append(currentRarity);
+                    output.append(" Stars: ");
+                } else {
+                    output.append(", ");
+                }
+                output.append(c.getDisplayString());
+            }
+
+            return output.toString();
+        }
+    }
+
+    private static class GachaBannerCharacter {
+        private String name;
+        private int rarity;
+        private String type;
+
+        GachaBannerCharacter(String name, int rarity, String type) {
+            this.name = name;
+            this.rarity = rarity;
+            this.type = type;
+        }
+
+        int getRarity() {
+            return rarity;
+        }
+
+        String getDisplayString() {
+            return name + " (" + rarity + " Star " + type + ")";
+        }
+    }
+
+    static class GachaBannerStats {
+        String name;
+        int totalCharacters;
+        int ownedCharacters;
+        int maxedCharacters;
+
+        GachaBannerStats(String name, int totalCharacters, int ownedCharacters, int maxedCharacters) {
+            this.name = name;
+            this.totalCharacters = totalCharacters;
+            this.ownedCharacters = ownedCharacters;
+            this.maxedCharacters = maxedCharacters;
+        }
+
+        String getDisplayString() {
+            return name + " (" + ownedCharacters + "/" + totalCharacters + " owned)("
+                + maxedCharacters + "/" + totalCharacters + " maxed)";
         }
     }
 
@@ -308,7 +415,9 @@ class Gacha {
 
         GachaBanner banner = getGachaBanner(bannerId);
         if (banner == null) {
-            return new HBMain.MultistepResponse("Unable to pull: Banner not found.");
+            return new HBMain.MultistepResponse("Unable to pull: Banner " + bannerId + " not found.");
+        } else if (!banner.enabled) {
+            return new HBMain.MultistepResponse("Unbale to pull: Banner '" + banner.name + "' is not currently active.");
         }
 
         long availablePulls = getPullCount(uid);
@@ -499,17 +608,8 @@ class Gacha {
                 ":black_large_square::black_large_square::black_large_square::black_large_square::black_large_square:"));
     }
 
-    // TODO
-    static List<String> provideCharacterPreview(long uid) {
-        // Query characters
-
-        // Format text
-
-        return new ArrayList<>(Arrays.asList(""));
-    }
-
     static String handleCharacterList(long uid) {
-        List<GachaCharacter> characters = getCharacters(uid);
+        List<GachaCharacter> characters = queryCharacters(uid);
         if (characters.isEmpty()) {
             long pullBalance = getPullCount(uid);
             if (pullBalance < 0) {
@@ -526,7 +626,9 @@ class Gacha {
         return output.toString();
     }
 
-    static String handleCharacterDetails(long uid, long cid, SHINY_TYPE shiny) {
+    static String handleCharacterInfo(long uid, long uniqueId) {
+        long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
+        SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
             long pullBalance = getPullCount(uid);
@@ -536,8 +638,23 @@ class Gacha {
                 return "Unable to fetch details for provided character";
             }
         }
-
         return character.toFullString();
+    }
+
+    static String handleBannerList(long uid) {
+        List<GachaBannerStats> bannerStats = getBannerStats(uid);
+        StringBuilder output = new StringBuilder();
+        output.append("Available Banners:");
+        for (GachaBannerStats banner: bannerStats) {
+            output.append('\n');
+            output.append(banner.getDisplayString());
+        }
+        return output.toString();
+    }
+
+    static String handleBannerInfo(long bannerId) {
+        GachaBanner banner = getGachaBanner(bannerId);
+        return banner.getInfoString();
     }
 
     static String handlePity(long uid, long banner_id) {
@@ -575,6 +692,13 @@ class Gacha {
         return queryBanners();
     }
 
+    static List<HBMain.AutocompleteIdOption> getCharacters(long uid) {
+        List<GachaCharacter> characters = queryCharacters(uid);
+        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(characters.size());
+        characters.forEach(c -> output.add(new HBMain.AutocompleteIdOption(c.getUniqueId(), c.getDisplayName())));
+        return output;
+    }
+
     //////////////////////////////////////////////////////////
 
     // CREATE TABLE IF NOT EXISTS gacha_user (
@@ -586,6 +710,7 @@ class Gacha {
     // CREATE TABLE IF NOT EXISTS gacha_banner (
     //   banner_id SERIAL PRIMARY KEY,
     //   banner_name varchar(40) NOT NULL,
+    //   description varchar(100) NOT NULL DEFAULT '',
     //   one_star_chance float8 NOT NULL DEFAULT 0.125,
     //   two_star_chance float8 NOT NULL DEFAULT 0.03125,
     //   three_star_chance float8 NOT NULL DEFAULT 0.0078125,
@@ -730,8 +855,8 @@ class Gacha {
         String query = "SELECT banner_id, one_star_chance, two_star_chance, three_star_chance, four_star_chance, "
             + "five_star_chance, shiny_chance, prismatic_chance, scaling_one_star_bonus, scaling_two_star_bonus, "
             + "scaling_three_star_bonus, scaling_four_star_bonus, scaling_five_star_bonus, max_one_star_pity, "
-            + "max_two_star_pity, max_three_star_pity, max_four_star_pity, max_five_star_pity, enabled FROM gacha_banner "
-            + "WHERE banner_id = " + bannerId + ";";
+            + "max_two_star_pity, max_three_star_pity, max_four_star_pity, max_five_star_pity, enabled, banner_name, description "
+            + "FROM gacha_banner WHERE banner_id = " + bannerId + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 GachaBanner banner = new GachaBanner();
@@ -754,6 +879,8 @@ class Gacha {
                 banner.maxFourStarPity = results.getInt(17);
                 banner.maxFiveStarPity = results.getInt(18);
                 banner.enabled = results.getBoolean(19);
+                banner.name = results.getString(20);
+                banner.description = results.getString(21);
                 return banner;
             }
             return null;
@@ -761,28 +888,28 @@ class Gacha {
     }
 
     private static GachaCharacter getCharacter(long uid, long cid, SHINY_TYPE shiny) {
-        String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM "
+        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
                 + " AND foil = " + shiny.getId() + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                return new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
-                        results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
-                        results.getString(8), results.getString(9), results.getString(10));
+                return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
+                        results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
+                        results.getString(9), results.getString(10), results.getString(11), results.getString(12));
             }
             return null;
         }, null);
     }
 
-    private static List<GachaCharacter> getCharacters(long uid) {
-        String query = "SELECT name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url FROM " +
+    private static List<GachaCharacter> queryCharacters(long uid) {
+        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM " +
                 "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, name ASC;";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
-                output.add(new GachaCharacter(results.getString(1), results.getInt(2), results.getInt(3),
-                        results.getString(4), results.getInt(5), results.getInt(6), results.getInt(7),
-                        results.getString(8), results.getString(9), results.getString(10)));
+                output.add(new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
+                        results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
+                        results.getString(9), results.getString(10), results.getString(11), results.getString(12)));
             }
             return output;
         }, new ArrayList<>());
@@ -869,6 +996,33 @@ class Gacha {
     }
 
     private static List<HBMain.AutocompleteIdOption> queryBanners() {
-        return CasinoDB.executeAutocompleteIdQuery("SELECT banner_id, banner_name FROM gacha_banner;");
+        return CasinoDB.executeAutocompleteIdQuery("SELECT banner_id, banner_name FROM gacha_banner WHERE enabled = true;");
+    }
+
+    private static List<GachaBannerCharacter> getBannerCharacters(long bannerId) {
+        return CasinoDB.executeQueryWithReturn("SELECT name, rarity, type FROM gacha_character NATURAL JOIN gacha_character_banner WHERE banner_id = "
+            + bannerId + " ORDER BY rarity DESC, name ASC;", results -> {
+                List<GachaBannerCharacter> output = new ArrayList<>();
+                while (results.next()) {
+                    output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2), results.getString(3)));
+                }
+                return output;
+            }, new ArrayList<>());
+    }
+
+    private static List<GachaBannerStats> getBannerStats(long uid) {
+        return CasinoDB.executeQueryWithReturn("SELECT banner_name, "
+            + "(SELECT COUNT(*) FROM gacha_character_banner WHERE gacha_character_banner.banner_id = gacha_banner.banner_id) AS banner_characters, "
+            + "(SELECT COUNT(DISTINCT cid) FROM gacha_user_character NATURAL JOIN gacha_character_banner WHERE banner_id = gacha_banner.banner_id AND uid = "
+                + uid + ") AS owned, "
+            + "(SELECT COUNT(DISTINCT cid) FROM gacha_user_character NATURAL JOIN gacha_character_banner WHERE banner_id = gacha_banner.banner_id AND uid = "
+                + uid + " AND duplicates = " + MAX_CHARACTER_DUPLICATES + ") AS maxed "
+            + "FROM gacha_banner WHERE enabled = true;", results -> {
+                List<GachaBannerStats> output = new ArrayList<>();
+                while (results.next()) {
+                    output.add(new GachaBannerStats(results.getString(1), results.getInt(2), results.getInt(3), results.getInt(4)));
+                }
+                return output;
+            }, new ArrayList<>());
     }
 }
