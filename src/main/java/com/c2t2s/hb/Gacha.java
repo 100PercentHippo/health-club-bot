@@ -160,7 +160,9 @@ class Gacha {
         }
 
         private double getBuffPercent() {
-            return 2.5 + (rarity * 2.5) + (duplicates * 1.0) + (level * 1.0);
+            return 2.5 + (rarity * 2.5)
+                + ((duplicates > MAX_CHARACTER_DUPLICATES ? MAX_CHARACTER_DUPLICATES : duplicates) /* * 1.0 */)
+                + (level /* * 1.0 */);
         }
 
         private double getBuffDecimal() {
@@ -1026,7 +1028,7 @@ class Gacha {
             + "(SELECT COUNT(DISTINCT cid) FROM gacha_user_character NATURAL JOIN gacha_character_banner WHERE banner_id = gacha_banner.banner_id AND uid = "
                 + uid + ") AS owned, "
             + "(SELECT COUNT(DISTINCT cid) FROM gacha_user_character NATURAL JOIN gacha_character_banner WHERE banner_id = gacha_banner.banner_id AND uid = "
-                + uid + " AND duplicates = " + MAX_CHARACTER_DUPLICATES + ") AS maxed "
+                + uid + " AND duplicates >= " + MAX_CHARACTER_DUPLICATES + ") AS maxed "
             + "FROM gacha_banner WHERE enabled = true;", results -> {
                 List<GachaBannerStats> output = new ArrayList<>();
                 while (results.next()) {
