@@ -702,8 +702,9 @@ class Casino {
                 || (prediction == PREDICTION_UNDER && target < game.getTarget())
                 || (prediction == PREDICTION_SAME && target == game.getTarget())) { // Correct
             if (game.getRound() == 3) {
-                return new HBMain.SingleResponse("Correct! The value was " + target + ". You win " + (3 * game.getWager())
-                    + "!\nYour new balance is " + logOverUnderWin(uid, 3 * game.getWager(), true, game.getWager()));
+                long payout = (long)(2.5 * game.getWager());
+                return new HBMain.SingleResponse("Correct! The value was " + target + ". You win " + payout
+                    + "!\nYour new balance is " + logOverUnderWin(uid, payout, true, game.getWager()));
             } else {
                 logOverUnderProgress(uid, game.getRound() + 1, target);
                 return new HBMain.SingleResponse("Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
