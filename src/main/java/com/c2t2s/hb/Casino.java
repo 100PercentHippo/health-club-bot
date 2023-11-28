@@ -637,12 +637,15 @@ class Casino {
                 + PLACEHOLDER_NEWLINE_STRING);
         }
         output.append("\n");
+        int winCondition = 0;
         if (cherries == 3 || oranges == 3 || lemons == 3 || blueberries == 3 || grapes == 3) {
             output.append(":moneybag: 3 of a kind! :moneybag: ");
             winnings += 5 * amount;
+            winCondition = 3;
         } else if (cherries == 2 || oranges == 2 || lemons == 2 || blueberries == 2 || grapes == 2) {
             output.append("2 of a kind. ");
             winnings += (int)(1.6 * amount);
+            winCondition = 2;
         }
         if (diamonds == 1) {
             output.append("1 bonus diamond :gem:");
@@ -660,7 +663,7 @@ class Casino {
             output.append("Winnings: " + (winnings) + " ");
         }
         output.append("New balance: " + balance);
-        logMinislots(uid, amount, winnings, diamonds);
+        logMinislots(uid, amount, winnings, diamonds, winCondition);
         responseSteps.add(output.toString());
         return new HBMain.MultistepResponse(responseSteps);
     }
@@ -938,9 +941,10 @@ class Casino {
             + (winCondition == 5 ? 1 : 0) + ", fruitsalads + " + (winCondition == 1 ? 1 : 0) + ") WHERE uid = " + uid + ";");
     }
 
-    private static void logMinislots(long uid, long spent, long winnings, int diamonds) {
-        CasinoDB.executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings) = (pulls + 1, diamonds + "
-            + diamonds + ", spent + " + spent + ", winnings + " + winnings + ") WHERE uid = " + uid + ";");
+    private static void logMinislots(long uid, long spent, long winnings, int diamonds, int winCondition) {
+        CasinoDB.executeUpdate("UPDATE minislots_user SET (pulls, diamonds, spent, winnings, twos, threes) = (pulls + 1, diamonds + "
+            + diamonds + ", spent + " + spent + ", winnings + " + winnings + ", twos + " + (winCondition == 2 ? 1 :0) + ", threes + "
+            + (winCondition == 3 ? 1 : 0) + ") WHERE uid = " + uid + ";");
     }
 
     private static User getUser(long uid) {
