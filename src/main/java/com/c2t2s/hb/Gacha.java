@@ -713,6 +713,7 @@ class Gacha {
     // CREATE TABLE IF NOT EXISTS gacha_user (
     //   uid bigint PRIMARY KEY,
     //   pulls integer NOT NULL DEFAULT 10,
+    //   coins_pulled bigint NOT NULL DEFAULT 0,
     //   CONSTRAINT gacha_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 

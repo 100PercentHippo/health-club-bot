@@ -176,18 +176,18 @@ class Blackjack {
 
     // CREATE TABLE IF NOT EXISTS blackjack_user (
     //  uid bigint PRIMARY KEY,
-    //  hands integer DEFAULT 0,
-    //  busts integer DEFAULT 0,
-    //  dealer_busts integer DEFAULT 0,
-    //  ties integer DEFAULT 0,
-    //  wins integer DEFAULT 0,
-    //  spent bigint DEFAULT 0,
-    //  winnings bigint DEFAULT 0,
-    //  hand varchar(63) DEFAULT '',
-    //  sum integer DEFAULT -1,
-    //  ace boolean DEFAULT false,
-    //  dealer_hand integer DEFAULT -1,
-    //  wager bigint DEFAULT -1,
+    //  hands integer NOT NULL DEFAULT 0,
+    //  busts integer NOT NULL DEFAULT 0,
+    //  dealer_busts NOT NULL integer DEFAULT 0,
+    //  ties integer NOT NULL DEFAULT 0,
+    //  wins integer NOT NULL DEFAULT 0,
+    //  spent bigint NOT NULL DEFAULT 0,
+    //  winnings bigint NOT NULL DEFAULT 0,
+    //  hand varchar(63) NOT NULL DEFAULT '',
+    //  sum integer NOT NULL DEFAULT -1,
+    //  ace boolean NOT NULL DEFAULT false,
+    //  dealer_hand integer NOT NULL DEFAULT -1,
+    //  wager bigint NOT NULL DEFAULT -1,
     //  CONSTRAINT blackjack_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
