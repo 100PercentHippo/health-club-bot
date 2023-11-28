@@ -241,7 +241,7 @@ class Stats {
             + "\n\t2 of a kinds: " + twos
             + "\n\tTotal diamonds: " + diamonds
             + "\n\tTotal wagered: " + spent
-            + "\n\tTotal wong: " + winnings
+            + "\n\tTotal won: " + winnings
             + (pulls > 0 ? "\n\tAverage payout amount: "  + twoDecimals.format((5 * threes + 1.6 * twos + 0.4 * diamonds) / pulls) + "x" : "");
     }
 
