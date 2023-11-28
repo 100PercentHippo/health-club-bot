@@ -112,13 +112,13 @@ class Stats {
         return "`/work` odds:"
             + "\n\tPayout chance: 100%"
             + "\n\tAverage Payout: 200 coins (225 if high morality)"
-            + "\n" + getWorkStats(uid);
+            + "\n\n" + getWorkStats(uid);
     }
 
     static String formatWorkStats(int workCount, long workProfit, int morality) {
-        return "`work` stats:"
+        return "`/work` stats:"
             + "\n\tTimes worked: " + workCount
-            + "\n\tAverage payout: " + oneDecimal.format((double)workProfit / workCount)
+            + (workCount > 0 ? "\n\tAverage payout: " + oneDecimal.format((double)workProfit / workCount) : "")
             + "\n\tTotal work profit: " + workProfit
             + "\n\tMorality: " + morality;
     }
@@ -127,14 +127,14 @@ class Stats {
         return "`/fish` odds:"
             + "\n\tPayout chance: 100%"
             + "\n\tAverage Payout: 65 coins (72.5 if high morality)"
-            + "\n" + getFishStats(uid);
+            + "\n\n" + getFishStats(uid);
     }
 
     static String formatFishStats(int fishCount, long fishProfit, int fishJackpots, int morality) {
         return "`/fish` stats:"
             + "\n\tTimes fished: " + fishCount
             + "\n\tFish jackpots: " + fishJackpots
-            + "\n\tAverage payout: " + oneDecimal.format((double)fishProfit / fishCount)
+            + (fishCount > 0 ? "\n\tAverage payout: " + oneDecimal.format((double)fishProfit / fishCount) : "")
             + "\n\tTotal fish profit: " + fishProfit
             + "\n\tMorality: " + morality;
     }
@@ -143,15 +143,15 @@ class Stats {
         return "`/rob` odds:"
             + "\n\tPayout chance: 50%"
             + "\n\tAverage Payout: 200 coins (225 if low morality)"
-            + "\n" + getRobStats(uid);
+            + "\n\n" + getRobStats(uid);
     }
 
     static String formatRobStats(int robCount, int robFails, int robJackpots, long robProfit, long jailTime, int morality) {
         return "`/rob` stats:"
             + "\n\tTimes robbed: " + robCount
-            + "\n\tSuccess rate: " + twoDecimalPercent.format((double)(robCount - robFails) / robCount)
+            + (robCount > 0 ? "\n\tSuccess rate: " + twoDecimalPercent.format((double)(robCount - robFails) / robCount) : "")
             + "\n\tRob jackpots: " + robJackpots
-            + "\n\tAverage payout: " + oneDecimal.format((double)robProfit / (robCount - robFails))
+            + (robCount - robFails > 0 ? "\n\tAverage payout: " + oneDecimal.format((double)robProfit / (robCount - robFails)): "")
             + "\n\tTotal jail time: " + jailTime + " minutes"
             + "\n\tMorality: " + morality;
     }
@@ -160,16 +160,15 @@ class Stats {
         return "`/pickpocket` odds:"
             + "\n\tPayout chance: 50%"
             + "\n\tAverage Payout: 65 coins (72.5 if high morality)"
-            + "\n\n`/pickpocket` stats for "
-            + "\n" + getPickStats(uid);
+            + "\n\n" + getPickStats(uid);
     }
 
     static String formatPickpocketStats(int pickCount, int pickFails, int pickJackpots, long pickProfit, long jailTime, int morality) {
         return "`/pickpocket` stats:"
             + "\n\tTimes pickpocketed: " + pickCount
-            + "\n\tSuccess rate: " + twoDecimalPercent.format((double)(pickCount - pickFails) / pickCount)
+            + (pickCount > 0 ? "\n\tSuccess rate: " + twoDecimalPercent.format((double)(pickCount - pickFails) / pickCount) : "")
             + "\n\tPickpocket jackpots: " + pickJackpots
-            + "\n\tAverage payout: " + oneDecimal.format((double)pickProfit / (pickCount - pickFails))
+            + (pickCount - pickFails > 0 ? "\n\tAverage payout: " + oneDecimal.format((double)pickProfit / (pickCount - pickFails)) : "")
             + "\n\tTotal jail time: " + jailTime + " minutes"
             + "\n\tMorality: " + morality;
     }
@@ -177,19 +176,19 @@ class Stats {
     static String handleGuessStats(long uid) {
         return "`/guess` odds:"
             + "\n\tCorrect guess: 10:1 (10%)"
-            + "\n" + getGuessStats(uid);
+            + "\n\n" + getGuessStats(uid);
     }
 
     static String handleHugeguessStats(long uid) {
         return "`/hugeguess` odds:"
             + "\n\tCorrect guess: 100:1 (1%)"
-            + "\n" + getHugeguessStats(uid);
+            + "\n\n" + getHugeguessStats(uid);
     }
 
     static String formatGuessStats(String gameName, int guesses, int correct, long spent, long winnings) {
         return "`/" + gameName + "` stats:"
             + "\n\tGames played: " + guesses
-            + "\n\tSuccess rate: " + twoDecimalPercent.format((double)correct / guesses)
+            + (guesses > 0 ? "\n\tSuccess rate: " + twoDecimalPercent.format((double)correct / guesses) : "")
             + "\n\tTotal wagered: " + spent
             + "\n\tTotal won: " + winnings;
     }
@@ -207,7 +206,7 @@ class Stats {
             + "\n\t4 diamonds:  1000:1 (1/20 000 000)"
             + "\n\t5 diamonds: 10000:1 (1/10 000 000 000)"
             + "\n```"
-            + "\n" + getSlotstStats(uid);
+            + "\n\n" + getSlotstStats(uid);
     }
 
     static String formatSlotsStats(int pulls, int diamonds, long spent, long winnings, int threes, int fours, int fives, int fruitSalads) {
@@ -220,7 +219,7 @@ class Stats {
             + "\n\tTotal diamonds: " + diamonds
             + "\n\tTotal wagered: " + spent
             + "\n\tTotal won: " + winnings
-            + "\n\tAverage payout amount: " + twoDecimals.format((30 * fives + 10 * fours + 1.5 * threes + 2 * fruitSalads + diamonds) / pulls) + "x";
+            + (pulls > 0 ? "\n\tAverage payout amount: " + twoDecimals.format((30 * fives + 10 * fours + 1.5 * threes + 2 * fruitSalads + diamonds) / pulls) + "x" : "");
     }
 
     static String handleMinislotsStats(long uid) {
@@ -232,7 +231,7 @@ class Stats {
             + "\n\t2 diamonds:   10:1 (3/10 000)"
             + "\n\t3 diamonds:  100:1 (1/1 000 0000)"
             + "\n```"
-            + "\n" + getMinislotsStats(uid);
+            + "\n\n" + getMinislotsStats(uid);
     }
 
     static String formatMinislotsStats(int pulls, int diamonds, long spent, long winnings, int threes, int twos) {
@@ -243,7 +242,7 @@ class Stats {
             + "\n\tTotal diamonds: " + diamonds
             + "\n\tTotal wagered: " + spent
             + "\n\tTotal wong: " + winnings
-            + "\n\tAverage payout amount: "  + twoDecimals.format((5 * threes + 1.6 * twos + 0.4 * diamonds) / pulls) + "x";
+            + (pulls > 0 ? "\n\tAverage payout amount: "  + twoDecimals.format((5 * threes + 1.6 * twos + 0.4 * diamonds) / pulls) + "x" : "");
     }
 
     static String handleFeedStats(long uid) {
@@ -251,7 +250,7 @@ class Stats {
             + "\n\tBase payout chance 5%"
             + "\n\tIncreases up to 25% based on current pot size"
             + "\n\tReduced for overly small feed amounts"
-            + "\n" + getFeedStats(uid);
+            + "\n\n" + getFeedStats(uid);
     }
 
     static String formatFeedStats(int feeds, int wins, long spent, long winnings) {
@@ -266,24 +265,26 @@ class Stats {
         return "`/overunder` odds:"
             + "\n\t2 correct answers: 1:1 (~2/11)"
             + "\n\t3 correct answers: 3:1 (~3/11)"
-            + "\n" + getOverunderStats(uid);
+            + "\n\n" + getOverunderStats(uid);
     }
 
     static String formatOverunderStats(int played, int consolations, int wins, long spent, long winnings) {
         return "`/overunder` stats:"
             + "\n\tGames played: " + played
-            + "\n\t2 correct: " + consolations + " (" + twoDecimalPercent.format((double)consolations / played) + ")"
-            + "\n\t3 correct: " + wins + " (" + twoDecimalPercent.format((double)wins / played) + ")"
+            + (played > 0 ?
+                "\n\t2 correct: " + consolations + " (" + twoDecimalPercent.format((double)consolations / played) + ")"
+                + "\n\t3 correct: " + wins + " (" + twoDecimalPercent.format((double)wins / played) + ")"
+                : "")
             + "\n\tTotal wagered: " + spent
             + "\n\tTotal won: " + winnings
-            + "\n\tAverage payout amount: " + twoDecimals.format((consolations + 3 * (double)wins) / played) + "x";
+            + (played > 0 ? "\n\tAverage payout amount: " + twoDecimals.format((consolations + 3 * (double)wins) / played) + "x" : "");
     }
 
     static String handleBlackjackStats(long uid) {
         return "`/blackjack` odds:"
             + "\n\tCorrect: 2:1 (Bit under 1/2 probably)"
-            + "\n\tTie:     1:1 (Rare)"
-            + "\n" + getBlackjackStats(uid);
+            + "\n\tTie:           1:1 (Rare)"
+            + "\n\n" + getBlackjackStats(uid);
     }
 
     static String formatBlackjackStats(int hands, int busts, int ties, int wins, long spent, long winnings) {
@@ -294,7 +295,7 @@ class Stats {
             + "\n\tGames won: " + wins
             + "\n\tTotal wagered: " + wins
             + "\n\tTotal won: " + winnings
-            + "\n\tAverage payout amount: " + twoDecimals.format((ties + 2 * (double)wins) / hands) + "x";
+            + (hands > 0 ? "\n\tAverage payout amount: " + twoDecimals.format((ties + 2 * (double)wins) / hands) + "x" : "");
     }
 
     static String handleGachaStats(long uid) {
