@@ -514,7 +514,7 @@ public class HBMain {
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single character",
                         Arrays.asList(SlashCommandOption.createLongOption("character", "Which character to view", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "banner", "View the available banners",
-                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your characters"),
+                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List available banners"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single banner",
                         Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))))))
             .setEnabledInDms(false));
