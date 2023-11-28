@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.1.10"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.1.11"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
@@ -578,15 +578,20 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Migrated gacha pulling to be banner-based"
-            + "\n- Added `/gacha banner list` and `/gacha banner info` to view banner information"
-            + "\n- Added `/gacha character info` to view information about an owned character"
-            + "\n- Reduced coins awarded for characters already maxed, as they are easier to target via banners";
+        return "\n- Added personalized stats to `/stats`. See how much you've ~~wasted~~ won in each game!"
+            + "\n- Improved the stat tracking for minislots. Minislot stats have been wiped as a result (there wasn't a ton there though)"
+            + "\n- Added new holiday characters to the gacha pool"
+            + "\n- Added a new Holiday banner containing the new characters as well as the existing Spooky ones";
     }
 
     private static String getChangelog() {
         return "Changelog:\n" + VERSION_STRING
             + getLatestReleaseString()
+            + "\n3.1.10"
+            + "\n- Migrated gacha pulling to be banner-based"
+            + "\n- Added `/gacha banner list` and `/gacha banner info` to view banner information"
+            + "\n- Added `/gacha character info` to view information about an owned character"
+            + "\n- Reduced coins awarded for characters already maxed, as they are easier to target via banners"
             + "\n3.1.9"
             + "\n- Fixed bug where it was sometime possible to get more gacha duplicates than intended"
             + "\n- Gacha characters are now sorted by rarity, then alphabetically by name when listed"
