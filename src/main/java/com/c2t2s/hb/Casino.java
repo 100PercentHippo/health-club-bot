@@ -772,94 +772,96 @@ class Casino {
 
     //CREATE TABLE IF NOT EXISTS money_user (
     //  uid bigint PRIMARY KEY,
-    //  name varchar(40) DEFAULT '',
-    //  balance bigint DEFAULT 0,
-    //  in_jail boolean DEFAULT false,
-    //  last_claim timestamp DEFAULT '2021-01-01 00:00:00',
-    //  timestamp2 timestamp DEFAULT '2021-01-01 00:00:00'
+    //  name varchar(40) NOT NULL DEFAULT '',
+    //  nickname varchar(40) NOT NULL DEFAULT '',
+    //  balance bigint NOT NULL DEFAULT 0,
+    //  in_jail boolean NOT NULL DEFAULT false,
+    //  last_claim timestamp NOT NULL DEFAULT '2021-01-01 00:00:00',
+    //  timestamp2 timestamp NOT NULL DEFAULT '2021-01-01 00:00:00'
     //);
 
     // CREATE TABLE IF NOT EXISTS job_user (
     //  uid bigint PRIMARY KEY,
-    //  work_count integer DEFAULT 0,
-    //  work_profit bigint DEFAULT 0,
-    //  fish_count integer DEFAULT 0,
-    //  fish_jackpots integer DEFAULT 0,
-    //  fish_profit bigint DEFAULT 0,
-    //  pick_count integer DEFAULT 0,
-    //  pick_fails integer DEFAULT 0,
-    //  pick_jackpots integer DEFAULT 0,
-    //  pick_profit bigint DEFAULT 0,
-    //  rob_count integer DEFAULT 0,
-    //  rob_fails integer DEFAULT 0,
-    //  rob_jackpots integer DEFAULT 0,
-    //  rob_profit bigint DEFAULT 0,
-    //  jail_time bigint DEFAULT 0,
+    //  work_count integer NOT NULL DEFAULT 0,
+    //  work_profit bigint NOT NULL DEFAULT 0,
+    //  fish_count integer NOT NULL DEFAULT 0,
+    //  fish_jackpots integer NOT NULL DEFAULT 0,
+    //  fish_profit bigint NOT NULL DEFAULT 0,
+    //  pick_count integer NOT NULL DEFAULT 0,
+    //  pick_fails integer NOT NULL DEFAULT 0,
+    //  pick_jackpots integer NOT NULL DEFAULT 0,
+    //  pick_profit bigint NOT NULL DEFAULT 0,
+    //  rob_count integer NOT NULL DEFAULT 0,
+    //  rob_fails integer NOT NULL DEFAULT 0,
+    //  rob_jackpots integer NOT NULL DEFAULT 0,
+    //  rob_profit bigint NOT NULL DEFAULT 0,
+    //  jail_time bigint NOT NULL DEFAULT 0,
     //  CONSTRAINT jobs_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS slots_user (
     //  uid bigint PRIMARY KEY,
-    //  pulls integer DEFAULT 0,
-    //  diamonds integer DEFAULT 0,
-    //  spent bigint DEFAULT 0,
-    //  winnings bigint DEFAULT 0,
-    //  threes integer DEFAULT 0,
-    //  fours integer DEFAULT 0,
-    //  fives integer DEFAULT 0,
-    //  fruitsalads integer DEFAULT 0,
+    //  pulls integer NOT NULL DEFAULT 0,
+    //  diamonds integer NOT NULL DEFAULT 0,
+    //  spent bigint NOT NULL DEFAULT 0,
+    //  winnings bigint NOT NULL DEFAULT 0,
+    //  threes integer NOT NULL DEFAULT 0,
+    //  fours integer NOT NULL DEFAULT 0,
+    //  fives integer NOT NULL DEFAULT 0,
+    //  fruitsalads integer NOT NULL DEFAULT 0,
     //  CONSTRAINT slots_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS guess_user (
     //  uid bigint PRIMARY KEY,
-    //  guesses integer DEFAULT 0,
-    //  correct integer DEFAULT 0,
-    //  close integer DEFAULT 0,
-    //  mistake integer DEFAULT 0,
-    //  spent bigint DEFAULT 0,
-    //  winnings bigint DEFAULT 0,
+    //  guesses integer NOT NULL DEFAULT 0,
+    //  correct integer NOT NULL DEFAULT 0,
+    //  spent bigint NOT NULL DEFAULT 0,
+    //  winnings bigint NOT NULL DEFAULT 0,
     //  CONSTRAINT guess_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS hugeguess_user (
     //  uid bigint PRIMARY KEY,
-    //  guesses integer DEFAULT 0,
-    //  correct integer DEFAULT 0,
-    //  spent bigint DEFAULT 0,
-    //  winnings bigint DEFAULT 0,
+    //  guesses integer NOT NULL DEFAULT 0,
+    //  correct integer NOT NULL DEFAULT 0,
+    //  spent bigint NOT NULL DEFAULT 0,
+    //  winnings bigint NOT NULL DEFAULT 0,
     //  CONSTRAINT hugeguess_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS minislots_user (
     //  uid bigint PRIMARY KEY,
-    //  pulls integer DEFAULT 0,
-    //  diamonds integer DEFAULT 0,
-    //  spent integer DEFAULT 0,
-    //  winnings integer DEFAULT 0,
+    //  pulls integer NOT NULL DEFAULT 0,
+    //  diamonds integer NOT NULL DEFAULT 0,
+    //  spent integer NOT NULL DEFAULT 0,
+    //  winnings integer NOT NULL DEFAULT 0,
+    //  twos integer NOT NULL DEFAULT 0,
+    //  threes integer NOT NULL DEFAULT 0,
     //  CONSTRAINT minislots_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS moneymachine_user (
     //  uid bigint PRIMARY KEY,
-    //  chocolate_coins bigint DEFAULT 0,
-    //  feeds integer DEFAULT 0,
-    //  wins integer DEFAULT 0,
-    //  spent integer DEFAULT 0,
-    //  winnings integer DEFAULT 0,
+    //  chocolate_coins bigint NOT NULL DEFAULT 0,
+    //  chocolate_spent bigint NOT NULL DEFAULT 0,
+    //  feeds integer NOT NULL DEFAULT 0,
+    //  wins integer NOT NULL DEFAULT 0,
+    //  spent integer NOT NULL DEFAULT 0,
+    //  winnings integer NOT NULL DEFAULT 0,
     //  CONSTRAINT moneymachine_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS overunder_user (
     //  uid bigint PRIMARY KEY,
-    //  played integer DEFAULT 0,
-    //  consolations integer DEFAULT 0,
-    //  wins integer DEFAULT 0,
-    //  spent bigint DEFAULT 0,
-    //  winnings bigint DEFAULT 0,
-    //  bet integer DEFAULT -1,
-    //  round integer DEFAULT -1,
-    //  target integer DEFAULT -1,
+    //  played integer NOT NULL DEFAULT 0,
+    //  consolations integer NOT NULL DEFAULT 0,
+    //  wins integer NOT NULL DEFAULT 0,
+    //  spent bigint NOT NULL DEFAULT 0,
+    //  winnings bigint NOT NULL DEFAULT 0,
+    //  bet integer NOT NULL DEFAULT -1,
+    //  round integer NOT NULL DEFAULT -1,
+    //  target integer NOT NULL DEFAULT -1,
     //  CONSTRAINT overunder_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
