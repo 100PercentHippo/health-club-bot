@@ -263,8 +263,8 @@ class Stats {
 
     static String handleOverunderStats(long uid) {
         return "`/overunder` odds:"
-            + "\n\t2 correct answers: 1:1 (~2/11)"
-            + "\n\t3 correct answers: 3:1 (~3/11)"
+            + "\n\t2 correct answers: 1:1 (~15%)"
+            + "\n\t3 correct answers: 2.5:1 (~33%)"
             + "\n\n" + getOverunderStats(uid);
     }
 
@@ -277,7 +277,7 @@ class Stats {
                 : "")
             + "\n\tTotal wagered: " + spent
             + "\n\tTotal won: " + winnings
-            + (played > 0 ? "\n\tAverage payout amount: " + twoDecimals.format((consolations + 3 * (double)wins) / played) + "x" : "");
+            + (played > 0 ? "\n\tAverage payout amount: " + twoDecimals.format((consolations + 2.5 * wins) / played) + "x" : "");
     }
 
     static String handleBlackjackStats(long uid) {

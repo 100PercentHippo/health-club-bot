@@ -581,7 +581,8 @@ public class HBMain {
         return "\n- Added personalized stats to `/stats`. See how much you've ~~wasted~~ won in each game!"
             + "\n- Improved the stat tracking for minislots. Minislot stats have been wiped as a result (there wasn't a ton there though)"
             + "\n- Added new holiday characters to the gacha pool"
-            + "\n- Added a new Holiday banner containing the new characters as well as the existing Spooky ones";
+            + "\n- Added a new Holiday banner containing the new characters as well as the existing Spooky ones"
+            + "\n- Reduced 3 win `/overunder` payout to 2.5x wager based on experimental payout rates (was overperforming by 13%)";
     }
 
     private static String getChangelog() {
