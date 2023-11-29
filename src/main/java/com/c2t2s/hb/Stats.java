@@ -7,9 +7,9 @@ import java.util.List;
 
 class Stats {
 
-    static final NumberFormat oneDecimal = new DecimalFormat("#.#");
-    static final NumberFormat twoDecimals = new DecimalFormat("#.##");
-    static final NumberFormat twoDecimalPercent = new DecimalFormat("#.##%");
+    static final NumberFormat oneDecimal = new DecimalFormat("0.0");
+    static final NumberFormat twoDecimals = new DecimalFormat("0.00");
+    static final NumberFormat twoDecimalPercent = new DecimalFormat("0.00%");
 
     static final String WORK_STRING = "work";
     static final String FISH_STRING = "fish";
@@ -206,7 +206,7 @@ class Stats {
             + "\n\t4 diamonds:  1000:1 (1/20 000 000)"
             + "\n\t5 diamonds: 10000:1 (1/10 000 000 000)"
             + "\n```"
-            + "\n\n" + getSlotstStats(uid);
+            + "\n" + getSlotstStats(uid);
     }
 
     static String formatSlotsStats(int pulls, int diamonds, long spent, long winnings, int threes, int fours, int fives, int fruitSalads) {
@@ -231,7 +231,7 @@ class Stats {
             + "\n\t2 diamonds:   10:1 (3/10 000)"
             + "\n\t3 diamonds:  100:1 (1/1 000 0000)"
             + "\n```"
-            + "\n\n" + getMinislotsStats(uid);
+            + "\n" + getMinislotsStats(uid);
     }
 
     static String formatMinislotsStats(int pulls, int diamonds, long spent, long winnings, int threes, int twos) {
