@@ -246,6 +246,9 @@ class Gacha {
 
         private String getPityString(GachaUser user, long pullBalance) {
             StringBuilder output = new StringBuilder();
+            output.append("Pity for ");
+            output.append(name);
+            output.append('\n');
             if (fiveStarChance > 0) {
                 output.append("5 Star Pity: ");
                 output.append(user.fiveStarPity);

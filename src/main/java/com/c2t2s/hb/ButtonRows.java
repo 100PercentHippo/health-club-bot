@@ -14,6 +14,11 @@ class ButtonRows {
 
     static ActionRow BLACKJACK_BUTTONS = ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
         Button.secondary("blackjack.stand", "Stand"));
+    static ActionRow makeBlackJackSplit(long wager) {
+        return ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
+            Button.secondary("blackjack.stand", "Stand"),
+            Button.secondary("blackjack.split", "Split (Costs " + wager + " coin" + Casino.getPluralSuffix(wager) + ")"));
+    }
 
     static ActionRow makeAllOrNothingUnclaimable(AllOrNothing.ActiveGame activeGame) {
         return ActionRow.of(Button.secondary("allornothing.claim|" + activeGame.difficulty.rollsToDouble, "Claim " + activeGame.getPotentialPayout()),
@@ -30,5 +35,10 @@ class ButtonRows {
     static ActionRow makeAllOrNothing(AllOrNothing.ActiveGame activeGame) {
         return activeGame.isClaimable() ? makeAllOrNothingClaimable(activeGame) : makeAllOrNothingUnclaimable(activeGame);
     }
+
+    static ActionRow WORKOUT_OFFER_VOLUNTARY_BREAK = ActionRow.of(Button.secondary("workout.break", "Report Streak Broken"));
+    static ActionRow WORKOUT_OFFER_VOLUNTARY_RESTORE = ActionRow.of(Button.secondary("workout.restore", "Preserve Streak"));
+    static ActionRow WORKOUT_UNDO_BREAK = ActionRow.of(Button.secondary("workout.restore", "Undo"));
+    static ActionRow WORKOUT_UNDO_RESTORE = ActionRow.of(Button.secondary("workout.break", "Undo"));
 
 }
