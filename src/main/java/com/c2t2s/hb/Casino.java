@@ -452,7 +452,7 @@ class Casino {
         if (pot < 20000) {
             winChance = 0.05 + (0.2 * ((double)pot / 20000));
         }
-        StringBuilder output = new StringBuilder("Fed " + amount + " coins to the Money Machine\n");
+        StringBuilder output = new StringBuilder("Fed " + amount + " coin" + getPluralSuffix(amount) + " to the Money Machine\n");
         if (HBMain.RNG_SOURCE.nextDouble() < winChance && (amount >= 100 || HBMain.RNG_SOURCE.nextInt(100) < amount)) { // Win
             long winnings = (long)(pot * 0.75);
             long newPot = pot - winnings;
@@ -722,7 +722,7 @@ class Casino {
             String response = "The answer was " + correct + ": " + target + ".";
             if (game.getRound() == 3) {
                 return new HBMain.SingleResponse(response + " With 2 correct your " + game.getWager()
-                    + " coins are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager()));
+                    + " coin" + getPluralSuffix(game.getWager()) + " are returned. Your new balance is " + logOverUnderWin(uid, game.getWager(), false, game.getWager()));
             } else {
                 logOverUnderLoss(uid);
                 return new HBMain.SingleResponse(response + " Your current balance is " + checkBalance(uid));
@@ -760,7 +760,7 @@ class Casino {
         if (donorBalance < 0) {
             return "Unable to process transaction";
         } else {
-            return "Gave " + amount + " coins to <@" + recipientUid + ">\nYour new balance is " + donorBalance
+            return "Gave " + amount + " coin" + getPluralSuffix(amount) + " to <@" + recipientUid + ">\nYour new balance is " + donorBalance
                 + "\nTheir new balance is " + recipientBalance;
         }
     }

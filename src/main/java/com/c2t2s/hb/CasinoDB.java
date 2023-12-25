@@ -40,6 +40,7 @@ class CasinoDB {
         String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         String event = "INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
+        String workout = "INSERT INTO workout_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
         List<String> allornothing = new ArrayList<>();
         for (AllOrNothing.Difficulty difficulty: AllOrNothing.Difficulty.values()) {
             allornothing.add("INSERT INTO allornothing_user (uid, rolls_to_double) VALUES (" + uid
@@ -62,6 +63,7 @@ class CasinoDB {
                 statement.executeUpdate(blackjac);
                 statement.executeUpdate(gacha);
                 statement.executeUpdate(event);
+                statement.executeUpdate(workout);
                 for (String entry: allornothing) {
                     statement.executeUpdate(entry);
                 }
