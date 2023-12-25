@@ -67,14 +67,10 @@ class HealthClub {
         } else if (elapsedTime > MAXIMUM_SEPARATION && user.streak > 0) {
             streakBroken = true;
             user = addWorkoutAndBreakStreak(uid);
-            if (user == null) {
-                return new HBMain.SingleResponse("Unable to report workout: Updated user was null");
-            }
-            return new HBMain.SingleResponse(user.getTotalWorkoutString() + STREAK_BROKEN_STRING,
-                ButtonRows.WORKOUT_OFFER_VOLUNTARY_RESTORE);
+        } else {
+            user = addWorkout(uid);
         }
 
-        user = addWorkout(uid, streakBroken);
         if (user == null) {
             return new HBMain.SingleResponse("Unable to report workout: Updated user was null");
         }
@@ -121,7 +117,7 @@ class HealthClub {
             return new HBMain.SingleResponse("Unable to restore streak: Updated user was null");
         }
         return new HBMain.SingleResponse("Restored streak, streak is now "
-                + user.streak + " day" + Casino.formatTime(user.streak),
+                + user.streak + " day" + Casino.getPluralSuffix(user.streak),
             ButtonRows.WORKOUT_UNDO_RESTORE);
     }
 
