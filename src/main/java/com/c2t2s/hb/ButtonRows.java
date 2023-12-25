@@ -36,8 +36,8 @@ class ButtonRows {
         return activeGame.isClaimable() ? makeAllOrNothingClaimable(activeGame) : makeAllOrNothingUnclaimable(activeGame);
     }
 
-    static ActionRow WORKOUT_OFFER_VOLUNTARY_BREAK = ActionRow.of(Button.secondary("workout.break", "Report Streak Broken"));
-    static ActionRow WORKOUT_OFFER_VOLUNTARY_RESTORE = ActionRow.of(Button.secondary("workout.restore", "Preserve Streak"));
+    static ActionRow WORKOUT_OFFER_VOLUNTARY_BREAK = ActionRow.of(Button.secondary("workout.break", "Manually Break Streak"));
+    static ActionRow WORKOUT_OFFER_VOLUNTARY_RESTORE = ActionRow.of(Button.secondary("workout.restore", "Manually Restore Streak"));
     static ActionRow WORKOUT_UNDO_BREAK = ActionRow.of(Button.secondary("workout.restore", "Undo"));
     static ActionRow WORKOUT_UNDO_RESTORE = ActionRow.of(Button.secondary("workout.break", "Undo"));
 

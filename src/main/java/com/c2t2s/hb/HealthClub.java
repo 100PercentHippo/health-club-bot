@@ -59,7 +59,7 @@ class HealthClub {
             return new HBMain.SingleResponse(Casino.USER_NOT_FOUND_MESSAGE);
         }
 
-        long elapsedTime = user.lastWorkout.getTime() - System.currentTimeMillis();
+        long elapsedTime = System.currentTimeMillis() - user.lastWorkout.getTime();
         boolean streakBroken = false;
         if (elapsedTime < MINIMUM_SEPARATION) {
             return new HBMain.SingleResponse("Unable to report workout: Too soon after last workout. Next workout available in "
