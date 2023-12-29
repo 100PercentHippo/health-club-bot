@@ -296,7 +296,7 @@ class Blackjack {
             rawCards = new StringBuilder(5).append(activeHand.getRawHand())
                 .append('<').append(rawCards.charAt(0)).append(BLACKJACK_CARD.newCard().getChar())
                 .toString();
-            splitIndex = 3;
+            splitIndex = 2;
         }
 
         private void addCard() {
@@ -316,7 +316,7 @@ class Blackjack {
             if (!isGameSplit() || !resolvingPrimaryHand || rawCards.charAt(splitIndex) != '<') {
                 return false;
             }
-            rawCards.replace('<', '>');
+            rawCards = rawCards.replace('<', '>');
             resolvingPrimaryHand = false;
             activeHand = new BlackJackHand(rawCards.substring(splitIndex + 1));
             return true;
@@ -411,7 +411,8 @@ class Blackjack {
         game.split();
         Casino.takeMoney(uid, game.getWager());
         blackjackSplit(uid, game);
-        return new HBMain.SingleResponse(game.displayGame(), ButtonRows.BLACKJACK_BUTTONS);
+        return new HBMain.SingleResponse(game.displayGame().replace("Playing first hand",
+            "Split for " + game.getWager() + " coins. Playing first hand"), ButtonRows.BLACKJACK_BUTTONS);
     }
 
     static HBMain.MultistepResponse handleStand(long uid) {
@@ -474,7 +475,7 @@ class Blackjack {
         }
 
         if (game.isGameSplit()) {
-            StringBuilder resolution = new StringBuilder('\n');
+            StringBuilder resolution = new StringBuilder("\n");
             int busts = 0;
             int dealerBusts = 0;
             int wins = 0;
