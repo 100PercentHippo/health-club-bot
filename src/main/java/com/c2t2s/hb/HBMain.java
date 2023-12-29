@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.2.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.0"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
@@ -94,6 +94,10 @@ public class HBMain {
 
         void addMessage(String message) {
             messages.add(message);
+        }
+
+        void addMessageToStart(String message) {
+            messages.add(0, message);
         }
 
         void addAllToStart(List<String> messages) {
@@ -252,20 +256,10 @@ public class HBMain {
                     respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), Casino.PREDICTION_SAME),
                         interaction);
                     break;
-                case "blackjack new":
+                case "blackjack":
                     respondImmediately(Blackjack.handleBlackjack(interaction.getUser().getId(),
                         interaction.getArgumentLongValueByIndex(0).orElse(100L)),
                         interaction);
-                    break;
-                case "blackjack hit":
-                    respondImmediately(Blackjack.handleHit(interaction.getUser().getId()),
-                        interaction);
-                    break;
-                case "blackjack stand":
-                    interaction.respondLater().thenAccept(updater -> {
-                        makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                        updater);
-                    });
                     break;
                 case "pull":
                     interaction.respondLater().thenAccept(updater -> {
@@ -398,13 +392,25 @@ public class HBMain {
     }
 
     private static void handleBlackjackButtonPress(MessageComponentInteraction interaction) {
-        if (interaction.getCustomId().equals("blackjack.hit")) {
-            respondImmediately(Blackjack.handleHit(interaction.getUser().getId()), interaction);
-        } else if (interaction.getCustomId().equals("blackjack.stand")) {
-            interaction.respondLater().thenAccept(updater -> {
-                makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                updater);
-            });
+        switch (interaction.getCustomId()) {
+            case "blackjack.hit":
+                interaction.respondLater().thenAccept(updater -> {
+                    makeMultiStepResponse(Blackjack.handleHit(interaction.getUser().getId()),
+                    updater);
+                });
+                break;
+            case "blackjack.stand":
+                interaction.respondLater().thenAccept(updater -> {
+                    makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                    updater);
+                });
+                break;
+            case "blackjack.split":
+                respondImmediately(Blackjack.handleSplit(interaction.getUser().getId()), interaction);
+                break;
+            default:
+                System.out.println("Encountered unexpected blackjack interaction: "
+                    + interaction.getCustomId());
         }
     }
 
@@ -529,10 +535,7 @@ public class HBMain {
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "same", "Guess the next number in an ongoing game will be the same"))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("blackjack").setDescription("Play a game of blackjack")
-            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "new", "Begin a new game of blackjack",
-                Arrays.asList(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))))
-            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "hit", "Ask the dealer for another card"))
-            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "stand", "Stand with the cards you have"))
+            .addOption(SlashCommandOption.createLongOption("wager", "Amount to wager, default 100", false, 1, 100000))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("give").setDescription("Give coins to another user")
             .addOption(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true))
@@ -623,19 +626,24 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- After 4 years, the bot now has actual workout tracking functionality!"
-            + "\n- Added `/workout` to report you've completed a workout (or other activity)"
-            + "\n- Added `/selectworkoutreward` to configure the reward awarded from `/workout`"
-            + "\n- The output from these commands is visible only to you, so feel free to use them for any self-improvement activity of your choice (doesn't have to just be workouts)"
-            + "\n- Workout tracks the number of successive days you've completed workouts, but the tracking can be overwritten so you can control how streaks are tracked"
-            + "\n- Added the ability to view old changelogs via argument";
+        return "\n- Splitting is now supported in blackjack"
+            + "\n- Updated how blackjack stats are stored. This should now cause blackjack to no longer appear to massively "
+            + "underperform when viewing `/stats`, but existing blackjack stats have been reset as a result"
+            + "\n- Simplified the command for a new blackjack game to just `/blackjack` instead of `/blackjack new`";
     }
 
     private static String getChangelog(String version) {
         switch (version) {
             default:
-            case "3.2.0":
-                return "Changelog:\n" + VERSION_STRING + getLatestReleaseString();
+            case "3.2.0-3.3.0":
+                return "Changelog:\n" + VERSION_STRING + getLatestReleaseString()
+                    + "\n3.2.0"
+                    + "\n- After 4 years, the bot now has actual workout tracking functionality!"
+                    + "\n- Added `/workout` to report you've completed a workout (or other activity)"
+                    + "\n- Added `/selectworkoutreward` to configure the reward awarded from `/workout`"
+                    + "\n- The output from these commands is visible only to you, so feel free to use them for any self-improvement activity of your choice (doesn't have to just be workouts)"
+                    + "\n- Workout tracks the number of successive days you've completed workouts, but the tracking can be overwritten so you can control how streaks are tracked"
+                    + "\n- Added the ability to view old changelogs via argument";
             case "3.1.8-3.1.11":
                 return "Historical Changelog for 3.1.8-3.1.11:"
                     + "\n3.1.11"
