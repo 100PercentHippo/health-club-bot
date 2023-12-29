@@ -219,6 +219,7 @@ class Blackjack {
             activeHand.addCard();
             activeHand.addCard();
             rawCards = activeHand.getRawHand();
+            dealerCard = BLACKJACK_CARD.newCard().getChar();
         }
 
         private BlackJackGame(String hand, char dealer, long wager) {
@@ -549,7 +550,7 @@ class Blackjack {
     //  spent bigint NOT NULL DEFAULT 0,
     //  winnings bigint NOT NULL DEFAULT 0,
     //  hand varchar(44) NOT NULL DEFAULT '',
-    //  dealer_hand varchar(1) NOT NULL DEFAULT -1,
+    //  dealer_hand varchar(1) NOT NULL DEFAULT '',
     //  wager bigint NOT NULL DEFAULT -1,
     //  CONSTRAINT blackjack_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
