@@ -176,7 +176,7 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(getLatestRelease()).respond();
                     break;
                 case "roll":
-                    interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
+                    interaction.createImmediateResponder().setContent(Roll.handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
                     break;
                 case "claim":
                     interaction.createImmediateResponder().setContent(
@@ -813,65 +813,6 @@ public class HBMain {
                     + "\n- Guess now pays out more at 1 and 10"
                     + "\n1.0.0:"
                     + "\n- Revamp income commands";
-        }
-    }
-
-    //TODO: This doesn't always behave as expected with multiple arguments
-    private static String handleRoll(String args) {
-        int max = 0;
-        try {
-            if (args.contains("d")) {
-                //Dice rolling
-                StringBuilder message = new StringBuilder("Rolling `" + args + "`\n");
-                args = args.replace("-\\s*-", "");
-                args = args.replace("-", "+-");
-                args = args.replace("\\s", "");
-                String[] pieces = args.split("\\+");
-                int total = 0;
-                for (int i = 0; i < pieces.length; ++i) {
-                    boolean negative = false;
-                    if (pieces[i].startsWith("-")) {
-                        pieces[i] = pieces[i].substring(1);
-                        negative = true;
-                    }
-                    if (!pieces[i].contains("d")) {
-                        int roll = Integer.parseInt(pieces[i]);
-                        message.append((negative ? " - " : " + ") + roll);
-                        total += (negative ? -1 : 1) * roll;
-                        continue;
-                    }
-                    String[] splitArgs = pieces[i].split("d");
-                    // If a NumberFormatException occurs, pass it up, don't catch
-                    int numDice = Integer.parseInt(splitArgs[0]);
-                    int diceSize = Integer.parseInt(splitArgs[1]);
-                    String text = "";
-                    for (int j = 0; j < numDice; ++j) {
-                        int roll = RNG_SOURCE.nextInt(diceSize) + 1;
-                        total += (roll * (negative ? -1 : 1));
-                        text += (negative ? " - " : " + ") + "`" + roll + "`";
-                    }
-                    text = text.substring(2, text.length());
-                    if (message.length() != 0) {
-                        message.append(negative ? " - " : " + ");
-                    }
-                    message.append(text);
-                }
-                return message.toString() + "\n`" + total + "`";
-            } else {
-                // Deathrolling
-                max = Integer.parseInt(args);
-                if (max < 0) {
-                    return "Negative numbers make me sad :slight_frown:";
-                } else if (max == 0) {
-                    return "Rolling 0-0\n0\n.-.";
-                }
-                int roll = RNG_SOURCE.nextInt(max) + 1;
-                return "Rolling 1-" + max + "\n" + roll
-                    + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
-            }
-        } catch (NumberFormatException e) {
-            // Unrecognized syntax
-            return "Unrecognized roll syntax. Try `/roll 3` or `/roll 2d6`";
         }
     }
 
