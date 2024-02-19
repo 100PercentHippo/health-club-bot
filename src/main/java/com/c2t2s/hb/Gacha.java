@@ -77,6 +77,7 @@ class Gacha {
             this.description = description;
             this.pictureUrl = pictureUrl;
             this.shinyUrl = shinyUrl;
+            this.prismaticUrl = prismaticUrl;
 
             if (duplicates > MAX_CHARACTER_DUPLICATES) {
                 duplicates = MAX_CHARACTER_DUPLICATES;
@@ -236,11 +237,11 @@ class Gacha {
             if (currentPity >= maxPity) {
                 return 1.0;
             }
-            int avg_pulls = (int)(1 / baseChance);
-            if (currentPity <= avg_pulls) {
+            int avgPulls = (int)(1 / baseChance);
+            if (currentPity <= avgPulls) {
                 return baseChance;
             }
-            double bonus = (currentPity - avg_pulls) / (maxPity - avg_pulls) * scalingBonus;
+            double bonus = (currentPity - avgPulls) / (maxPity - avgPulls) * scalingBonus;
             return baseChance + bonus;
         }
 
@@ -671,13 +672,13 @@ class Gacha {
         return banner.getInfoString();
     }
 
-    static String handlePity(long uid, long banner_id) {
+    static String handlePity(long uid, long bannerId) {
         long pullBalance = getPullCount(uid);
-        GachaUser user = getGachaUser(uid, banner_id);
+        GachaUser user = getGachaUser(uid, bannerId);
         if (pullBalance < 0 || user == null) {
             return Casino.USER_NOT_FOUND_MESSAGE;
         }
-        GachaBanner banner = getGachaBanner(banner_id);
+        GachaBanner banner = getGachaBanner(bannerId);
         if (banner == null) {
             return "Unable to fetch pity: Specified banner was not found";
         }
@@ -932,7 +933,7 @@ class Gacha {
 
     private static List<Long> getEligibleCharacters(long uid, long bannerId, int rarity, SHINY_TYPE shiny) {
         return CasinoDB.executeListQuery("SELECT cid FROM gacha_character NATURAL JOIN gacha_character_banner "
-                + "WHERE rarity = " + rarity + " AND enabled = TRUE and banner_id = " + bannerId 
+                + "WHERE rarity = " + rarity + " AND enabled = TRUE and banner_id = " + bannerId
                 + "AND NOT EXISTS(SELECT 1 FROM gacha_user_character "
                 + "WHERE gacha_user_character.cid = gacha_character.cid AND duplicates >= "
                 + MAX_CHARACTER_DUPLICATES + " AND foil = " + shiny.getId() + " AND uid = " + uid + ");");
@@ -1006,7 +1007,7 @@ class Gacha {
         String oneStarPityResult = (rarity == 1 ? "0" : (rarity > 1 ? "one_star_pity" : "one_star_pity + 1"));
         return getGachaUser("UPDATE gacha_user_banner SET (times_pulled, one_star_pity, two_star_pity, three_star_pity, "
             + " four_star_pity, five_star_pity) = (times_pulled + 1, " + oneStarPityResult + ", " + twoStarPityResult
-            + ", " + threeStarPityResult + ", " + fourStarPityResult + ", " + fiveStarPityResult + ") WHERE uid = " 
+            + ", " + threeStarPityResult + ", " + fourStarPityResult + ", " + fiveStarPityResult + ") WHERE uid = "
             + uid + " AND banner_id = " + bannerId + " RETURNING " + GACHA_USER_BANNER_COLUMNS + ";");
     }
 
