@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
@@ -31,6 +32,7 @@ public class HBMain {
 
     private static final String VERSION_STRING = "3.3.0"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
+    static final Logger logger = Logger.getLogger("com.ct2ts.hb");
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
         int roll = (int)(HBMain.RNG_SOURCE.nextGaussian() * stdDev) + average;
@@ -149,7 +151,7 @@ public class HBMain {
 
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.out.println("API key is required as first argument");
+            logger.severe("API key is required as first argument");
             return;
         }
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
@@ -315,7 +317,7 @@ public class HBMain {
                     break;
                 case "selectworkoutreward":
                     interaction.createImmediateResponder().setContent(
-                        HealthClub.handleSelectReward(interaction.getUser().getId(), 
+                        HealthClub.handleSelectReward(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get()))
                         .setFlags(MessageFlag.EPHEMERAL).respond();
                     break;
@@ -344,7 +346,7 @@ public class HBMain {
                     handleWorkoutButtonPress(interaction);
                     break;
                 default:
-                    System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
+                    logger.warning("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
         });
         api.addAutocompleteCreateListener(event -> {
@@ -369,7 +371,7 @@ public class HBMain {
             }
             interaction.respondWithChoices(choices);
         });
-        System.out.println("Server started");
+        logger.info("Server started");
     }
 
     private static void handleOverUnderButtonPress(MessageComponentInteraction interaction) {
@@ -385,7 +387,7 @@ public class HBMain {
                 prediction = Casino.PREDICTION_SAME;
                 break;
             default:
-                System.out.println("Encountered unexpected overunder interaction: "
+                logger.warning("Encountered unexpected overunder interaction: "
                     + interaction.getCustomId());
         }
         respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction), interaction);
@@ -394,22 +396,22 @@ public class HBMain {
     private static void handleBlackjackButtonPress(MessageComponentInteraction interaction) {
         switch (interaction.getCustomId()) {
             case "blackjack.hit":
-                interaction.respondLater().thenAccept(updater -> {
+                interaction.respondLater().thenAccept(updater ->
                     makeMultiStepResponse(Blackjack.handleHit(interaction.getUser().getId()),
-                    updater);
-                });
+                    updater)
+                );
                 break;
             case "blackjack.stand":
-                interaction.respondLater().thenAccept(updater -> {
+                interaction.respondLater().thenAccept(updater ->
                     makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
-                    updater);
-                });
+                    updater)
+                );
                 break;
             case "blackjack.split":
                 respondImmediately(Blackjack.handleSplit(interaction.getUser().getId()), interaction);
                 break;
             default:
-                System.out.println("Encountered unexpected blackjack interaction: "
+                logger.warning("Encountered unexpected blackjack interaction: "
                     + interaction.getCustomId());
         }
     }
@@ -417,8 +419,9 @@ public class HBMain {
     private static void handleAllOrNothingButtonPress(MessageComponentInteraction interaction) {
         String[] parts = interaction.getCustomId().split("\\|");
         if (parts.length < 1) {
-            System.out.println("Encountered unexpected allornothing interaction: "
-                + interaction.getCustomId() + " (split into " + parts.toString() + ")");
+            logger.warning(() ->
+                String.format("Encountered unexpected allornothing interaction: %s (split into %s)",
+                    interaction.getCustomId(), Arrays.toString(parts)));
             return;
         }
         String command = parts[0];
@@ -430,7 +433,7 @@ public class HBMain {
                 rollsToDouble = 0;
             }
         } catch (NumberFormatException e) {
-            System.out.println("Unable to parse allornothing odds as int: " + parts[1]
+            logger.warning("Unable to parse allornothing odds as int: " + parts[1]
                 + " (full command " + interaction.getCustomId() + ")");
             return;
         }
@@ -440,14 +443,15 @@ public class HBMain {
                     interaction);
                 break;
             case "allornothing.roll":
-                interaction.respondLater().thenAccept(updater -> {
+                interaction.respondLater().thenAccept(updater ->
                     makeMultiStepResponse(AllOrNothing.handleRoll(interaction.getUser().getId(), rollsToDouble),
-                    updater);
-                });
+                    updater)
+                );
                 break;
             default:
-                System.out.println("Encountered unexpected allornothing command: "
-                    + command + " (full command " + interaction.getCustomId() + ")");
+                logger.warning(() ->
+                    String.format("Encountered unexpected allornothing command: %s (full command %s)",
+                        command, interaction.getCustomId()));
                 return;
         }
     }
@@ -461,13 +465,13 @@ public class HBMain {
                 respondImmediately(HealthClub.handleBreakStreak(interaction.getUser().getId()), interaction, true);
                 break;
             default:
-                System.out.println("Encountered unexpected workout interaction: "
+                logger.warning("Encountered unexpected workout interaction: "
                     + interaction.getCustomId());
         }
     }
 
     private static void initCommands(DiscordApi api) {
-        System.out.println("Registering commands with discord");
+        logger.info("Registering commands with discord");
         Set<SlashCommandBuilder> builders = new HashSet<>();
 
         builders.add(new SlashCommandBuilder().setName("version")
@@ -478,6 +482,7 @@ public class HBMain {
             .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true)
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.STRING, "Versions", "Changelog version range", false,
                 Arrays.asList(SlashCommandOptionChoice.create(VERSION_STRING, VERSION_STRING),
+                    SlashCommandOptionChoice.create("3.2.0-3.3.0", "3.2.0-3.3.0"),
                     SlashCommandOptionChoice.create("3.1.8-3.1.11", "3.1.8-3.1.11"),
                     SlashCommandOptionChoice.create("3.1.0-3.1.7", "3.1.0-3.1.7"),
                     SlashCommandOptionChoice.create("2.0.0-2.0.13", "2.0.0-2.0.13"),
@@ -543,12 +548,12 @@ public class HBMain {
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pull").setDescription("Try to win a gacha character!")
             .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
-            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 25))
+            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 25", false, 1, 25))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pulls").setDescription("Check how many gacha pulls you have")
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pity").setDescription("Check your gacha pity")
-            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
+            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
@@ -558,7 +563,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "banner", "View the available banners",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List available banners"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single banner",
-                        Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))))))
+                        Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
@@ -577,7 +582,7 @@ public class HBMain {
                     SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
-        System.out.println("Command registration complete");
+        logger.info("Command registration complete");
     }
 
     private static String getHelpText() {
@@ -607,7 +612,6 @@ public class HBMain {
             + "\n\t\tStart a new game with `new`"
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
-            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
             + "\n\t`/allornothing` Push your luck and go for a new record!"
             + "\n\t\tStart or resume a game with `/allornothing`, play with the buttons"
             + "\nGacha Commands:"
@@ -703,7 +707,7 @@ public class HBMain {
                     + "\n2.0.11"
                     + "\n- Formating fixes for help text"
                     + "\n2.0.10"
-                    + "\n- Fixes for `/blackjack`, `/overunder`, and `/feed`" 
+                    + "\n- Fixes for `/blackjack`, `/overunder`, and `/feed`"
                     + "\n2.0.9"
                     + "\n- Readd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
                     + "\n2.0.8"
@@ -713,11 +717,11 @@ public class HBMain {
                     + "\n2.0.6"
                     + "\n- Readd `/claim`"
                     + "\n- Readd full implementation of `/minislots`"
-                    + "\n- Hook up DB to existing commands" 
+                    + "\n- Hook up DB to existing commands"
                     + "\n2.0.5"
-                    + "\n- Update slots to update existing messages" 
+                    + "\n- Update slots to update existing messages"
                     + "\n2.0.4"
-                    + "\n- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
+                    + "\n- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots"
                     + "\n2.0.3"
                     + "\n- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
                     + "\n2.0.2"
