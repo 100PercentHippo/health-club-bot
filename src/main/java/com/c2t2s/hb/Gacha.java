@@ -457,12 +457,12 @@ class Gacha {
                 rarity = 5;
             } else if (banner.fourStarChance > 0 && HBMain.RNG_SOURCE.nextDouble() <= banner.getFourStarChance(user.fourStarPity)) {
                 rarity = 4;
-            } else if (HBMain.RNG_SOURCE.nextDouble() <= banner.getThreeStarChance(user.threeStarPity)) {
+            } else if (banner.threeStarChance > 0 && HBMain.RNG_SOURCE.nextDouble() <= banner.getThreeStarChance(user.threeStarPity)) {
                 rarity = 3;
-            } else if (HBMain.RNG_SOURCE.nextDouble() <= banner.getTwoStarChance(user.twoStarPity)) {
+            } else if (banner.twoStarChance > 0 && HBMain.RNG_SOURCE.nextDouble() <= banner.getTwoStarChance(user.twoStarPity)) {
                 rarity = 2;
             // First roll always gives at least 1 star
-            } else if (HBMain.RNG_SOURCE.nextDouble() <= banner.getOneStarChance(user.oneStarPity) || veryFirstPull) {
+            } else if (banner.oneStarChance > 0 && (HBMain.RNG_SOURCE.nextDouble() <= banner.getOneStarChance(user.oneStarPity) || veryFirstPull)) {
                 rarity = 1;
                 veryFirstPull = false;
             }
@@ -508,14 +508,13 @@ class Gacha {
 
     private static GachaUser awardFiller(long uid, long bannerId, GachaResponse response) {
         int roll = HBMain.RNG_SOURCE.nextInt(100);
-        // TODO: Add filler other than coins
         if (roll < 99) {
             int coins = HBMain.generateBoundedNormal(50, 20, 2);
-            response.coinBalance = awardCoinFiller(uid, coins);
+            response.coinBalance = awardCoinFiller(uid, bannerId, coins);
             response.coinsAwarded += coins;
             response.addMessagePart(":coin: You pull " + coins + " coins.");
         } else {
-            response.pullBalance = addPulls(uid, 1);
+            response.pullBalance = awardPullFiller(uid, bannerId);
             response.addMessagePart(":stars: You pull ... a pull. Neat.");
         }
         return logFillerPull(uid, bannerId);
@@ -719,7 +718,6 @@ class Gacha {
     // CREATE TABLE IF NOT EXISTS gacha_user (
     //   uid bigint PRIMARY KEY,
     //   pulls integer NOT NULL DEFAULT 10,
-    //   coins_pulled bigint NOT NULL DEFAULT 0,
     //   CONSTRAINT gacha_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
@@ -756,6 +754,8 @@ class Gacha {
     //   three_star_pity integer NOT NULL DEFAULT 0,
     //   four_star_pity integer NOT NULL DEFAULT 0,
     //   five_star_pity integer NOT NULL DEFAULT 0,
+    //   coins_pulled bigint NOT NULL DEFAULT 0,
+    //   pulls_pulled integer NOT NULL DEFAULT 0,
     //   PRIMARY KEY(uid, banner_id),
     //   CONSTRAINT gacha_user_banner_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
     //   CONSTRAINT gacha_user_banner_banner_id FOREIGN KEY(banner_id) REFERENCES gacha_banner(banner_id)
@@ -940,8 +940,8 @@ class Gacha {
     }
 
     private static List<Long> getAllCharacters(int rarity, long bannerId) {
-        return CasinoDB.executeListQuery("SELECT cid FROM gacha_character WHERE rarity = "
-                + rarity + " AND enabled = TRUE;");
+        return CasinoDB.executeListQuery("SELECT cid FROM gacha_character NATURAL JOIN gacha_character_banner "
+            + "WHERE banner_id = " + bannerId + " AND rarity = " + rarity + " AND enabled = TRUE;");
     }
 
     private static int checkCharacterDuplicates(long uid, long cid, SHINY_TYPE shiny) {
@@ -971,8 +971,16 @@ class Gacha {
         return Casino.addMoney(uid, coinEquivalent);
     }
 
-    private static long awardCoinFiller(long uid, long coinAmount) {
+    private static long awardCoinFiller(long uid, long bannerId, long coinAmount) {
+        CasinoDB.executeUpdate("UPDATE gacha_user_banner SET coins_pulled = coins_pulled + " + coinAmount
+            + " WHERE uid = " + uid + "AND banner_id = " + bannerId + ";");
         return Casino.addMoney(uid, coinAmount);
+    }
+
+    private static long awardPullFiller(long uid, long bannerId) {
+        CasinoDB.executeUpdate("UPDATE gacha_user_banner SET pulls_pulled = pulls_pulled + 1 WHERE uid = "
+            + uid + "AND banner_id = " + bannerId + ";");
+        return addPulls(uid, 1);
     }
 
     static long getPullCount(long uid) {
