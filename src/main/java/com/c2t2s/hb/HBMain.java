@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Random;
@@ -30,7 +33,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.3.1.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.1.1"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
     static final Logger logger = Logger.getLogger("com.ct2ts.hb");
 
@@ -150,6 +153,9 @@ public class HBMain {
     }
 
     public static void main(String[] args) {
+        Handler ch = new ConsoleHandler();
+        logger.addHandler(ch);
+        logger.setLevel(Level.FINEST);
         if (args.length < 1) {
             logger.severe("API key is required as first argument");
             return;
