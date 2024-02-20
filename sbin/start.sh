@@ -14,7 +14,11 @@ fi
 
 # Run the server
 datetime=$(date +"%Y%m%d-%H%M%S")
-screen -dmS casino bash -c "java -cp target/classes/:target/dependency/* com.c2t2s.hb.HBMain $BOT_TOKEN > \"logs/log-$datetime.log\""
+screen -dmS casino bash -c "java -cp target/classes/:target/dependency/* com.c2t2s.hb.HBMain $BOT_TOKEN > logs/log-$datetime.log"
+if [ -e logs/log-current.log ]
+then
+  rm logs/log-current.log
+fi
 ln -s "logs/log-$datetime.log" logs/log-current.log
 
 echo "Server started successfully"
