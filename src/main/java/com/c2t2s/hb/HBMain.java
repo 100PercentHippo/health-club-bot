@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
@@ -29,8 +30,9 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.3.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.1.0"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
+    static final Logger logger = Logger.getLogger("com.ct2ts.hb");
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
         int roll = (int)(HBMain.RNG_SOURCE.nextGaussian() * stdDev) + average;
@@ -149,7 +151,7 @@ public class HBMain {
 
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.out.println("API key is required as first argument");
+            logger.severe("API key is required as first argument");
             return;
         }
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
@@ -174,7 +176,7 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(getLatestRelease()).respond();
                     break;
                 case "roll":
-                    interaction.createImmediateResponder().setContent(handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
+                    respondImmediately(Roll.handleRoll(interaction.getArgumentStringValueByIndex(0).get()), interaction);
                     break;
                 case "claim":
                     interaction.createImmediateResponder().setContent(
@@ -315,7 +317,7 @@ public class HBMain {
                     break;
                 case "selectworkoutreward":
                     interaction.createImmediateResponder().setContent(
-                        HealthClub.handleSelectReward(interaction.getUser().getId(), 
+                        HealthClub.handleSelectReward(interaction.getUser().getId(),
                             interaction.getArgumentLongValueByIndex(0).get()))
                         .setFlags(MessageFlag.EPHEMERAL).respond();
                     break;
@@ -343,8 +345,11 @@ public class HBMain {
                 case "workout":
                     handleWorkoutButtonPress(interaction);
                     break;
+                case "roll":
+                    handleRollButtonPress(interaction);
+                    break;
                 default:
-                    System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
+                    logger.warning("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
         });
         api.addAutocompleteCreateListener(event -> {
@@ -369,7 +374,129 @@ public class HBMain {
             }
             interaction.respondWithChoices(choices);
         });
-        System.out.println("Server started");
+        logger.info("Server started");
+    }
+
+    private static void handleOverUnderButtonPress(MessageComponentInteraction interaction) {
+        int prediction = 0;
+        switch (interaction.getCustomId()) {
+            case "overunder.over":
+                prediction = Casino.PREDICTION_OVER;
+                break;
+            case "overunder.under":
+                prediction = Casino.PREDICTION_UNDER;
+                break;
+            case "overunder.same":
+                prediction = Casino.PREDICTION_SAME;
+                break;
+            default:
+                logger.warning("Encountered unexpected overunder interaction: "
+                    + interaction.getCustomId());
+        }
+        respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction), interaction);
+    }
+
+    private static void handleBlackjackButtonPress(MessageComponentInteraction interaction) {
+        switch (interaction.getCustomId()) {
+            case "blackjack.hit":
+                interaction.respondLater().thenAccept(updater ->
+                    makeMultiStepResponse(Blackjack.handleHit(interaction.getUser().getId()),
+                    updater)
+                );
+                break;
+            case "blackjack.stand":
+                interaction.respondLater().thenAccept(updater ->
+                    makeMultiStepResponse(Blackjack.handleStand(interaction.getUser().getId()),
+                    updater)
+                );
+                break;
+            case "blackjack.split":
+                respondImmediately(Blackjack.handleSplit(interaction.getUser().getId()), interaction);
+                break;
+            default:
+                logger.warning("Encountered unexpected blackjack interaction: "
+                    + interaction.getCustomId());
+        }
+    }
+
+    private static void handleAllOrNothingButtonPress(MessageComponentInteraction interaction) {
+        String[] parts = interaction.getCustomId().split("\\|");
+        if (parts.length < 1) {
+            logger.warning(() ->
+                String.format("Encountered unexpected allornothing interaction: %s (split into %s)",
+                    interaction.getCustomId(), Arrays.toString(parts)));
+            return;
+        }
+        String command = parts[0];
+        int rollsToDouble;
+        try {
+            if (parts.length > 1) {
+                rollsToDouble = Integer.parseInt(parts[1]);
+            } else {
+                rollsToDouble = 0;
+            }
+        } catch (NumberFormatException e) {
+            logger.warning("Unable to parse allornothing odds as int: " + parts[1]
+                + " (full command " + interaction.getCustomId() + ")");
+            return;
+        }
+        switch (command) {
+            case "allornothing.claim":
+                respondImmediately(new SingleResponse(AllOrNothing.handleCashOut(interaction.getUser().getId(), rollsToDouble)),
+                    interaction);
+                break;
+            case "allornothing.roll":
+                interaction.respondLater().thenAccept(updater ->
+                    makeMultiStepResponse(AllOrNothing.handleRoll(interaction.getUser().getId(), rollsToDouble),
+                    updater)
+                );
+                break;
+            default:
+                logger.warning(() ->
+                    String.format("Encountered unexpected allornothing command: %s (full command %s)",
+                        command, interaction.getCustomId()));
+                return;
+        }
+    }
+
+    private static void handleWorkoutButtonPress(MessageComponentInteraction interaction) {
+        switch (interaction.getCustomId()) {
+            case "workout.restore":
+                respondImmediately(HealthClub.handleRestoreStreak(interaction.getUser().getId()), interaction, true);
+                break;
+            case "workout.break":
+                respondImmediately(HealthClub.handleBreakStreak(interaction.getUser().getId()), interaction, true);
+                break;
+            default:
+                logger.warning("Encountered unexpected workout interaction: "
+                    + interaction.getCustomId());
+        }
+    }
+
+    private static void handleRollButtonPress(MessageComponentInteraction interaction) {
+        String[] parts = interaction.getCustomId().split("\\|");
+        if (parts.length < 2) {
+            logger.warning(() ->
+                String.format("Encountered unexpected deathroll interaction: %s (split into %s)",
+                    interaction.getCustomId(), Arrays.toString(parts)));
+            return;
+        }
+        String command = parts[0];
+        int maxRoll;
+        try {
+            maxRoll = Integer.parseInt(parts[1]);
+        } catch (NumberFormatException e) {
+            logger.warning("Unable to parse deathroll max as int: " + parts[1]
+                + " (full command " + interaction.getCustomId() + ")");
+            return;
+        }
+        if (command.equals("roll.deathroll")) {
+            respondImmediately(Roll.handleDeathroll(maxRoll), interaction);
+        } else {
+            logger.warning(() ->
+                String.format("Encountered unexpected roll command: %s (full command %s)",
+                    command, interaction.getCustomId()));
+        }
     }
 
     private static void handleOverUnderButtonPress(MessageComponentInteraction interaction) {
@@ -467,7 +594,7 @@ public class HBMain {
     }
 
     private static void initCommands(DiscordApi api) {
-        System.out.println("Registering commands with discord");
+        logger.info("Registering commands with discord");
         Set<SlashCommandBuilder> builders = new HashSet<>();
 
         builders.add(new SlashCommandBuilder().setName("version")
@@ -478,6 +605,7 @@ public class HBMain {
             .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true)
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.STRING, "Versions", "Changelog version range", false,
                 Arrays.asList(SlashCommandOptionChoice.create(VERSION_STRING, VERSION_STRING),
+                    SlashCommandOptionChoice.create("3.2.0-latest", "3.2.0-latest"),
                     SlashCommandOptionChoice.create("3.1.8-3.1.11", "3.1.8-3.1.11"),
                     SlashCommandOptionChoice.create("3.1.0-3.1.7", "3.1.0-3.1.7"),
                     SlashCommandOptionChoice.create("2.0.0-2.0.13", "2.0.0-2.0.13"),
@@ -543,12 +671,12 @@ public class HBMain {
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pull").setDescription("Try to win a gacha character!")
             .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
-            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1", false, 1, 25))
+            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 25", false, 1, 25))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pulls").setDescription("Check how many gacha pulls you have")
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("pity").setDescription("Check your gacha pity")
-            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
+            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
@@ -558,7 +686,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "banner", "View the available banners",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List available banners"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single banner",
-                        Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))))))
+                        Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName("allornothing").setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
@@ -577,7 +705,7 @@ public class HBMain {
                     SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
-        System.out.println("Command registration complete");
+        logger.info("Command registration complete");
     }
 
     private static String getHelpText() {
@@ -607,7 +735,6 @@ public class HBMain {
             + "\n\t\tStart a new game with `new`"
             + "\n\t\tPlace predictions with `over`, `under`, or `same`"
             + "\n\t`/blackjack` Play a hand of blackjack"
-            + "\n\t\tStart a game with `/blackjack new`, play with `/blackjack hit` and `/blackjack stand`"
             + "\n\t`/allornothing` Push your luck and go for a new record!"
             + "\n\t\tStart or resume a game with `/allornothing`, play with the buttons"
             + "\nGacha Commands:"
@@ -626,17 +753,20 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Splitting is now supported in blackjack"
-            + "\n- Updated how blackjack stats are stored. This should now cause blackjack to no longer appear to massively "
-            + "underperform when viewing `/stats`, but existing blackjack stats have been reset as a result"
-            + "\n- Simplified the command for a new blackjack game to just `/blackjack` instead of `/blackjack new`";
+        return "\n- Fixed a case where gacha characters could be awarded from outside the selected banner"
+            + "\n- Added a button to facilitate deathroll followups";
     }
 
     private static String getChangelog(String version) {
         switch (version) {
             default:
-            case "3.2.0-3.3.0":
+            case "3.2.0-latest":
                 return "Changelog:\n" + VERSION_STRING + getLatestReleaseString()
+                    + "\n3.3.0"
+                    + "\n- Splitting is now supported in blackjack"
+                    + "\n- Updated how blackjack stats are stored. This should now cause blackjack to no longer appear to massively "
+                    + "underperform when viewing `/stats`, but existing blackjack stats have been reset as a result"
+                    + "\n- Simplified the command for a new blackjack game to just `/blackjack` instead of `/blackjack new`"
                     + "\n3.2.0"
                     + "\n- After 4 years, the bot now has actual workout tracking functionality!"
                     + "\n- Added `/workout` to report you've completed a workout (or other activity)"
@@ -703,7 +833,7 @@ public class HBMain {
                     + "\n2.0.11"
                     + "\n- Formating fixes for help text"
                     + "\n2.0.10"
-                    + "\n- Fixes for `/blackjack`, `/overunder`, and `/feed`" 
+                    + "\n- Fixes for `/blackjack`, `/overunder`, and `/feed`"
                     + "\n2.0.9"
                     + "\n- Readd `/pot`, `/feed`, `/blackjack`, `/overunder`, and `/give`"
                     + "\n2.0.8"
@@ -713,11 +843,11 @@ public class HBMain {
                     + "\n2.0.6"
                     + "\n- Readd `/claim`"
                     + "\n- Readd full implementation of `/minislots`"
-                    + "\n- Hook up DB to existing commands" 
+                    + "\n- Hook up DB to existing commands"
                     + "\n2.0.5"
-                    + "\n- Update slots to update existing messages" 
+                    + "\n- Update slots to update existing messages"
                     + "\n2.0.4"
-                    + "\n- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots" 
+                    + "\n- Readded `/slots` and `/minislots`, minislots is temporarily an alias of slots"
                     + "\n2.0.3"
                     + "\n- Added `/changelog`. Readded `/help`, `/roll`, and `/hugeguess`"
                     + "\n2.0.2"
@@ -809,65 +939,6 @@ public class HBMain {
                     + "\n- Guess now pays out more at 1 and 10"
                     + "\n1.0.0:"
                     + "\n- Revamp income commands";
-        }
-    }
-
-    //TODO: This doesn't always behave as expected with multiple arguments
-    private static String handleRoll(String args) {
-        int max = 0;
-        try {
-            if (args.contains("d")) {
-                //Dice rolling
-                StringBuilder message = new StringBuilder("Rolling `" + args + "`\n");
-                args = args.replace("-\\s*-", "");
-                args = args.replace("-", "+-");
-                args = args.replace("\\s", "");
-                String[] pieces = args.split("\\+");
-                int total = 0;
-                for (int i = 0; i < pieces.length; ++i) {
-                    boolean negative = false;
-                    if (pieces[i].startsWith("-")) {
-                        pieces[i] = pieces[i].substring(1);
-                        negative = true;
-                    }
-                    if (!pieces[i].contains("d")) {
-                        int roll = Integer.parseInt(pieces[i]);
-                        message.append((negative ? " - " : " + ") + roll);
-                        total += (negative ? -1 : 1) * roll;
-                        continue;
-                    }
-                    String[] splitArgs = pieces[i].split("d");
-                    // If a NumberFormatException occurs, pass it up, don't catch
-                    int numDice = Integer.parseInt(splitArgs[0]);
-                    int diceSize = Integer.parseInt(splitArgs[1]);
-                    String text = "";
-                    for (int j = 0; j < numDice; ++j) {
-                        int roll = RNG_SOURCE.nextInt(diceSize) + 1;
-                        total += (roll * (negative ? -1 : 1));
-                        text += (negative ? " - " : " + ") + "`" + roll + "`";
-                    }
-                    text = text.substring(2, text.length());
-                    if (message.length() != 0) {
-                        message.append(negative ? " - " : " + ");
-                    }
-                    message.append(text);
-                }
-                return message.toString() + "\n`" + total + "`";
-            } else {
-                // Deathrolling
-                max = Integer.parseInt(args);
-                if (max < 0) {
-                    return "Negative numbers make me sad :slight_frown:";
-                } else if (max == 0) {
-                    return "Rolling 0-0\n0\n.-.";
-                }
-                int roll = RNG_SOURCE.nextInt(max) + 1;
-                return "Rolling 1-" + max + "\n" + roll
-                    + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
-            }
-        } catch (NumberFormatException e) {
-            // Unrecognized syntax
-            return "Unrecognized roll syntax. Try `/roll 3` or `/roll 2d6`";
         }
     }
 
