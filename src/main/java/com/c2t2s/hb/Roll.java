@@ -5,7 +5,7 @@ class Roll {
     // Hide default constructor
     private Roll() {}
 
-    static String handleRoll(String args) {
+    static HBMain.SingleResponse handleRoll(String args) {
         try {
             if (args.contains("d")) {
                 //Dice rolling
@@ -16,24 +16,32 @@ class Roll {
             }
         } catch (NumberFormatException e) {
             // Unrecognized syntax
-            return "Unrecognized roll syntax. Try `/roll 3` or `/roll 2d6`";
+            return new HBMain.SingleResponse("Unrecognized roll syntax. Try `/roll 3` or `/roll 2d6`");
         }
     }
 
-    private static String handleDeathroll(String args) throws NumberFormatException {
-        int max = Integer.parseInt(args);
+    private static HBMain.SingleResponse handleDeathroll(String args) throws NumberFormatException {
+        return handleDeathroll(Integer.parseInt(args));
+    }
+
+    static HBMain.SingleResponse handleDeathroll(int max) {
         if (max < 0) {
-            return "Negative numbers make me sad :slight_frown:";
+            return new HBMain.SingleResponse("Negative numbers make me sad :slight_frown:");
         } else if (max == 0) {
-            return "Rolling 0-0\n0\n.-.";
+            return new HBMain.SingleResponse("Rolling 0-0\n0\n.-.");
         }
         int roll = HBMain.RNG_SOURCE.nextInt(max) + 1;
-        return "Rolling 1-" + max + "\n" + roll
-            + (roll == 1 ? "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:" : "");
+        String response = "Rolling 1-" + max + "\n" + roll;
+        if (roll == 1) {
+            return new HBMain.SingleResponse(response
+                + "\nIt's been a pleasure doing business with you :slight_smile: :moneybag:");
+        } else {
+            return new HBMain.SingleResponse(response, ButtonRows.makeDeathroll(roll));
+        }
     }
 
     //TODO: This doesn't always behave as expected with multiple arguments
-    private static String handleTabletopRoll(String args) throws NumberFormatException {
+    private static HBMain.SingleResponse handleTabletopRoll(String args) throws NumberFormatException {
         StringBuilder message = new StringBuilder("Rolling `" + args + "`\n");
         args = args.replace("-\\s*-", "");
         args = args.replace("-", "+-");
@@ -68,6 +76,6 @@ class Roll {
             }
             message.append(text);
         }
-        return message.toString() + "\n`" + total + "`";
+        return new HBMain.SingleResponse(message.toString() + "\n`" + total + "`");
     }
 }

@@ -176,7 +176,7 @@ public class HBMain {
                     interaction.createImmediateResponder().setContent(getLatestRelease()).respond();
                     break;
                 case "roll":
-                    interaction.createImmediateResponder().setContent(Roll.handleRoll(interaction.getArgumentStringValueByIndex(0).get())).respond();
+                    respondImmediately(Roll.handleRoll(interaction.getArgumentStringValueByIndex(0).get()), interaction);
                     break;
                 case "claim":
                     interaction.createImmediateResponder().setContent(
@@ -345,6 +345,9 @@ public class HBMain {
                 case "workout":
                     handleWorkoutButtonPress(interaction);
                     break;
+                case "roll":
+                    handleRollButtonPress(interaction);
+                    break;
                 default:
                     logger.warning("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
@@ -467,6 +470,32 @@ public class HBMain {
             default:
                 logger.warning("Encountered unexpected workout interaction: "
                     + interaction.getCustomId());
+        }
+    }
+
+    private static void handleRollButtonPress(MessageComponentInteraction interaction) {
+        String[] parts = interaction.getCustomId().split("\\|");
+        if (parts.length < 2) {
+            logger.warning(() ->
+                String.format("Encountered unexpected deathroll interaction: %s (split into %s)",
+                    interaction.getCustomId(), Arrays.toString(parts)));
+            return;
+        }
+        String command = parts[0];
+        int maxRoll;
+        try {
+            maxRoll = Integer.parseInt(parts[1]);
+        } catch (NumberFormatException e) {
+            logger.warning("Unable to parse deathroll max as int: " + parts[1]
+                + " (full command " + interaction.getCustomId() + ")");
+            return;
+        }
+        if (command.equals("roll.deathroll")) {
+            respondImmediately(Roll.handleDeathroll(maxRoll), interaction);
+        } else {
+            logger.warning(() ->
+                String.format("Encountered unexpected roll command: %s (full command %s)",
+                    command, interaction.getCustomId()));
         }
     }
 
