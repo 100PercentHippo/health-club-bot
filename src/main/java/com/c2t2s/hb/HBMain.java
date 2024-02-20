@@ -30,7 +30,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.3.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.1.0"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
     static final Logger logger = Logger.getLogger("com.ct2ts.hb");
 
@@ -511,7 +511,7 @@ public class HBMain {
             .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true)
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.STRING, "Versions", "Changelog version range", false,
                 Arrays.asList(SlashCommandOptionChoice.create(VERSION_STRING, VERSION_STRING),
-                    SlashCommandOptionChoice.create("3.2.0-3.3.0", "3.2.0-3.3.0"),
+                    SlashCommandOptionChoice.create("3.2.0-latest", "3.2.0-latest"),
                     SlashCommandOptionChoice.create("3.1.8-3.1.11", "3.1.8-3.1.11"),
                     SlashCommandOptionChoice.create("3.1.0-3.1.7", "3.1.0-3.1.7"),
                     SlashCommandOptionChoice.create("2.0.0-2.0.13", "2.0.0-2.0.13"),
@@ -659,17 +659,20 @@ public class HBMain {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Splitting is now supported in blackjack"
-            + "\n- Updated how blackjack stats are stored. This should now cause blackjack to no longer appear to massively "
-            + "underperform when viewing `/stats`, but existing blackjack stats have been reset as a result"
-            + "\n- Simplified the command for a new blackjack game to just `/blackjack` instead of `/blackjack new`";
+        return "\n- Fixed a case where gacha characters could be awarded from outside the selected banner"
+            + "\n- Added a button to facilitate deathroll followups";
     }
 
     private static String getChangelog(String version) {
         switch (version) {
             default:
-            case "3.2.0-3.3.0":
+            case "3.2.0-latest":
                 return "Changelog:\n" + VERSION_STRING + getLatestReleaseString()
+                    + "\n3.3.0"
+                    + "\n- Splitting is now supported in blackjack"
+                    + "\n- Updated how blackjack stats are stored. This should now cause blackjack to no longer appear to massively "
+                    + "underperform when viewing `/stats`, but existing blackjack stats have been reset as a result"
+                    + "\n- Simplified the command for a new blackjack game to just `/blackjack` instead of `/blackjack new`"
                     + "\n3.2.0"
                     + "\n- After 4 years, the bot now has actual workout tracking functionality!"
                     + "\n- Added `/workout` to report you've completed a workout (or other activity)"
