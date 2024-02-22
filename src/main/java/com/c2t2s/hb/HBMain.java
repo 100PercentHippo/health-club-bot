@@ -21,10 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
@@ -33,9 +29,8 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.3.1.1"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.1.2"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
-    static final Logger logger = Logger.getLogger("com.ct2ts.hb");
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
         int roll = (int)(HBMain.RNG_SOURCE.nextGaussian() * stdDev) + average;
@@ -153,11 +148,8 @@ public class HBMain {
     }
 
     public static void main(String[] args) {
-        Handler ch = new ConsoleHandler();
-        logger.addHandler(ch);
-        logger.setLevel(Level.FINEST);
         if (args.length < 1) {
-            logger.severe("API key is required as first argument");
+            System.out.println("API key is required as first argument");
             return;
         }
         DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
@@ -355,7 +347,7 @@ public class HBMain {
                     handleRollButtonPress(interaction);
                     break;
                 default:
-                    logger.warning("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
+                    System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
         });
         api.addAutocompleteCreateListener(event -> {
@@ -380,7 +372,7 @@ public class HBMain {
             }
             interaction.respondWithChoices(choices);
         });
-        logger.info("Server started");
+        System.out.println("Server started");
     }
 
     private static void handleOverUnderButtonPress(MessageComponentInteraction interaction) {
@@ -396,7 +388,7 @@ public class HBMain {
                 prediction = Casino.PREDICTION_SAME;
                 break;
             default:
-                logger.warning("Encountered unexpected overunder interaction: "
+                System.out.println("Encountered unexpected overunder interaction: "
                     + interaction.getCustomId());
         }
         respondImmediately(Casino.handleOverUnderFollowup(interaction.getUser().getId(), prediction), interaction);
@@ -420,7 +412,7 @@ public class HBMain {
                 respondImmediately(Blackjack.handleSplit(interaction.getUser().getId()), interaction);
                 break;
             default:
-                logger.warning("Encountered unexpected blackjack interaction: "
+                System.out.println("Encountered unexpected blackjack interaction: "
                     + interaction.getCustomId());
         }
     }
@@ -428,9 +420,8 @@ public class HBMain {
     private static void handleAllOrNothingButtonPress(MessageComponentInteraction interaction) {
         String[] parts = interaction.getCustomId().split("\\|");
         if (parts.length < 1) {
-            logger.warning(() ->
-                String.format("Encountered unexpected allornothing interaction: %s (split into %s)",
-                    interaction.getCustomId(), Arrays.toString(parts)));
+            System.out.println(String.format("Encountered unexpected allornothing interaction: %s (split into %s)",
+                interaction.getCustomId(), Arrays.toString(parts)));
             return;
         }
         String command = parts[0];
@@ -442,7 +433,7 @@ public class HBMain {
                 rollsToDouble = 0;
             }
         } catch (NumberFormatException e) {
-            logger.warning("Unable to parse allornothing odds as int: " + parts[1]
+            System.out.println("Unable to parse allornothing odds as int: " + parts[1]
                 + " (full command " + interaction.getCustomId() + ")");
             return;
         }
@@ -458,9 +449,8 @@ public class HBMain {
                 );
                 break;
             default:
-                logger.warning(() ->
-                    String.format("Encountered unexpected allornothing command: %s (full command %s)",
-                        command, interaction.getCustomId()));
+                System.out.println(String.format("Encountered unexpected allornothing command: %s (full command %s)",
+                    command, interaction.getCustomId()));
                 return;
         }
     }
@@ -474,7 +464,7 @@ public class HBMain {
                 respondImmediately(HealthClub.handleBreakStreak(interaction.getUser().getId()), interaction, true);
                 break;
             default:
-                logger.warning("Encountered unexpected workout interaction: "
+                System.out.println("Encountered unexpected workout interaction: "
                     + interaction.getCustomId());
         }
     }
@@ -482,9 +472,8 @@ public class HBMain {
     private static void handleRollButtonPress(MessageComponentInteraction interaction) {
         String[] parts = interaction.getCustomId().split("\\|");
         if (parts.length < 2) {
-            logger.warning(() ->
-                String.format("Encountered unexpected deathroll interaction: %s (split into %s)",
-                    interaction.getCustomId(), Arrays.toString(parts)));
+            System.out.println(String.format("Encountered unexpected deathroll interaction: %s (split into %s)",
+                interaction.getCustomId(), Arrays.toString(parts)));
             return;
         }
         String command = parts[0];
@@ -492,21 +481,20 @@ public class HBMain {
         try {
             maxRoll = Integer.parseInt(parts[1]);
         } catch (NumberFormatException e) {
-            logger.warning("Unable to parse deathroll max as int: " + parts[1]
+            System.out.println("Unable to parse deathroll max as int: " + parts[1]
                 + " (full command " + interaction.getCustomId() + ")");
             return;
         }
         if (command.equals("roll.deathroll")) {
             respondImmediately(Roll.handleDeathroll(maxRoll), interaction);
         } else {
-            logger.warning(() ->
-                String.format("Encountered unexpected roll command: %s (full command %s)",
-                    command, interaction.getCustomId()));
+            System.out.println(String.format("Encountered unexpected roll command: %s (full command %s)",
+                command, interaction.getCustomId()));
         }
     }
 
     private static void initCommands(DiscordApi api) {
-        logger.info("Registering commands with discord");
+        System.out.println("Registering commands with discord");
         Set<SlashCommandBuilder> builders = new HashSet<>();
 
         builders.add(new SlashCommandBuilder().setName("version")
@@ -617,7 +605,7 @@ public class HBMain {
                     SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
-        logger.info("Command registration complete");
+        System.out.println("Command registration complete");
     }
 
     private static String getHelpText() {
