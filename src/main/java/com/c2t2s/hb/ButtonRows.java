@@ -36,6 +36,10 @@ class ButtonRows {
         return activeGame.isClaimable() ? makeAllOrNothingClaimable(activeGame) : makeAllOrNothingUnclaimable(activeGame);
     }
 
+    static ActionRow makeDeathroll(int max) {
+        return ActionRow.of(Button.success("roll.deathroll|" + max, "Roll 1-" + max));
+    }
+
     static ActionRow WORKOUT_OFFER_VOLUNTARY_BREAK = ActionRow.of(Button.secondary("workout.break", "Manually Break Streak"));
     static ActionRow WORKOUT_OFFER_VOLUNTARY_RESTORE = ActionRow.of(Button.secondary("workout.restore", "Manually Restore Streak"));
     static ActionRow WORKOUT_UNDO_BREAK = ActionRow.of(Button.secondary("workout.restore", "Undo"));
