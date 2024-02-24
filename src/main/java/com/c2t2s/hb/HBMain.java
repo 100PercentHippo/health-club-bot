@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.3.1.2"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.1.3"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
@@ -319,6 +319,9 @@ public class HBMain {
                             interaction.getArgumentLongValueByIndex(0).get()))
                         .setFlags(MessageFlag.EPHEMERAL).respond();
                     break;
+                case "test":
+                    respondImmediately(Items.handleTest(), interaction);
+                    break;
                 default:
                     return;
             }
@@ -603,6 +606,8 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "reward", "Desired reward", true,
                 Arrays.asList(SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.COIN_REWARD_ID), HealthClub.COIN_REWARD_ID),
                     SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
+        builders.add(new SlashCommandBuilder().setName("test").setDescription("[Placeholder]")
+                    .setEnabledInDms(true));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");

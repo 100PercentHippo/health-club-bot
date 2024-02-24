@@ -27,9 +27,9 @@ class Gacha {
     private static final int SHINY_TYPE_PRISMATIC = 2;
 
     private enum SHINY_TYPE {
-        NORMAL(0),
-        SHINY(1),
-        PRISMATIC(2);
+        NORMAL(SHINY_TYPE_NORMAL),
+        SHINY(SHINY_TYPE_SHINY),
+        PRISMATIC(SHINY_TYPE_PRISMATIC);
 
         private int typeId;
         SHINY_TYPE(int id) { typeId = id; }
