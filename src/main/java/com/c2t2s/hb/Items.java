@@ -96,7 +96,7 @@ public class Items {
 
         double getModifier(ITEM_STAT stat) {
             int modifier = bonuses[stat.getIndex()];
-            if (stat == bonusStat) {
+            if (stat == bonusStat && modifier > 0) {
                 // Add 50%, using int math as a floor
                 modifier = modifier + modifier / 2;
             }
@@ -133,7 +133,7 @@ public class Items {
     private static final double LN_ONE_HALF = Math.log(0.5);
     private static final double TIER_OFFSET = 8.0;
     private static final int TIER_0_INDEX = 5;
-    private static final double MAXIMUM_TIER = 3.0;
+    private static final double MAXIMUM_TIER = 15.0;
     private static final int BASE_GEM_SLOTS = 2;
 
     static Item generateItem() {
