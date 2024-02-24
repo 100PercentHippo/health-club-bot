@@ -46,6 +46,7 @@ public class Items {
         // [Tier #][Quality description from initial + and -][Adjective from positive affinity][Item name from bonus]
         String name = "";
         String description = "";
+        double generatorVersion = GENERATOR_VERSION;
 
         int[] bonuses;
 
@@ -58,37 +59,37 @@ public class Items {
         int initialAdditions;
         int initialSubtractions;
 
+        int tier;
         int gemSlots;
 
-        Item(int baseStats, int gemSlots, int initialAdditions, int initialSubtractions) {
+        Item(int baseStats, int tier, int gemSlots, int initialAdditions, int initialSubtractions) {
             bonuses = new int[]{baseStats, baseStats, baseStats, baseStats, baseStats};
             positiveTendency = ITEM_STAT.fromIndex(HBMain.RNG_SOURCE.nextInt(5));
             negativeTendency = ITEM_STAT.fromIndex(HBMain.RNG_SOURCE.nextInt(5));
             bonusStat        = ITEM_STAT.fromIndex(HBMain.RNG_SOURCE.nextInt(5));
-            this.gemSlots    = gemSlots;
 
-            addRandomStats(initialAdditions);
-            subtractRandomStats(initialSubtractions);
-            this.initialAdditions = initialAdditions;
+            this.gemSlots            = gemSlots;
+            this.tier                = tier;
+            this.initialAdditions    = initialAdditions;
             this.initialSubtractions = initialSubtractions;
         }
 
-        void addRandomStats(int amount) {
-            for (int i = 0; i < amount; i++) {
+        void addRandomStats(int amount, int repetitions) {
+            for (int i = 0; i < repetitions; i++) {
                 if (HBMain.RNG_SOURCE.nextInt(10) == 0) {
-                    bonuses[positiveTendency.getIndex()]++;
+                    bonuses[positiveTendency.getIndex()] += amount;
                 } else {
-                    bonuses[HBMain.RNG_SOURCE.nextInt(5)]++;
+                    bonuses[HBMain.RNG_SOURCE.nextInt(5)] += amount;
                 }
             }
         }
 
-        void subtractRandomStats(int amount) {
-            for (int i = 0; i < amount; i++) {
+        void subtractRandomStats(int amount, int repetitions) {
+            for (int i = 0; i < repetitions; i++) {
                 if (HBMain.RNG_SOURCE.nextInt(10) == 0) {
-                    bonuses[negativeTendency.getIndex()]--;
+                    bonuses[negativeTendency.getIndex()] -= amount;
                 } else {
-                    bonuses[HBMain.RNG_SOURCE.nextInt(5)]--;
+                    bonuses[HBMain.RNG_SOURCE.nextInt(5)] -= amount;
                 }
             }
         }
@@ -109,7 +110,9 @@ public class Items {
                 builder.append(Stats.oneDecimal.format(getModifier(stat)));
                 builder.append(']');
             }
-            builder.append('\n');
+            builder.append("\nT");
+            builder.append(tier);
+            builder.append(' ');
             builder.append(initialAdditions);
             builder.append('/');
             builder.append(initialSubtractions);
@@ -125,35 +128,51 @@ public class Items {
         }
     }
 
-    // Eventually make this {-20, -10, 0, 5, 10, 20}
-    private static final int[] TIER_STATS = {-10, 0, 5, 10};
+    private static final double GENERATOR_VERSION = 0.2;
+    private static final int[] TIER_STATS = {-10, -7, -5, -3, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12};
     private static final double LN_ONE_HALF = Math.log(0.5);
-    private static final double TIER_OFFSET = 2.0;
+    private static final double TIER_OFFSET = 8.0;
+    private static final int TIER_0_INDEX = 5;
     private static final double MAXIMUM_TIER = 3.0;
     private static final int BASE_GEM_SLOTS = 2;
 
     static Item generateItem() {
         // Roll for tier
-        Double tier = Math.floor(HBMain.RNG_SOURCE.nextGaussian()) + TIER_OFFSET;
+        Double tier = Math.floor(HBMain.RNG_SOURCE.nextGaussian() * 4) + TIER_OFFSET;
         if (tier < 0.0) {
             tier = 0.0;
         } else if (tier > MAXIMUM_TIER) {
             tier = MAXIMUM_TIER;
         }
 
-        // Roll for initial additions and subtractions
-        int additions = HBMain.RNG_SOURCE.nextInt(100);
-        int subtractions = HBMain.RNG_SOURCE.nextInt(100);
-
         // Repeating 50% chance per additional gem slots
         Double extraGemSlots = Math.log(HBMain.RNG_SOURCE.nextDouble()) / LN_ONE_HALF;
         int gemSlots = BASE_GEM_SLOTS + extraGemSlots.intValue();
 
-        return new Item(TIER_STATS[tier.intValue()], gemSlots, additions, subtractions);
+        // Roll for initial additions and subtractions
+        int additions = HBMain.RNG_SOURCE.nextInt(100);
+        int subtractions = HBMain.RNG_SOURCE.nextInt(100);
+
+        Item item = new Item(TIER_STATS[tier.intValue()], tier.intValue() - TIER_0_INDEX, gemSlots, additions, subtractions);
+
+        // Award 1/3 of the stats 3 at a time, 1/3 2 at a time, and the last 1/3 1 at a time
+        // Some rounding will occur, but that's fine
+        int allocation = additions / 3;
+        item.addRandomStats(3, allocation / 3);
+        item.addRandomStats(2, allocation / 2);
+        item.addRandomStats(1, allocation);
+        allocation = subtractions / 3;
+        item.subtractRandomStats(3, allocation / 3);
+        item.subtractRandomStats(2, allocation / 2);
+        item.subtractRandomStats(1, allocation);
+
+        return item;
     }
 
     static HBMain.SingleResponse handleTest() {
         StringBuilder builder = new StringBuilder();
+        builder.append(GENERATOR_VERSION);
+        builder.append('\n');
         for (int i = 0; i < 10; i++) {
             builder.append(generateItem().toString());
             builder.append('\n');
