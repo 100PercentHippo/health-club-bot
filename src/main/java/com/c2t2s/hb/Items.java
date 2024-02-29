@@ -128,32 +128,25 @@ public class Items {
         }
     }
 
-    private static final double GENERATOR_VERSION = 0.2;
-    private static final int[] TIER_STATS = {-10, -7, -5, -3, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12};
+    private static final double GENERATOR_VERSION = 0.3;
     private static final double LN_ONE_HALF = Math.log(0.5);
-    private static final double TIER_OFFSET = 8.0;
-    private static final int TIER_0_INDEX = 5;
-    private static final double MAXIMUM_TIER = 15.0;
+    private static final int AVERAGE_ADDITIONS = 50;
+    private static final int AVERAGE_SUBTRACTIONS = 50;
+    private static final int ADDITIONS_STDDEV = 25;
+    private static final int BASE_STAT_AMOUNT = 2;
     private static final int BASE_GEM_SLOTS = 2;
 
     static Item generateItem() {
-        // Roll for tier
-        Double tier = Math.floor(HBMain.RNG_SOURCE.nextGaussian() * 4) + TIER_OFFSET;
-        if (tier < 0.0) {
-            tier = 0.0;
-        } else if (tier > MAXIMUM_TIER) {
-            tier = MAXIMUM_TIER;
-        }
-
         // Repeating 50% chance per additional gem slots
         Double extraGemSlots = Math.log(HBMain.RNG_SOURCE.nextDouble()) / LN_ONE_HALF;
         int gemSlots = BASE_GEM_SLOTS + extraGemSlots.intValue();
 
         // Roll for initial additions and subtractions
-        int additions = HBMain.RNG_SOURCE.nextInt(100);
-        int subtractions = HBMain.RNG_SOURCE.nextInt(100);
+        int additions = HBMain.generateBoundedNormal(AVERAGE_ADDITIONS, ADDITIONS_STDDEV, 0);
+        int subtractions = HBMain.generateBoundedNormal(AVERAGE_SUBTRACTIONS, ADDITIONS_STDDEV, 0);
+        int tier = (additions - subtractions) / 10;
 
-        Item item = new Item(TIER_STATS[tier.intValue()], tier.intValue() - TIER_0_INDEX, gemSlots, additions, subtractions);
+        Item item = new Item(BASE_STAT_AMOUNT, tier, gemSlots, additions, subtractions);
 
         // Award 1/3 of the stats 3 at a time, 1/3 2 at a time, and the last 1/3 1 at a time
         // Some rounding will occur, but that's fine

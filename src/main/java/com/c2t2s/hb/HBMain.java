@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class HBMain {
 
-    private static final String VERSION_STRING = "3.3.1.5"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "3.3.1.6"; //Update this in pom.xml too when updating
     static final Random RNG_SOURCE = new Random();
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
