@@ -708,7 +708,7 @@ class Casino {
             } else {
                 logOverUnderProgress(uid, game.getRound() + 1, target);
                 return new HBMain.SingleResponse("Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
-                    + " round is " + target, ButtonRows.OVERUNDER_BUTTONS); 
+                    + " round is " + target, ButtonRows.OVERUNDER_BUTTONS);
             }
         } else { // Loss
             String correct = "";
@@ -975,7 +975,7 @@ class Casino {
 
     private static long logFish(long uid, boolean rare, int income) {
         long balance = addWorkMoney(uid, income, "30 minutes");
-        CasinoDB.executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
+        CasinoDB.executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + "
             + (rare ? 1 : 0) + ", fish_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }

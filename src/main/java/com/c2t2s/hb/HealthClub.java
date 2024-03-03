@@ -204,10 +204,6 @@ class HealthClub {
             + uid + ";");
     }
 
-    private static WorkoutUser addWorkout(long uid, boolean streakBroken) {
-        return streakBroken ? addWorkoutAndBreakStreak(uid) : addWorkout(uid);
-    }
-
     private static WorkoutUser addWorkout(long uid) {
         return executeWorkoutUserQuery("UPDATE workout_user SET (streak, total_workouts, last_workout, longest_streak) "
             + "= (streak + 1, total_workouts + 1, NOW(), GREATEST(longest_streak, streak + 1)) WHERE uid = "

@@ -162,7 +162,7 @@ public class Items {
         return item;
     }
 
-    static HBMain.SingleResponse handleTest() {
+    static String handleTest() {
         StringBuilder builder = new StringBuilder();
         builder.append(GENERATOR_VERSION);
         builder.append('\n');
@@ -170,6 +170,6 @@ public class Items {
             builder.append(generateItem().toString());
             builder.append('\n');
         }
-        return new HBMain.SingleResponse(builder.toString());
+        return builder.toString();
     }
 }
