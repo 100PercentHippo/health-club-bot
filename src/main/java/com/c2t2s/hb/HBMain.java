@@ -238,7 +238,6 @@ public class HBMain {
     private static final String CLAIM_COMMAND = "claim";
     private static final String BALANCE_COMMAND = "balance";
     private static final String LEADERBOARD_COMMAND = "leaderboard";
-    private static final String RICHEST_COMMAND = "richest";
     private static final String GIVE_COMMAND = "give";
     private static final String POT_COMMAND = "pot";
     private static final String FEED_COMMAND = "feed";
@@ -291,8 +290,6 @@ public class HBMain {
             entry(BALANCE_COMMAND, new SimpleCasinoCommand(
                 i -> Casino.handleBalance(i.getUser().getId()))),
             entry(LEADERBOARD_COMMAND, new SimpleCasinoCommand(
-                i -> Casino.handleLeaderboard(i.getArgumentLongValueByIndex(0).orElse(DEFAULT_LEADERBOARD_LENGTH)))),
-            entry(RICHEST_COMMAND, new SimpleCasinoCommand(
                 i -> Casino.handleLeaderboard(i.getArgumentLongValueByIndex(0).orElse(DEFAULT_LEADERBOARD_LENGTH)))),
             entry(GIVE_COMMAND, new SimpleCasinoCommand(
                 i -> Casino.handleGive(i.getUser().getId(), i.getArgumentUserValueByIndex(0).get().getId(),
@@ -613,9 +610,6 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName(PICKPOCKET_COMMAND).setDescription("Attempt a petty theft of pickpocketting")
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(LEADERBOARD_COMMAND).setDescription("View the richest people in the casino")
-            .addOption(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10))
-            .setEnabledInDms(false));
-        builders.add(new SlashCommandBuilder().setName(RICHEST_COMMAND).setDescription("View the richest people in the casino")
             .addOption(SlashCommandOption.createLongOption("entries", "Number of entries to show, default 3", false, 1, 10))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(POT_COMMAND).setDescription("Check how much money is in the Money Machine")
