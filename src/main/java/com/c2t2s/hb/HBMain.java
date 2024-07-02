@@ -268,9 +268,9 @@ public class HBMain {
     private static final long DEFAULT_ALLORNOTHING_WAGER = 500L;
     private static final long DEFAULT_PULL_AMOUNT = 1L;
 
-    private static Set<Long> casinoChannels = new HashSet<>();
-    private static Set<Long> gachaChannels = new HashSet<>();
-    private static Set<Long> adminUsers = new HashSet<>();
+    //private static Set<Long> casinoChannels = new HashSet<>();
+    //private static Set<Long> gachaChannels = new HashSet<>();
+    //private static Set<Long> adminUsers = new HashSet<>();
     private static Map<String, CasinoCommand> commands = Map.ofEntries(
             entry(VERSION_COMMAND, new SimpleCasinoCommand(
                 Changelog::getVersion)),
@@ -374,16 +374,16 @@ public class HBMain {
                 return;
             }
 
-            // Ensure user is allowed to run this command in this channel
-            if (!(adminUsers.contains(interaction.getUser().getId())
-                    || (command.isValidInCasinoChannels() && casinoChannels.contains(interaction.getChannel().get().getId()))
-                    || (command.isValidInGachaChannels() && gachaChannels.contains(interaction.getChannel().get().getId())))) {
-                respondImmediately(
-                    new SingleResponse("Unable to run `" + interaction.getFullCommandName()
-                        + "` in this channel. If this is unexpected, have an admin run `/registerchannel`"),
-                    interaction, true);
-                return;
-            }
+            // // Ensure user is allowed to run this command in this channel
+            // if (!(adminUsers.contains(interaction.getUser().getId())
+            //         || (command.isValidInCasinoChannels() && casinoChannels.contains(interaction.getChannel().get().getId()))
+            //         || (command.isValidInGachaChannels() && gachaChannels.contains(interaction.getChannel().get().getId())))) {
+            //     respondImmediately(
+            //         new SingleResponse("Unable to run `" + interaction.getFullCommandName()
+            //             + "` in this channel. If this is unexpected, have an admin run `/registerchannel`"),
+            //         interaction, true);
+            //     return;
+            // }
 
             command.handle(interaction);
         });
@@ -669,40 +669,37 @@ public class HBMain {
     private static String getHelpText() {
         return "Casino Bot Version " + Changelog.getVersion()
             + "\nCommands:"
-            + "\n\t`/help` Displays this help text"
-            + "\n\t`/changelog` View recent changes to the bot"
-            + "\n\t`/roll` Roll a random number."
+            + "\n\t`/" + HELP_COMMAND + "` Displays this help text"
+            + "\n\t`/" + CHANGELOG_COMMAND + "` View recent changes to the bot"
+            + "\n\t`/" + LEADERBOARD_COMMAND + "` View the coin leaderboard"
+            + "\n\t`/" + ROLL_COMMAND + "` Roll a random number."
             + "\n\t\tEither deathrolling (e.g. `100`) or RPG style dice (e.g. `1d20`)"
-            + "\n\t`/claim` Initialize yourself with some starting money"
-            + "\n\t`/balance` Check your balance"
-            + "\n\t`/richest` Check who's the richest"
-            + "\n\t`/give` Transfer money to someone else"
+            + "\n\t`/" + CLAIM_COMMAND + "` Initialize yourself with some starting money"
+            + "\n\t`/" + BALANCE_COMMAND + "` Check your balance"
+            + "\n\t`/" + GIVE_COMMAND + "` Transfer money to someone else"
             + "\nIncome Commands:"
-            + "\n\t`/work` Work for 2 hours to earn some coins"
-            + "\n\t`/fish` Fish for 30 minutes to earn some coins"
-            + "\n\t`/rob` Attempt to rob The Bank to steal some of The Money, you might be caught!"
-            + "\n\t`/pickpocket` Attempt a petty theft of pickpocketting"
+            + "\n\t`/" + WORK_COMMAND + "` Work for 2 hours to earn some coins"
+            + "\n\t`/" + FISH_COMMAND + "` Fish for 30 minutes to earn some coins"
+            + "\n\t`/" + ROB_COMMAND + "` Attempt to rob The Bank to steal some of The Money, you might be caught!"
+            + "\n\t`/" + PICKPOCKET_COMMAND + "` Attempt a petty theft of pickpocketting"
             + "\nGambling Commands:"
-            + "\n\t`/guess` Guess a number from 1 to 10"
-            + "\n\t`/hugeguess` Guess a number from 1 to 100"
-            + "\n\t`/slots` Spin the slots!"
-            + "\n\t`/minislots` Spin the little slots!"
-            + "\n\t`/pot` Check the Money Machine pot"
-            + "\n\t`/feed` Feed the Money Machine!"
-            + "\n\t`/overunder` Multiple rounds of predicting if the next number is over or under"
-            + "\n\t\tStart a new game with `new`"
-            + "\n\t\tPlace predictions with `over`, `under`, or `same`"
-            + "\n\t`/blackjack` Play a hand of blackjack"
-            + "\n\t`/allornothing` Push your luck and go for a new record!"
-            + "\n\t\tStart or resume a game with `/allornothing`, play with the buttons"
+            + "\n\t`/" + GUESS_COMMAND + "` Guess a number from 1 to 10"
+            + "\n\t`/" + HUGEGUESS_COMMAND + "` Guess a number from 1 to 100"
+            + "\n\t`/" + SLOTS_COMMAND + "` Spin the slots!"
+            + "\n\t`/" + MINISLOTS_COMMAND + "` Spin the little slots!"
+            + "\n\t`/" + POT_COMMAND + "` Check the Money Machine pot"
+            + "\n\t`/" + FEED_COMMAND + "` Feed the Money Machine!"
+            + "\n\t`/" + OVERUNDER_COMMAND + "` Multiple rounds of predicting if the next number is over or under"
+            + "\n\t`/" + BLACKJACK_COMMAND + "` Play a hand of blackjack"
+            + "\n\t`/" + ALLORNOTHING_COMMAND + "` Push your luck and go for a new record!"
             + "\nGacha Commands:"
-            + "\n\t`/pull` Pull for gacha characters!"
-            + "\n\t`/pulls` Check your available pulls"
-            + "\n\t`/pity` Check your gacha pity"
-            + "\n\t`/gacha character list` List the characters you've pulled"
-            + "\n\t`/gacha character info` View information about an owned character"
-            + "\n\t`/gacha banner list` List the available banners"
-            + "\n\t`/gacha banner info` View information about an available banner";
+            + "\n\t`/" + PULL_COMMAND + "` Pull for gacha characters!"
+            + "\n\t`/" + PULLS_COMMAND + "` Check your available pulls"
+            + "\n\t`/" + PITY_COMMAND + "` Check your gacha pity"
+            + "\n\t`/" + GACHA_CHARACTER_LIST_COMMAND + "` List the characters you've pulled"
+            + "\n\t`/" + GACHA_CHARACTER_INFO_COMMAND + "` View information about an owned character"
+            + "\n\t`/" + GACHA_BANNER_LIST_COMMAND + "` List the available banners"
+            + "\n\t`/" + GACHA_BANNER_INFO_COMMAND + "` View information about an available banner";
     }
 
     private static <T extends InteractionBase> void respondImmediately(SingleResponse singleResponse, T interaction) {
