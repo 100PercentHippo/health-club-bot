@@ -428,7 +428,7 @@ class Gacha {
 
         long availablePulls = getPullCount(uid);
         if (availablePulls < 1 || availablePulls < pulls) {
-            Events.EventUser eventUser = Events.getEventUser(uid);
+            EventUser eventUser = EventUser.getEventUser(uid);
             if (eventUser == null) {
                 return new HBMain.MultistepResponse("Unable to pull. Insufficient pulls and unable to fetch EventUser.");
             }
@@ -689,7 +689,7 @@ class Gacha {
         if (pullBalance < 0) {
             return Casino.USER_NOT_FOUND_MESSAGE;
         }
-        Events.EventUser eventUser = Events.getEventUser(uid);
+        EventUser eventUser = EventUser.getEventUser(uid);
         if (eventUser == null) {
             return "Unable to fetch EventUser. Potentially bad DB state";
         }

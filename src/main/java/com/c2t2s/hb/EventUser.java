@@ -2,51 +2,45 @@ package com.c2t2s.hb;
 
 import java.sql.Timestamp;
 
-class Events {
+class EventUser {
+    private int eventsToday = 0;
+    private int robsToday = 0;
+    private int picksToday = 0;
+    private Timestamp reset;
 
-    // Hide default constructor
-    private Events() {}
-
-    static class EventUser {
-        private int eventsToday = 0;
-        private int robsToday = 0;
-        private int picksToday = 0;
-        private Timestamp reset;
-
-        private EventUser(long uid, int robs, int picks, int events, Timestamp nextReset) {
-            if (nextReset.getTime() - System.currentTimeMillis() < 0) {
-                this.reset = resetEventUserDailyLimits(uid);
-            } else {
-                this.reset = nextReset;
-                this.eventsToday = events;
-                this.robsToday = robs;
-                this.picksToday = picks;
-            }
+    private EventUser(long uid, int robs, int picks, int events, Timestamp nextReset) {
+        if (nextReset.getTime() - System.currentTimeMillis() < 0) {
+            this.reset = resetEventUserDailyLimits(uid);
+        } else {
+            this.reset = nextReset;
+            this.eventsToday = events;
+            this.robsToday = robs;
+            this.picksToday = picks;
         }
+    }
 
-        String getAvailablePullSources() {
-            long timeRemaining = reset.getTime() - System.currentTimeMillis();
-            if (timeRemaining < 1000) { timeRemaining = 1000; }
-            String remainingTime = Casino.formatTime(timeRemaining);
-            if (robsToday < 1 || picksToday < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
-                String output = "You can still earn pulls today through the following means:";
-                if (robsToday < 1) {
-                    output += "\n\t`/rob` or `/work` once today";
-                }
-                if (picksToday < 1) {
-                    output += "\n\t`/fish` or `/pickpocket` once today";
-                }
-                // TODO: Readd event check
-                //int remaining_events = MAX_DAILY_EVENT_PULLS - events_today;
-                //if (remaining_events > 0) {
-                //    output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
-                //}
-
-                output += "\nYour next reset occurs in " + remainingTime;
-                return output;
-            } else {
-                return "Return in " + remainingTime + " to get more!";
+    String getAvailablePullSources() {
+        long timeRemaining = reset.getTime() - System.currentTimeMillis();
+        if (timeRemaining < 1000) { timeRemaining = 1000; }
+        String remainingTime = Casino.formatTime(timeRemaining);
+        if (robsToday < 1 || picksToday < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
+            String output = "You can still earn pulls today through the following means:";
+            if (robsToday < 1) {
+                output += "\n\t`/rob` or `/work` once today";
             }
+            if (picksToday < 1) {
+                output += "\n\t`/fish` or `/pickpocket` once today";
+            }
+            // TODO: Readd event check
+            //int remaining_events = MAX_DAILY_EVENT_PULLS - events_today;
+            //if (remaining_events > 0) {
+            //    output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
+            //}
+
+            output += "\nYour next reset occurs in " + remainingTime;
+            return output;
+        } else {
+            return "Return in " + remainingTime + " to get more!";
         }
     }
 

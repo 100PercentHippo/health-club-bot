@@ -171,7 +171,7 @@ public class HBMain {
         }
     }
 
-    static class SimpleCasinoCommand extends CasinoCommand {
+    private static class SimpleCasinoCommand extends CasinoCommand {
         SimpleCasinoCommand(Supplier<String> handler) {
             this.responder = i -> respondImmediately(new SingleResponse(handler.get()), i);
         }
@@ -201,7 +201,7 @@ public class HBMain {
         }
     }
 
-    static class ImmediateCasinoCommand extends CasinoCommand {
+    private static class ImmediateCasinoCommand extends CasinoCommand {
         ImmediateCasinoCommand(Function<SlashCommandInteraction, SingleResponse> handler) {
             this.responder = i -> respondImmediately(handler.apply(i), i);
         }
@@ -217,7 +217,7 @@ public class HBMain {
         }
     }
 
-    static class MultistepCasinoCommand extends CasinoCommand {
+    private static class MultistepCasinoCommand extends CasinoCommand {
         MultistepCasinoCommand(Function<SlashCommandInteraction, MultistepResponse> handler) {
             this.responder = i -> i.respondLater().thenAccept(updater -> makeMultiStepResponse(handler.apply(i), updater));
         }

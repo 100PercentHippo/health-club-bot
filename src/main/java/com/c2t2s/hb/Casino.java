@@ -158,7 +158,7 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkRobBonus(uid, "`/work`");
+        String bonus = EventUser.checkRobBonus(uid, "`/work`");
         String output = "";
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 25) {
@@ -207,7 +207,7 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkPickBonus(uid, "`/fish`");
+        String bonus = EventUser.checkPickBonus(uid, "`/fish`");
         String output = "";
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 80) {
@@ -260,7 +260,7 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkRobBonus(uid, "`/rob`");
+        String bonus = EventUser.checkRobBonus(uid, "`/rob`");
         String output = "";
         if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             robFailed(uid);
@@ -323,7 +323,7 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkPickBonus(uid, "`/pickpocket`");
+        String bonus = EventUser.checkPickBonus(uid, "`/pickpocket`");
         String output = "";
         if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             pickFailed(uid);
