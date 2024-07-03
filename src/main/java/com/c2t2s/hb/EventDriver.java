@@ -3,12 +3,11 @@ package com.c2t2s.hb;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 public class EventDriver {
 
@@ -16,45 +15,40 @@ public class EventDriver {
     private EventDriver() {}
 
     Map<Long, ServerEventDriver> serverDrivers = new HashMap<>();
-    Queue<Event> upcomingEvents = new LinkedList<>();
+    Deque<Event> upcomingEvents = new LinkedList<>();
 
     private static final int HOURS_BETWEEN_EVENTS = 12;
+    private static final int STORED_UPCOMING_EVENTS = 4;
 
     void initialize() {
+        Event lastEvent = fetchLastEvent();
         Event nextEvent = fetchNextEvent();
+        Instant now = Instant.now();
 
-        if (nextEvent == null) {
-            // If no upcoming events in DB, generate one
-            Event lastEvent = fetchLastEvent();
-            Instant now = Instant.now();
-            Instant lastTime;
-            Event.EventType lastEventType;
+        if (lastEvent == null) {
+            lastEvent = EventFactory.createEvent(Event.EventType.SUPER_GUESS, now.minusSeconds(1), true);
+        }
 
-            if (lastEvent != null) {
-                lastTime = lastEvent.getEndTime().toInstant();
-                lastEventType = lastEvent.getType();
-            } else {
-                // No events in DB at all. This shouldn't ever happen,
-                // but if it does we just need a placeholder value.
-                // Details like timezone therefore aren't important
-                lastTime = now.minusSeconds(1);
-                // Set last type to a bonus event so next is Fishing
-                lastEventType = Event.EventType.SUPER_GUESS;
-            }
+        // Events happen every 12 hours so figure out the next
+        // upcoming event time from the last one
+        long missedEvents = Duration.between(lastEvent.getEndTime(), now).toHours() / HOURS_BETWEEN_EVENTS;
+        Instant nextEventTime = lastEvent.getEndTime().plus((missedEvents + 1) * HOURS_BETWEEN_EVENTS, ChronoUnit.HOURS);
 
-            // Events happen every 12 hours so figure out the next
-            // time from the last one
-            long missedEvents = Duration.between(lastTime, now).toHours() / HOURS_BETWEEN_EVENTS;
-            Timestamp nextTime = Timestamp.from(lastTime.plus((missedEvents + 1) * HOURS_BETWEEN_EVENTS, ChronoUnit.HOURS));
-            nextEvent = EventFactory.createEvent(getNextEventType(lastEventType), nextTime);
+        if (nextEvent.getEndTime().isAfter(nextEventTime)) {
+            nextEvent = EventFactory.createEvent(getNextEventType(lastEvent.getType()), nextEventTime);
             storeEvent(nextEvent);
         }
 
+        // If last event never completed complete it now
+        if (!lastEvent.isComplete()) {
+            // TODO: Complete event
+        }
+
+        // Populate all the upcoming events
         upcomingEvents.add(nextEvent);
-
-        // TODO: Populate the next 3 events
-
-        // TODO: Check if we need to resolve the next event immediately
+        while (upcomingEvents.size() < STORED_UPCOMING_EVENTS) {
+            upcomingEvents.add(generateNextEvent(upcomingEvents.peekLast()));
+        }
 
         // TODO: Start a timer
     }
@@ -80,6 +74,18 @@ public class EventDriver {
         }
     }
 
+    private static Event generateNextEvent(Event previousEvent) {
+        Instant nextEndTime = previousEvent.getEndTime().plus(HOURS_BETWEEN_EVENTS, ChronoUnit.HOURS);
+        Event nextEvent = getUpcomingEvent(nextEndTime);
+
+        if (nextEvent == null) {
+            nextEvent = EventFactory.createEvent(getNextEventType(previousEvent.getType()), nextEndTime);
+            storeEvent(nextEvent);
+        }
+
+        return nextEvent;
+    }
+
     static String checkUpcomingEvents(Long server) {
         return "placeholder";
     }
@@ -90,21 +96,22 @@ public class EventDriver {
 
     //////////////////////////////////////////////////////////
 
-    private Event fetchNextEvent() {
+    private static Event fetchNextEvent() {
         //TODO
         return null;
     }
 
-    private Event fetchLastEvent() {
+    private static Event fetchLastEvent() {
         //TODO
         return null;
     }
 
-    private void storeEvent(Event event) {
+    private static void storeEvent(Event event) {
         //TODO
     }
 
-    private Event getUpcomingEvent(Timestamp time) {
+    private static Event getUpcomingEvent(Instant time) {
+        Timestamp sqlTime = Timestamp.from(time);
         //TODO
         return null;
     }

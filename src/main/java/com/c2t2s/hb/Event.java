@@ -1,13 +1,17 @@
 package com.c2t2s.hb;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
 class EventFactory {
 
     // Hide default constructor
     private EventFactory() {}
 
-    static Event createEvent(Event.EventType type, Timestamp endTime) {
+    static Event createEvent(Event.EventType type, Instant endTime) {
+        return createEvent(type, endTime, false);
+    }
+
+    static Event createEvent(Event.EventType type, Instant endTime, boolean complete) {
         // TODO
         return null;
     }
@@ -20,14 +24,15 @@ abstract class Event {
     }
 
     protected EventType type;
-    protected boolean isBonus;
-    private Timestamp endTime;
+    protected boolean isComplete;
+    private Instant endTime;
 
-    boolean isBonus() {
-        return isBonus;
+
+    boolean isComplete() {
+        return isComplete;
     }
 
-    Timestamp getEndTime() {
+    Instant getEndTime() {
         return endTime;
     }
 
