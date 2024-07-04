@@ -2,8 +2,11 @@ package com.c2t2s.hb;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.channel.TextChannel;
+import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.interaction.AutocompleteInteraction;
 import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.MessageComponentInteraction;
@@ -22,7 +25,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import static java.util.Map.entry;
+
+import java.awt.Color;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -129,6 +136,48 @@ public class HBMain {
 
         URL getAttachment() {
             return images.get(index);
+        }
+    }
+
+    static class EmbedResponse {
+        private String title;
+        private String message;
+        private Color color;
+        private ActionRow buttons;
+
+        EmbedResponse(Color color, String message) {
+            this.message = message;
+            this.color = color;
+        }
+
+        EmbedResponse(Color color, String message, String title) {
+            this.title = title;
+            this.message = message;
+            this.color = color;
+        }
+
+        Color getColor() {
+            return color;
+        }
+
+        String getTitle() {
+            return title;
+        }
+
+        String getMessage() {
+            return message;
+        }
+
+        ActionRow getButtons() {
+            return buttons;
+        }
+
+        boolean hasTitle() {
+            return title != null && !title.isEmpty();
+        }
+
+        boolean hasButtons() {
+            return buttons != null;
         }
     }
 
@@ -268,6 +317,8 @@ public class HBMain {
     private static final long DEFAULT_ALLORNOTHING_WAGER = 500L;
     private static final long DEFAULT_PULL_AMOUNT = 1L;
 
+    static DiscordApi api;
+
     //private static Set<Long> casinoChannels = new HashSet<>();
     //private static Set<Long> gachaChannels = new HashSet<>();
     //private static Set<Long> adminUsers = new HashSet<>();
@@ -358,7 +409,7 @@ public class HBMain {
             return;
         }
 
-        DiscordApi api = new DiscordApiBuilder().setToken(args[0]).login().join();
+        api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.setMessageCacheSize(0, 0);
         if (args.length > 1 && args[1].equalsIgnoreCase("init")) {
             initCommands(api);
@@ -750,5 +801,26 @@ public class HBMain {
                 updater.update();
             }
         }, 0, multistepResponse.delay);
+    }
+
+    static void sendMessage(EmbedResponse embedResponse, long channelID) {
+        Optional<TextChannel> channel = api.getTextChannelById(channelID);
+        if (!channel.isPresent()) {
+            System.out.println("Failed to send message to channel " + channelID + ": Channel was not found");
+            return;
+        }
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(embedResponse.getColor());
+        embedBuilder.setDescription(embedResponse.getMessage());
+        if (embedResponse.hasTitle()) {
+            embedBuilder.setTitle(embedResponse.getTitle());
+        }
+        MessageBuilder messageBuilder = new MessageBuilder();
+        messageBuilder.setEmbed(embedBuilder);
+        if (embedResponse.hasButtons()) {
+            messageBuilder.addComponents(embedResponse.getButtons());
+        }
+        messageBuilder.send(channel.get());
     }
 }
