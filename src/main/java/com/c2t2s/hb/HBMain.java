@@ -199,7 +199,7 @@ public class HBMain {
         }
     }
 
-    private abstract static class CasinoCommand {
+    abstract static class CasinoCommand {
         Consumer<SlashCommandInteraction> responder;
         // If the number of channel options expands greatly, replace these with a bitmask
         boolean isValidInCasinoChannels = true;
@@ -319,9 +319,6 @@ public class HBMain {
 
     static DiscordApi api;
 
-    //private static Set<Long> casinoChannels = new HashSet<>();
-    //private static Set<Long> gachaChannels = new HashSet<>();
-    //private static Set<Long> adminUsers = new HashSet<>();
     private static Map<String, CasinoCommand> commands = Map.ofEntries(
             entry(VERSION_COMMAND, new SimpleCasinoCommand(
                 Changelog::getVersion)),
@@ -425,16 +422,14 @@ public class HBMain {
                 return;
             }
 
-            // // Ensure user is allowed to run this command in this channel
-            // if (!(adminUsers.contains(interaction.getUser().getId())
-            //         || (command.isValidInCasinoChannels() && casinoChannels.contains(interaction.getChannel().get().getId()))
-            //         || (command.isValidInGachaChannels() && gachaChannels.contains(interaction.getChannel().get().getId())))) {
-            //     respondImmediately(
-            //         new SingleResponse("Unable to run `" + interaction.getFullCommandName()
-            //             + "` in this channel. If this is unexpected, have an admin run `/registerchannel`"),
-            //         interaction, true);
-            //     return;
-            // }
+            if (!CommandAccessControl.isValid(interaction.getUser().getId(), command,
+                    interaction.getChannel().get().getId())) {
+                respondImmediately(
+                    new SingleResponse("Unable to run `" + interaction.getFullCommandName()
+                        + "` in this channel. If this is unexpected, have a casino admin register this channel"),
+                    interaction, true);
+                return;
+            }
 
             command.handle(interaction);
         });
