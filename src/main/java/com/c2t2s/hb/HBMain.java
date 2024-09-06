@@ -406,6 +406,8 @@ public class HBMain {
             return;
         }
 
+        CommandAccessControl.initialize();
+
         api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.setMessageCacheSize(0, 0);
         if (args.length > 1 && args[1].equalsIgnoreCase("init")) {
