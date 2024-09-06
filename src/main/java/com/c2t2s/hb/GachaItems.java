@@ -9,8 +9,8 @@ public class GachaItems {
     private static final int PICK_STAT_INDEX = 2;
     private static final int ROB_STAT_INDEX  = 3;
     private static final int MISC_STAT_INDEX = 4;
-    private static final int INITIAL_BONUS_INDEX = 0;
-    private static final int GEM_BONUS_INDEX = 1;
+    private static final int STAT_SIZE = 5;
+    private static final int TENDENCY_STAT_INDEX = 5;
 
     private enum ITEM_STAT {
         WORK(WORK_STAT_INDEX, 'W', "Work", "Hardworking", "Lazy", "Tie", "Suit"),
@@ -66,16 +66,79 @@ public class GachaItems {
         }
     }
 
+    private static final int FRACTURED_GEM_ID = 0;
+    private static final int PURE_GEM_ID = 1;
+    private static final int UNSTABLE_GEM_ID = 2;
+
     private abstract static class Gem {
-        abstract String getDescription();
+        int id;
+        String name;
+        String description;
+
+        abstract List<String> apply(Item item);
+
+        int getId() { return id; }
+        String getName() { return name; }
+        String getDescription() { return description; }
+
+        static Gem fromId(int id) {
+            switch (id) {
+                case FRACTURED_GEM_ID:
+                    return new BasicGem(FRACTURED_GEM_ID, "Fractured Gem", "+0.2 to 1 stat & -0.1 to 1 stat",
+                            new int[]{2}, new int[]{1});
+                case PURE_GEM_ID:
+                    return new BasicGem(PURE_GEM_ID, "Pure Gem", "+0.1 to 1 stat",
+                            new int[]{1}, new int[]{});
+                case UNSTABLE_GEM_ID:
+                    return new BasicGem(UNSTABLE_GEM_ID, "Unstable Gem", "+0.3 to 1 stat & -0.1 to 1 stat & -0.1 to 1 stat",
+                            new int[]{3}, new int[]{1, 1});
+                default:
+                    throw new IllegalArgumentException("Encountered unexpected gem id: " + id);
+            }
+        }
     }
+
+    private static class BasicGem extends Gem {
+        int[] additions;
+        int[] subtractions;
+
+        BasicGem(int id, String name, String description, int[] additions, int[] subtractions) {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+            this.additions = additions;
+            this.subtractions = subtractions;
+        }
+
+        List<String> apply(Item item) {
+
+        }
+    }
+
+    private static class AppliedGem {
+        private int gemType;
+        private int[] modifiedStats;
+
+        String getDescription() {
+            StringBuilder builder = new StringBuilder();
+            builder.append(GEM.fromId(gemType).)
+        }
+
+        AppliedGem(int gemType, int[] modifiedStats) {
+            this.gemType = gemType;
+            this.modifiedStats = modifiedStats;
+        }
+    }
+
+    private static final int INITIAL_BONUS_INDEX = 0;
+    private static final int GEM_BONUS_INDEX = 1;
 
     private abstract static class Item {
         double generatorVersion;
         // { {5 element initial bonus array}
         //   {5 element gem bonus array} }
         int[][] bonuses;
-        List<Gem> gems;
+        List<AppliedGem> gems;
 
         // Stat selected is more likely to be rolled when adding stats
         ITEM_STAT positiveTendency;
@@ -91,12 +154,26 @@ public class GachaItems {
         int gemSlots;
         int enhancementLevel = 0;
 
-        abstract void addRandomStats(int amount, int repetitions, boolean initial);
-        abstract void subtractRandomStats(int amount, int repetitions, boolean initial);
+        abstract int addRandomStat(int amount, boolean initial);
+        abstract int subtractRandomStat(int amount, boolean initial);
 
         abstract double getModifier(ITEM_STAT stat);
         abstract double getBonusModifierContribution(int baseModifier);
         abstract int getTier();
+
+        void addRandomStats(int amount, boolean initial, int repetitions) {
+            for (int i = 0; i < repetitions; ++i) {
+                addRandomStat(amount, initial);
+            }
+        }
+
+        void subtractRandomStats(int amount, boolean initial, int repetitions) {
+            for (int i = 0; i < repetitions; ++i) {
+                subtractRandomStat(amount, initial);
+            }
+        }
+
+        AppliedGem applyGem(Gem)
 
         public String getName() {
             // [Tier #][Adjective from positive affinity][Adjective from negative affinity][Item name from bonus]
@@ -152,7 +229,7 @@ public class GachaItems {
                 builder.append(')');
             }
             builder.append("\n\nGems:");
-            for (Gem gem : gems) {
+            for (AppliedGem gem : gems) {
                 builder.append("\n  ");
                 builder.append(gem.getDescription());
             }
@@ -160,6 +237,16 @@ public class GachaItems {
                 builder.append("\n  Empty Gem Slot");
             }
             return builder.toString();
+        }
+
+        static Item getItem(double generatorVersion, int[][] bonuses, ITEM_STAT positiveTendency,
+                ITEM_STAT negativeTendency, ITEM_STAT bonusStat, int initialAdditions,
+                int appliedAdditions, int initialSubtractions, int appliedSubtractiions,
+                int enhancementLevel, int gemSlots) {
+            // In the future use the generator version to pick the right item generation
+            return new G0Item(generatorVersion, bonuses, positiveTendency, negativeTendency,
+                bonusStat, initialAdditions, appliedAdditions, initialSubtractions,
+                appliedSubtractiions, enhancementLevel, gemSlots);
         }
     }
 
@@ -192,13 +279,13 @@ public class GachaItems {
             // Award 1/3 of the stats 3 at a time, 1/3 2 at a time, and the last 1/3 1 at a time
             // Some rounding will occur, but that's fine
             int allocation = additions / 3;
-            item.addRandomStats(3, allocation / 3, true);
-            item.addRandomStats(2, allocation / 2, true);
-            item.addRandomStats(1, allocation, true);
+            item.addRandomStats(3, true, allocation / 3);
+            item.addRandomStats(2, true, allocation / 2);
+            item.addRandomStats(1, true, allocation);
             allocation = subtractions / 3;
-            item.subtractRandomStats(3, allocation / 3, true);
-            item.subtractRandomStats(2, allocation / 2, true);
-            item.subtractRandomStats(1, allocation, true);
+            item.subtractRandomStats(3, true, allocation / 3);
+            item.subtractRandomStats(2, true, allocation / 2);
+            item.subtractRandomStats(1, true, allocation);
 
             return item;
         }
@@ -234,35 +321,38 @@ public class GachaItems {
             this.gemSlots            = gemSlots;
         }
 
-        void addRandomStats(int amount, int repetitions, boolean initial) {
+        int addRandomStat(int amount, boolean initial) {
             int index = initial ? INITIAL_BONUS_INDEX : GEM_BONUS_INDEX;
-            for (int i = 0; i < repetitions; i++) {
-                if (HBMain.RNG_SOURCE.nextDouble() < TENDENCY_CHANCE) {
-                    bonuses[index][positiveTendency.getIndex()] += amount;
-                } else {
-                    bonuses[index][HBMain.RNG_SOURCE.nextInt(5)] += amount;
-                }
+            int stat;
+            if (HBMain.RNG_SOURCE.nextDouble() < TENDENCY_CHANCE) {
+                stat = TENDENCY_STAT_INDEX;
+                bonuses[index][positiveTendency.getIndex()] += amount;
+            } else {
+                stat = HBMain.RNG_SOURCE.nextInt(STAT_SIZE);
+                bonuses[index][stat] += amount;
             }
             if (initial) {
-                initialAdditions += amount * repetitions;
+                initialAdditions += amount;
             } else {
-                appliedAdditions += amount * repetitions;
+                appliedAdditions += amount;
             }
+            return stat;
         }
 
-        void subtractRandomStats(int amount, int repetitions, boolean initial) {
+        int subtractRandomStat(int amount, boolean initial) {
             int index = initial ? INITIAL_BONUS_INDEX : GEM_BONUS_INDEX;
-            for (int i = 0; i < repetitions; i++) {
-                if (HBMain.RNG_SOURCE.nextInt(10) == 0) {
-                    bonuses[index][negativeTendency.getIndex()] -= amount;
-                } else {
-                    bonuses[index][HBMain.RNG_SOURCE.nextInt(5)] -= amount;
-                }
+            int stat;
+            if (HBMain.RNG_SOURCE.nextDouble() < TENDENCY_CHANCE) {
+                stat = TENDENCY_STAT_INDEX;
+                bonuses[index][negativeTendency.getIndex()] -= amount;
+            } else {
+                stat = HBMain.RNG_SOURCE.nextInt(STAT_SIZE);
+                bonuses[index][stat] -= amount;
             }
             if (initial) {
-                initialSubtractions += amount * repetitions;
+                initialSubtractions += amount;
             } else {
-                appliedSubtractions += amount * repetitions;
+                appliedSubtractions += amount;
             }
         }
 
@@ -297,3 +387,22 @@ public class GachaItems {
         return builder.toString();
     }
 }
+
+    // CREATE TABLE IF NOT EXISTS gacha_item (
+    //  iid SERIAL PRIMARY KEY,
+    //  uid bigint NOT NULL,
+    //  generator double NOT NULL,
+    //  enhancement_level integer NOT NULL,
+    //  gem_slots integer NOT NULL,
+    //  positive_tendency integer NOT NULL,
+    //  negative_tendency integer NOT NULL,
+    //  bonusStat integer NOT NULL,
+    //  initial_additions integer NOT NULL,
+    //  initial_subtractions integer NOT NULL,
+    //  initial_work integer NOT NULL,
+    //  initial_fish integer NOT NULL,
+    //  initial_pick integer NOT NULL,
+    //  initial_rob integer NOT NULL,
+    //  initial_misc integer NOT NULL,
+    //  CONSTRAINT gacha_item_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    // );
