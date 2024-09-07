@@ -394,7 +394,7 @@ public class HBMain {
             entry(GACHA_BANNER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
             entry(TEST_COMMAND, new SimpleCasinoCommand(
-                Items::handleTest,
+                GachaItems::handleTest,
                 false,
                 false,
                 false))

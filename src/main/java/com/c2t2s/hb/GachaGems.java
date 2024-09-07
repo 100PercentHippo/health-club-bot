@@ -55,6 +55,17 @@ public class GachaGems {
         String getName() { return name; }
         String getDescription() { return description; }
 
+        boolean isEligible(GachaItems.Item item) {
+            return item.gems.size() < item.gemSlots;
+        }
+
+        String getIneligibilityReason(GachaItems.Item item) {
+            if (item.gems.size() < item.gemSlots) {
+                return "Selected item has no gem slots";
+            }
+            return "";
+        }
+
         static Gem fromId(int id) {
             switch (id) {
                 case FRACTURED_GEM_ID:
@@ -90,6 +101,8 @@ public class GachaGems {
                     return new VersatileGem();
                 case PUTRID_GEM_ID:
                     return new PutridGem();
+                case FORGETFUL_GEM_ID:
+                    return new ForgetfulGem();
                 default:
                     throw new IllegalArgumentException("Encountered unexpected gem id: " + id);
             }
@@ -341,12 +354,46 @@ public class GachaGems {
         }
     }
 
+    private static class ForgetfulGem extends Gem {
+        ForgetfulGem() {
+            id = FORGETFUL_GEM_ID;
+            name = "Forgetful Gem";
+            description = "Negate all existing gem bonuses and refund their gem slots";
+        }
+
+        @Override
+        boolean isEligible(GachaItems.Item item) {
+            if (item.gems.isEmpty()) {
+                return false;
+            }
+            return super.isEligible(item);
+        }
+
+        @Override
+        String getIneligibilityReason(GachaItems.Item item) {
+            if (item.gems.isEmpty()) {
+                return "No gems to remove";
+            }
+            return super.getIneligibilityReason(item);
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            GemApplicationResult applicationResult = new GemApplicationResult(id);
+            int removedGems = item.removeAllGems();
+            applicationResult.output.add(removedGems + " gems removed");
+            return applicationResult;
+        }
+    }
+
     static class AppliedGem {
         private int gemType;
         private GachaItems.StatArray modifiedStats;
+        private long gemId;
 
         int getGemType() { return gemType; }
         GachaItems.StatArray getModifiedStats() { return modifiedStats; }
+        long getGemId() { return gemId; }
 
         // e.g. "Cursed Gem: Work +0.1, Fish -0.3"
         String getDescription() {
@@ -373,9 +420,10 @@ public class GachaGems {
             modifiedStats = new GachaItems.StatArray();
         }
 
-        AppliedGem(int gemType, GachaItems.StatArray modifiedStats) {
+        AppliedGem(int gemType, GachaItems.StatArray modifiedStats, long gemId) {
             this.gemType = gemType;
             this.modifiedStats = modifiedStats;
+            this.gemId = gemId;
         }
     }
 }

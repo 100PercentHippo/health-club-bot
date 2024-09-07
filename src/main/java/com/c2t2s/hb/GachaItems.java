@@ -172,12 +172,32 @@ public class GachaItems {
             }
         }
 
+        StatArray getGemModifiers() {
+            return bonuses[GEM_BONUS_INDEX];
+        }
+
         List<String> applyGem(GachaGems.Gem gem) {
+            // TODO: Move this to command handling
+            if (!gem.isEligible(this)) {
+                List<String> result = new ArrayList<>();
+                result.add(gem.getIneligibilityReason(this));
+                return result;
+            }
+
             GachaGems.GemApplicationResult applicationResult = gem.apply(this);
             gems.add(applicationResult.result);
             bonuses[GEM_BONUS_INDEX].addArray(applicationResult.result.getModifiedStats());
             logAppliedGem(itemId, gem.id, applicationResult.result.getModifiedStats());
             return applicationResult.output;
+        }
+
+        int removeAllGems() {
+            int removedGems = gems.size();
+            for (GachaGems.AppliedGem gem : gems) {
+                logGemRemoval(gem.getGemId());
+            }
+            gems.clear();
+            return removedGems;
         }
 
         public String getName() {
@@ -426,7 +446,23 @@ public class GachaItems {
     //  CONSTRAINT gacha_item_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
+    // CREATE TABLE IF NOT EXISTS gacha_item_gem (
+    //  gid SERIAL PRIMARY KEY,
+    //  iid bigint NOT NULL,
+    //  work_modifier integer NOT NULL DEFAULT 0,
+    //  fish_modifier integer NOT NULL DEFAULT 0,
+    //  pick_modifier integer NOT NULL DEFAULT 0,
+    //  rob_modifier integer NOT NULL DEFAULT 0,
+    //  misc_modifier integer NOT NULL DEFAULT 0,
+    //  negated boolean NOT NULL DEFAULT false,
+    //  CONSTRAINT gacha_item_gem_iid KEY(iid) REFERENCES gacha_item(iid)
+    // );
+
     static void logAppliedGem(long itemId, int gemId, StatArray stats) {
+
+    }
+
+    static void logGemRemoval(long gemId) {
 
     }
 }
