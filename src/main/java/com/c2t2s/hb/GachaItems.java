@@ -7,15 +7,16 @@ import java.util.Set;
 
 public class GachaItems {
 
+    // Hide default constructor
+    private GachaItems() { }
+
     private static final int WORK_STAT_INDEX = 0;
     private static final int FISH_STAT_INDEX = 1;
     private static final int PICK_STAT_INDEX = 2;
     private static final int ROB_STAT_INDEX  = 3;
     private static final int MISC_STAT_INDEX = 4;
-    // Used by item add/subtract to indicate tendency procced
-    private static final int TENDENCY_STAT_INDEX = 5;
 
-    private enum ITEM_STAT {
+    enum ITEM_STAT {
         WORK(WORK_STAT_INDEX, 'W', "Work", "Hardworking", "Lazy", "Tie", "Suit"),
         FISH(FISH_STAT_INDEX, 'F', "Fish", "Patient", "Impatient", "Reel", "Tacklebox"),
         PICK(PICK_STAT_INDEX, 'P', "Pick", "Inconspicuous", "Conspicuous", "Gloves", "Mage Hand"),
@@ -67,9 +68,15 @@ public class GachaItems {
                     return ITEM_STAT.MISC;
             }
         }
+
+        static String format(int amount) {
+            return (amount > 0 ? "+" : "") + Stats.oneDecimal.format(amount / 10.0);
+        }
     }
 
-    private static class StatArray {
+    // This could be adjusted to be doubles in more granular control
+    // is wanted in the future
+    static class StatArray {
         private static final int[] EMPTY_STAT_ARRAY = {0, 0, 0, 0, 0};
 
         private int[] stats = EMPTY_STAT_ARRAY.clone();
@@ -105,237 +112,30 @@ public class GachaItems {
                 addStat(stat, array.getStat(stat));
             }
         }
-    }
 
-    private static final int FRACTURED_GEM_ID = 0;
-    private static final int PURE_GEM_ID = 1;
-    private static final int UNSTABLE_GEM_ID = 2;
-    private static final int BOLSTERING_GEM_ID = 3;
-    private static final int BALANCED_GEM_ID = 4;
-    private static final int RECKLESS_GEM_ID = 5;
-    private static final int HARDWORKING_GEM_ID = 6;
-    private static final int PATIENT_GEM_ID = 7;
-    private static final int SHADOWY_GEM_ID = 8;
-    private static final int INTIMIDATING_GEM_ID = 9;
-    private static final int PUTRID_GEM_ID = 10;
-    private static final int FORGETFUL_GEM_ID = 11;
-    private static final int EQUALIZING_GEM_ID = 12;
-    private static final int CHAOTIC_GEM_ID = 13;
-    private static final int INVERTED_GEM_ID = 14;
-    private static final int COMPOUNDING_GEM_ID = 15;
-    private static final int FRACTAL_GEM_ID = 16;
-
-    static final int COMMON_GEM_RARITY = 0;
-    static final int UNCOMMON_GEM_RARITY = 1;
-    static final int RARE_GEM_RARITY = 2;
-    private static final int[] COMMON_GEMS
-        = {FRACTURED_GEM_ID, PURE_GEM_ID, UNSTABLE_GEM_ID, BOLSTERING_GEM_ID, BALANCED_GEM_ID};
-    private static final int[] UNCOMMON_GEMS
-        = {RECKLESS_GEM_ID, HARDWORKING_GEM_ID, PATIENT_GEM_ID, SHADOWY_GEM_ID,
-           INTIMIDATING_GEM_ID, PUTRID_GEM_ID, FORGETFUL_GEM_ID, EQUALIZING_GEM_ID};
-    private static final int[] RARE_GEMS
-        = {CHAOTIC_GEM_ID, INVERTED_GEM_ID, COMPOUNDING_GEM_ID, FRACTAL_GEM_ID};
-
-    abstract static class Gem {
-        int id;
-        String name;
-        String description;
-
-        abstract GemApplicationResult apply(Item item);
-
-        int getId() { return id; }
-        String getName() { return name; }
-        String getDescription() { return description; }
-
-        static Gem fromId(int id) {
-            switch (id) {
-                case FRACTURED_GEM_ID:
-                    return new BasicGem(FRACTURED_GEM_ID, "Fractured Gem", "+0.2 x1, -0.1 x1, duplicate rolls permitted",
-                            new int[]{2, -1});
-                case PURE_GEM_ID:
-                    return new BasicGem(PURE_GEM_ID, "Pure Gem", "+0.1 x1",
-                            new int[]{1});
-                case UNSTABLE_GEM_ID:
-                    return new BasicGem(UNSTABLE_GEM_ID, "Unstable Gem", "+0.3 x1, -0.1 x2, duplicate rolls permitted",
-                            new int[]{3, -1, -1});
-                case BOLSTERING_GEM_ID:
-                    return new BolsteringGem();
-                case BALANCED_GEM_ID:
-                    return new BalancedGem();
-                default:
-                    throw new IllegalArgumentException("Encountered unexpected gem id: " + id);
-            }
-        }
-
-        static Gem getRandomGem(int rarity) {
-            switch (rarity) {
-                default:
-                    System.out.println("Unexpected gem rarity encountered: " + rarity);
-                case COMMON_GEM_RARITY:
-                    return fromId(COMMON_GEMS[HBMain.RNG_SOURCE.nextInt(COMMON_GEMS.length)]);
-                case UNCOMMON_GEM_RARITY:
-                    return fromId(UNCOMMON_GEMS[HBMain.RNG_SOURCE.nextInt(UNCOMMON_GEMS.length)]);
-                case RARE_GEM_RARITY:
-                    return fromId(RARE_GEMS[HBMain.RNG_SOURCE.nextInt(RARE_GEMS.length)]);
-            }
-        }
-    }
-
-    private static class GemApplicationResult {
-        AppliedGem result;
-        List<String> output;
-
-        GemApplicationResult(int gemType) {
-            result = new AppliedGem(gemType);
-            output = new ArrayList<>();
-        }
-
-        static String formatStatApplication(ITEM_STAT stat, int amount, boolean isTendency,
-                String tendencyAdjective) {
-            String result = stat.statName + (amount >= 0 ? " +" : " ")
-                + Stats.oneDecimal.format(amount / 10.0);
-            if (isTendency) {
-                result += " (selected with " + tendencyAdjective + ")";
-            }
-            return result;
-        }
-
-        void addStat(ITEM_STAT stat, int amount) {
-            addStat(stat, amount, false, "");
-        }
-
-        void addStat(StatRollResult roll, int amount) {
-            addStat(roll.stat, amount, roll.isTendency, roll.tendencyAdjective);
-        }
-
-        void addStat(ITEM_STAT stat, int amount, boolean isTendency, String tendencyAdjective) {
-            result.modifiedStats.addStat(stat, amount);
-            output.add(formatStatApplication(stat, amount, isTendency, tendencyAdjective));
-        }
-    }
-
-    private static class BasicGem extends Gem {
-        int[] statChanges;
-
-        BasicGem(int id, String name, String description, int[] statChanges) {
-            this.id = id;
-            this.name = name;
-            this.description = description;
-            this.statChanges = statChanges;
-        }
-
-        GemApplicationResult apply(Item item) {
-            GemApplicationResult applicationResult = new GemApplicationResult(id);
-            for (int change : statChanges) {
-                StatRollResult roll = item.rollStat(change > 0);
-                applicationResult.addStat(roll, change);
-            }
-            return applicationResult;
-        }
-    }
-
-    private static class BolsteringGem extends Gem {
-        BolsteringGem() {
-            this.id = BOLSTERING_GEM_ID;
-            this.name = "Bolstering Gem";
-            this.description = "+0.3 to lowest stat (ties broken randomly)";
-        }
-
-        GemApplicationResult apply(Item item) {
-            GemApplicationResult applicationResult = new GemApplicationResult(id);
-            List<ITEM_STAT> lowestStat = new ArrayList<>();
-            double lowestValue = item.getModifier(ITEM_STAT.fromIndex(0));
-            for (int i = 1; i < ITEM_STAT.values().length; ++i) {
-                double value = item.getModifier(ITEM_STAT.fromIndex(i));
-                if (value < lowestValue) {
-                    lowestValue = value;
-                    lowestStat.clear();
-                    lowestStat.add(ITEM_STAT.fromIndex(i));
-                } else if (value == lowestValue) {
-                    lowestStat.add(ITEM_STAT.fromIndex(i));
-                }
-            }
-            ITEM_STAT selectedStat;
-            if (lowestStat.size() > 1) {
-                selectedStat = lowestStat.get(HBMain.RNG_SOURCE.nextInt(lowestStat.size()));
-            } else {
-                selectedStat = lowestStat.get(0);
-            }
-            applicationResult.addStat(selectedStat, 3);
-            return applicationResult;
-        }
-    }
-
-    private static class BalancedGem extends Gem {
-        BalancedGem() {
-            this.id = BALANCED_GEM_ID;
-            this.name = "Balanced Gem";
-            this.description = "+0.2 x1, -0.2 x1, +0.1 x1, -0.1 x1 to unique stats";
-        }
-
-        GemApplicationResult apply(Item item) {
-            GemApplicationResult applicationResult = new GemApplicationResult(id);
-            // There's probably a more efficient implementation, but it was done
-            // this way to include biases for tendencies
-            Set<ITEM_STAT> selectedStats = new HashSet<>();
-            StatRollResult roll;
-            for (int change : new int[]{2, -2, 1, -1}) {
-                boolean found = false;
-                do {
-                    roll = item.rollStat(change > 0);
-                    if (!selectedStats.contains(roll.stat)) { found = true; }
-                } while (!found);
-                applicationResult.addStat(roll, change);
-                selectedStats.add(roll.stat);
-            }
-            return applicationResult;
-        }
-    }
-
-    private static class AppliedGem {
-        private int gemType;
-        private StatArray modifiedStats;
-
-        // e.g. "Cursed Gem: Work +0.1, Fish -0.3"
-        String getDescription() {
+        @Override
+        public String toString() {
+            // e.g. [-0.1W 0.4F 1.1P 0.2R -0.5M]
             StringBuilder builder = new StringBuilder();
-            builder.append(Gem.fromId(gemType).getName());
-            builder.append(": ");
-            int loggedStats = 0;
             for (ITEM_STAT stat : ITEM_STAT.values()) {
-                if (modifiedStats.getStat(stat) == 0) { continue; }
-                if (loggedStats > 0) { builder.append(", "); }
-                builder.append(stat.getStatName());
-                builder.append(modifiedStats.getStat(stat) > 0 ? " +" : " ");
-                builder.append(Stats.oneDecimal.format(modifiedStats.getStat(stat) / 10.0));
-                ++loggedStats;
+                builder.append(builder.isEmpty() ? '[' : ' ');
+                builder.append(Stats.oneDecimal.format(stat));
+                builder.append(stat.getLetter());
             }
-            if (loggedStats == 0) {
-                builder.append("No stats changed");
-            }
+            builder.append(']');
             return builder.toString();
-        }
-
-        AppliedGem(int gemType) {
-            this.gemType = gemType;
-            modifiedStats = new StatArray();
-        }
-
-        AppliedGem(int gemType, StatArray modifiedStats) {
-            this.gemType = gemType;
-            this.modifiedStats = modifiedStats;
         }
     }
 
     private static final int INITIAL_BONUS_INDEX = 0;
     private static final int GEM_BONUS_INDEX = 1;
 
-    private abstract static class Item {
+    abstract static class Item {
         double generatorVersion;
         long itemId;
         // { StatArray of inital stats, StatArray of gem stats }
         StatArray[] bonuses;
-        List<AppliedGem> gems;
+        List<GachaGems.AppliedGem> gems;
 
         // Stat selected is more likely to be rolled when adding stats
         ITEM_STAT positiveTendency;
@@ -355,17 +155,10 @@ public class GachaItems {
         abstract void addRandomStat(int amount, boolean initial);
         abstract void subtractRandomStat(int amount, boolean initial);
 
-        abstract double getModifier(ITEM_STAT stat);
-        abstract double getBonusModifierContribution(int baseModifier);
+        abstract int getModifier(ITEM_STAT stat);
+        abstract StatArray getModifiers();
+        abstract int getBonusModifierContribution(int baseModifier);
         abstract int getTier();
-
-        String getPositiveTendencyAdjective() {
-            return positiveTendency.getPositiveAdjective();
-        }
-
-        String getNegativeTendencyAdjective() {
-            return negativeTendency.getNegativeAdjective();
-        }
 
         void addRandomStats(int amount, boolean initial, int repetitions) {
             for (int i = 0; i < repetitions; ++i) {
@@ -379,11 +172,11 @@ public class GachaItems {
             }
         }
 
-        List<String> applyGem(Gem gem) {
-            GemApplicationResult applicationResult = gem.apply(this);
+        List<String> applyGem(GachaGems.Gem gem) {
+            GachaGems.GemApplicationResult applicationResult = gem.apply(this);
             gems.add(applicationResult.result);
-            bonuses[GEM_BONUS_INDEX].addArray(applicationResult.result.modifiedStats);
-            logAppliedGem(itemId, gem.id, applicationResult.result.modifiedStats);
+            bonuses[GEM_BONUS_INDEX].addArray(applicationResult.result.getModifiedStats());
+            logAppliedGem(itemId, gem.id, applicationResult.result.getModifiedStats());
             return applicationResult.output;
         }
 
@@ -402,15 +195,7 @@ public class GachaItems {
         }
 
         public String getBriefDescription() {
-            // e.g. [-0.1W][0.4F][1.1P][0.2R][-0.5M]
-            StringBuilder builder = new StringBuilder();
-            for (ITEM_STAT stat : ITEM_STAT.values()) {
-                builder.append('[');
-                builder.append(Stats.oneDecimal.format(getModifier(stat)));
-                builder.append(stat.getLetter());
-                builder.append(']');
-            }
-            return builder.toString();
+            return getModifiers().toString();
         }
 
         public String getFullDescription() {
@@ -421,27 +206,27 @@ public class GachaItems {
                 if (!builder.isEmpty()) { builder.append('\n'); }
                 builder.append(stat.getStatName());
                 builder.append(": ");
-                builder.append(Stats.oneDecimal.format(getModifier(stat)));
+                builder.append(ITEM_STAT.format(getModifier(stat)));
                 builder.append(" (");
-                builder.append(Stats.oneDecimal.format(initialBonus / 10.0));
+                builder.append(ITEM_STAT.format(initialBonus));
                 builder.append(" Base");
                 if (gemBonus != 0) {
                     builder.append(", ");
-                    builder.append(Stats.oneDecimal.format(gemBonus / 10.0));
+                    builder.append(ITEM_STAT.format(gemBonus));
                     builder.append(" from Gems");
                 }
                 if (stat == bonusStat) {
-                    double bonusContribution = getBonusModifierContribution(initialBonus + gemBonus);
+                    int bonusContribution = getBonusModifierContribution(initialBonus + gemBonus);
                     if (bonusContribution != 0.0) {
                         builder.append(", ");
-                        builder.append(Stats.oneDecimal.format(bonusContribution));
+                        builder.append(ITEM_STAT.format(bonusContribution));
                         builder.append(" from Item Type");
                     }
                 }
                 builder.append(')');
             }
             builder.append("\n\nGems:");
-            for (AppliedGem gem : gems) {
+            for (GachaGems.AppliedGem gem : gems) {
                 builder.append("\n  ");
                 builder.append(gem.getDescription());
             }
@@ -462,7 +247,7 @@ public class GachaItems {
         }
     }
 
-    private static class StatRollResult {
+    static class StatRollResult {
         ITEM_STAT stat;
         boolean isTendency;
         String tendencyAdjective;
@@ -546,6 +331,7 @@ public class GachaItems {
             this.gemSlots            = gemSlots;
         }
 
+        @Override
         StatRollResult rollStat(boolean isPositive) {
             if (HBMain.RNG_SOURCE.nextDouble() < TENDENCY_CHANCE) {
                 return new StatRollResult(isPositive ? positiveTendency : negativeTendency, true,
@@ -557,6 +343,7 @@ public class GachaItems {
             }
         }
 
+        @Override
         void addRandomStat(int amount, boolean initial) {
             int index = initial ? INITIAL_BONUS_INDEX : GEM_BONUS_INDEX;
             StatRollResult rollResult = rollStat(true);
@@ -568,6 +355,7 @@ public class GachaItems {
             }
         }
 
+        @Override
         void subtractRandomStat(int amount, boolean initial) {
             int index = initial ? INITIAL_BONUS_INDEX : GEM_BONUS_INDEX;
             StatRollResult rollResult = rollStat(false);
@@ -579,19 +367,28 @@ public class GachaItems {
             }
         }
 
-        double getModifier(ITEM_STAT stat) {
+        @Override
+        int getModifier(ITEM_STAT stat) {
             int modifier = bonuses[INITIAL_BONUS_INDEX].getStat(stat)
                 + bonuses[GEM_BONUS_INDEX].getStat(stat);
-            return modifier / 10.0
-                + (stat == bonusStat ? getBonusModifierContribution(modifier) : 0);
+            return modifier + (stat == bonusStat ? getBonusModifierContribution(modifier) : 0);
         }
 
-        double getBonusModifierContribution(int baseModifier) {
-            if (baseModifier <= 0) { return 0.0; }
+        @Override
+        StatArray getModifiers() {
+            return new StatArray(getModifier(ITEM_STAT.fromIndex(0)),
+                getModifier(ITEM_STAT.fromIndex(1)), getModifier(ITEM_STAT.fromIndex(2)),
+                getModifier(ITEM_STAT.fromIndex(3)), getModifier(ITEM_STAT.fromIndex(4)));
+        }
+
+        @Override
+        int getBonusModifierContribution(int baseModifier) {
+            if (baseModifier <= 0) { return 0; }
             // Add 50%, using int math as a floor
-            return (baseModifier / 2) / 10.0;
+            return baseModifier / 2;
         }
 
+        @Override
         int getTier() {
             return ((initialAdditions + appliedAdditions) - (initialSubtractions + appliedSubtractions)) / 10;
         }
