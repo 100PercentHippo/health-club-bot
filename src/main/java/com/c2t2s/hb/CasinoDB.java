@@ -2,6 +2,7 @@ package com.c2t2s.hb;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,45 +29,39 @@ class CasinoDB {
         } else {
             nickname = name;
         }
-        String query = "INSERT INTO money_user (uid, name, nickname, balance) VALUES(" + uid + ", '" + name
-            + "', '" + nickname + "', 1000) ON CONFLICT (uid) DO NOTHING;";
-        String job = "INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String slots = "INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String guess = "INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String minislots = "INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String hugeguess = "INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String monemachine = "INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String overunder = "INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String blackjac = "INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String gacha = "INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String event = "INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        String workout = "INSERT INTO workout_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;";
-        List<String> allornothing = new ArrayList<>();
+        String query = "INSERT INTO money_user (uid, name, nickname, balance) VALUES(?, ?, ?, 1000) ON CONFLICT (uid) DO NOTHING;";
+        List<String> uidStatements = new ArrayList<>();
+        uidStatements.add("INSERT INTO job_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO slots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO guess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO minislots_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO hugeguess_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO moneymachine_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO overunder_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO blackjack_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO gacha_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO event_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
+        uidStatements.add("INSERT INTO workout_user (uid) VALUES (" + uid + ") ON CONFLICT (uid) DO NOTHING;");
         for (AllOrNothing.Difficulty difficulty: AllOrNothing.Difficulty.values()) {
-            allornothing.add("INSERT INTO allornothing_user (uid, rolls_to_double) VALUES (" + uid
+            uidStatements.add("INSERT INTO allornothing_user (uid, rolls_to_double) VALUES (" + uid
                 + ", " + difficulty.rollsToDouble + ") ON CONFLICT (uid, rolls_to_double) DO NOTHING;");
         }
         Connection connection = null;
+        PreparedStatement preparedStatement = null;
         Statement statement = null;
         try {
             connection = getConnection();
-            statement = connection.createStatement();
-            error = statement.executeUpdate(query) < 1;
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setLong(1, uid);
+            preparedStatement.setString(2, name);
+            preparedStatement.setString(3, nickname);
+            error = preparedStatement.executeUpdate() < 1;
             if (!error) {
-                statement.executeUpdate(job);
-                statement.executeUpdate(slots);
-                statement.executeUpdate(guess);
-                statement.executeUpdate(minislots);
-                statement.executeUpdate(hugeguess);
-                statement.executeUpdate(monemachine);
-                statement.executeUpdate(overunder);
-                statement.executeUpdate(blackjac);
-                statement.executeUpdate(gacha);
-                statement.executeUpdate(event);
-                statement.executeUpdate(workout);
-                for (String entry: allornothing) {
-                    statement.executeUpdate(entry);
+                statement = connection.createStatement();
+                for (String entry: uidStatements) {
+                    statement.addBatch(entry);
                 }
+                statement.executeBatch();
             }
             statement.close();
             connection.close();
@@ -121,6 +116,39 @@ class CasinoDB {
         }
     }
 
+    static void executeValidatedUpdate(String query, List<String> userArgs) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = getConnection();
+            statement = connection.prepareStatement(query);
+            for (int i = 0; i < userArgs.size(); ++i) {
+                // SQL is 1-indexed
+                statement.setString(i + 1, userArgs.get(i));
+            }
+            statement.executeUpdate();
+            statement.close();
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     interface ResultSetConsumer <T> {
         public T apply(ResultSet results) throws SQLException;
     }
@@ -133,6 +161,43 @@ class CasinoDB {
             connection = getConnection();
             statement = connection.createStatement();
             ResultSet results = statement.executeQuery(query);
+            output = parseResult.apply(results);
+            statement.close();
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return output;
+    }
+
+    static <T> T executeValidatedQueryWithReturn(String query, List<String> userArgs,
+            ResultSetConsumer<T> parseResult, T defaultValue) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        T output = defaultValue;
+        try {
+            connection = getConnection();
+            statement = connection.prepareStatement(query);
+            for (int i = 0; i < userArgs.size(); ++i) {
+                // SQL is 1-indexed
+                statement.setString(i + 1, userArgs.get(i));
+            }
+            ResultSet results = statement.executeQuery();
             output = parseResult.apply(results);
             statement.close();
             connection.close();
