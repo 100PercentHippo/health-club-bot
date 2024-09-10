@@ -223,7 +223,7 @@ public class CommandAccessControl {
     }
 
     private static boolean logAddCasinoChannel(long server, long channel, String channelName, long uid) {
-        String query = "INSERT INTO casino_chanel (channel_id, server_id, name, added_by) VALUES ("
+        String query = "INSERT INTO casino_channel (channel_id, server_id, name, added_by) VALUES ("
             + channel + ", " + server + ",?," + uid + ");";
         int result = CasinoDB.executeValidatedUpdate(query, channelName);
         return CasinoDB.wasInsertSuccessful(result);
