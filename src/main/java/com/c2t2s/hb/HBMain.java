@@ -2,11 +2,13 @@ package com.c2t2s.hb;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.AutocompleteInteraction;
 import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.MessageComponentInteraction;
@@ -310,7 +312,13 @@ public class HBMain {
     private static final String GACHA_CHARACTER_INFO_COMMAND = "gacha character info";
     private static final String GACHA_BANNER_LIST_COMMAND = "gacha banner list";
     private static final String GACHA_BANNER_INFO_COMMAND = "gacha banner info";
+    private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
     private static final String TEST_COMMAND = "test";
+
+    private static final int REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL = 0;
+    private static final int REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL = 1;
+    private static final int REGISTER_SUBCOMMAND_REMOVE_CASINO_CHANNEL = 2;
+    private static final int REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL = 3;
 
     private static final long DEFAULT_LEADERBOARD_LENGTH = 3L;
     private static final long DEFAULT_CASINO_WAGER = 100L;
@@ -393,6 +401,11 @@ public class HBMain {
                 i -> Gacha.handleBannerInfo(i.getArgumentLongValueByIndex(0).get()))),
             entry(GACHA_BANNER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
+            entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
+                i -> handleRegisterChannel(i.getUser().getId(), i.getServer(), i.getChannel(), i.getArgumentLongValueByIndex(0).get()),
+                false,
+                false,
+                false)),
             entry(TEST_COMMAND, new SimpleCasinoCommand(
                 GachaItems::handleTest,
                 false,
@@ -424,8 +437,18 @@ public class HBMain {
                 return;
             }
 
-            if (!CommandAccessControl.isValid(interaction.getUser().getId(), command,
-                    interaction.getChannel().get().getId())) {
+            if (!interaction.getServer().isPresent()) {
+                respondImmediately(
+                    new SingleResponse("Unable to run `" + interaction.getFullCommandName()
+                        + "` in this channel. Server was not provided through API"),
+                    interaction, true);
+            } else if (!interaction.getChannel().isPresent()) {
+                respondImmediately(
+                    new SingleResponse("Unable to run `" + interaction.getFullCommandName()
+                        + "` in this channel. Channel was not provided through API"),
+                    interaction, true);
+            } else if (!CommandAccessControl.isValid(interaction.getUser().getId(), command,
+                    interaction.getServer().get().getId(), interaction.getChannel().get().getId())) {
                 respondImmediately(
                     new SingleResponse("Unable to run `" + interaction.getFullCommandName()
                         + "` in this channel. If this is unexpected, have a casino admin register this channel"),
@@ -605,6 +628,35 @@ public class HBMain {
         }
     }
 
+    private static String handleRegisterChannel(long uid, Optional<Server> serverOptional,
+            Optional<TextChannel> channelOptional, long subcommand) {
+        if (serverOptional.isEmpty() || channelOptional.isEmpty()) {
+            return "Unable to register channel: Server or channel is empty";
+        }
+        if (!(channelOptional.get() instanceof ServerTextChannel)) {
+            return "Unable to register channel: Channel is not a text channel";
+        }
+        Server server = serverOptional.get();
+        ServerTextChannel channel = (ServerTextChannel)channelOptional.get();
+        switch ((int)subcommand) {
+            case REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL:
+                return CommandAccessControl.handleRegisterCasinoChannel(uid, server.getId(),
+                    server.getName(), channel.getId(), channel.getName());
+            case REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL:
+                return CommandAccessControl.handleRegisterEventChannel(uid, server.getId(),
+                    server.getName(), channel.getId(), channel.getName());
+            case REGISTER_SUBCOMMAND_REMOVE_CASINO_CHANNEL:
+                return CommandAccessControl.handleDeregisterCasinoChannel(uid, server.getId(),
+                    channel.getId());
+            case REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL:
+                return CommandAccessControl.handleDeregisterEventChannel(uid, server.getId(),
+                    channel.getId());
+            default:
+                throw new IllegalArgumentException("Unexpected registercommand subcommand received: "
+                    + subcommand);
+        }
+    }
+
     private static void initCommands(DiscordApi api) {
         System.out.println("Registering commands with discord");
         Set<SlashCommandBuilder> builders = new HashSet<>();
@@ -707,6 +759,12 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "reward", "Desired reward", true,
                 Arrays.asList(SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.COIN_REWARD_ID), HealthClub.COIN_REWARD_ID),
                     SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
+        builders.add(new SlashCommandBuilder().setName(REGISTER_CHANNEL_COMMAND).setDescription("Register a channel for use by the casino bot")
+            .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "subcommand", "Action to perform", true,
+                Arrays.asList(SlashCommandOptionChoice.create("Register this as a casino channel", REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL),
+                    SlashCommandOptionChoice.create("Register this as an event channel", REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL),
+                    SlashCommandOptionChoice.create("Deregister this casino channel", REGISTER_SUBCOMMAND_REMOVE_CASINO_CHANNEL),
+                    SlashCommandOptionChoice.create("Deregister this event channel", REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL)))));
         builders.add(new SlashCommandBuilder().setName(TEST_COMMAND).setDescription("[Placeholder]")
                     .setEnabledInDms(true));
 

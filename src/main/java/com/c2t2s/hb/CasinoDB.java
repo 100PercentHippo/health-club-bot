@@ -8,12 +8,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class CasinoDB {
 
     // Hide default constructor
     private CasinoDB() {}
+
+    static final int DEFAULT_UPDATE_RETURN = -1;
 
     private static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(System.getenv("JDBC_DATABASE_URL"),
@@ -87,13 +91,14 @@ class CasinoDB {
         return error;
     }
 
-    static void executeUpdate(String query) {
+    static int executeUpdate(String query) {
         Connection connection = null;
         Statement statement = null;
+        int result = DEFAULT_UPDATE_RETURN;
         try {
             connection = getConnection();
             statement = connection.createStatement();
-            statement.executeUpdate(query);
+            result = statement.executeUpdate(query);
             statement.close();
             connection.close();
         } catch (SQLException e) {
@@ -114,19 +119,21 @@ class CasinoDB {
                 e.printStackTrace();
             }
         }
+        return result;
     }
 
-    static void executeValidatedUpdate(String query, List<String> userArgs) {
+    static int executeValidatedUpdate(String query, String... userArgs) {
         Connection connection = null;
         PreparedStatement statement = null;
+        int result = DEFAULT_UPDATE_RETURN;
         try {
             connection = getConnection();
             statement = connection.prepareStatement(query);
-            for (int i = 0; i < userArgs.size(); ++i) {
+            for (int i = 0; i < userArgs.length; ++i) {
                 // SQL is 1-indexed
-                statement.setString(i + 1, userArgs.get(i));
+                statement.setString(i + 1, userArgs[i]);
             }
-            statement.executeUpdate();
+            result = statement.executeUpdate();
             statement.close();
             connection.close();
         } catch (SQLException e) {
@@ -147,6 +154,7 @@ class CasinoDB {
                 e.printStackTrace();
             }
         }
+        return result;
     }
 
     interface ResultSetConsumer <T> {
@@ -185,17 +193,17 @@ class CasinoDB {
         return output;
     }
 
-    static <T> T executeValidatedQueryWithReturn(String query, List<String> userArgs,
-            ResultSetConsumer<T> parseResult, T defaultValue) {
+    static <T> T executeValidatedQueryWithReturn(String query, ResultSetConsumer<T> parseResult,
+            T defaultValue, String... userArgs) {
         Connection connection = null;
         PreparedStatement statement = null;
         T output = defaultValue;
         try {
             connection = getConnection();
             statement = connection.prepareStatement(query);
-            for (int i = 0; i < userArgs.size(); ++i) {
+            for (int i = 0; i < userArgs.length; ++i) {
                 // SQL is 1-indexed
-                statement.setString(i + 1, userArgs.get(i));
+                statement.setString(i + 1, userArgs[i]);
             }
             ResultSet results = statement.executeQuery();
             output = parseResult.apply(results);
@@ -224,7 +232,7 @@ class CasinoDB {
 
     static Timestamp executeTimestampQuery(String query) {
         Timestamp defaultValue = new Timestamp(0);
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 return results.getTimestamp(1);
             }
@@ -234,8 +242,19 @@ class CasinoDB {
 
     static List<Long> executeListQuery(String query) {
         List<Long> defaultValue = new ArrayList<>();
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+        return executeQueryWithReturn(query, results -> {
             List<Long> output = defaultValue;
+            while (results.next()) {
+                output.add(results.getLong(1));
+            }
+            return output;
+        }, defaultValue);
+    }
+
+    static Set<Long> executeSetQuery(String query) {
+        Set<Long> defaultValue = new HashSet<>();
+        return executeQueryWithReturn(query, results -> {
+            Set<Long> output = defaultValue;
             while (results.next()) {
                 output.add(results.getLong(1));
             }
@@ -245,7 +264,7 @@ class CasinoDB {
 
     static int executeIntQuery(String query) {
         int defaultValue = 0;
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 return results.getInt(1);
             }
@@ -255,7 +274,7 @@ class CasinoDB {
 
     static long executeLongQuery(String query) {
         long defaultValue = -1L;
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+        return executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 return results.getLong(1);
             }
@@ -263,9 +282,19 @@ class CasinoDB {
         }, defaultValue);
     }
 
+    static String executeStringQuery(String query) {
+        String defaultValue = "";
+        return executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return results.getString(1);
+            }
+            return defaultValue;
+        }, defaultValue);
+    }
+
     static List<HBMain.AutocompleteIdOption> executeAutocompleteIdQuery(String query) {
         List<HBMain.AutocompleteIdOption> defaultValue = new ArrayList<>();
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+        return executeQueryWithReturn(query, results -> {
             List<HBMain.AutocompleteIdOption> output = defaultValue;
             while (results.next()) {
                 long id = results.getLong(1);
@@ -274,5 +303,9 @@ class CasinoDB {
             }
             return output;
         }, defaultValue);
+    }
+
+    static boolean wasInsertSuccessful(int result) {
+        return result == 1;
     }
 }
