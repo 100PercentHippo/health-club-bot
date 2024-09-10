@@ -22,6 +22,7 @@ public class CommandAccessControl {
         long eventChannel;
         String eventChannelName;
         Set<Long> casinioChannels = new HashSet<>();
+        Set<Long> users = new HashSet<>();
 
         CasinoServer(String serverName) {
             this.serverName = serverName;
@@ -40,6 +41,7 @@ public class CommandAccessControl {
         adminUsers = fetchAdminUsers();
         servers = fetchCasinoServers();
         populateCasinoChannels(servers);
+        populateCasinoUsers(servers);
     }
 
     static boolean isValid(long uid, CasinoCommand command, long server, long channel) {
@@ -50,8 +52,17 @@ public class CommandAccessControl {
             return false;
         }
         CasinoServer casinoServer = servers.get(server);
+        if (!casinoServer.users.contains(uid)) {
+            addServerUser(uid, server);
+        }
         return (command.isValidInCasinoChannels() && casinoServer.casinioChannels.contains(channel))
             || (command.isValidInGachaChannels() && casinoServer.eventChannel == channel);
+    }
+
+    static void addServerUser(long uid, long server) {
+        if (logAddServerUser(uid, server)) {
+            servers.get(server).users.add(uid);
+        }
     }
 
     static boolean addServer(long server, String serverName, long uid) {
@@ -214,7 +225,21 @@ public class CommandAccessControl {
         }
     }
 
-    // In this and below, validate the String names
+    private static void populateCasinoUsers(Map<Long, CasinoServer> servers) {
+        for (Map.Entry<Long, CasinoServer> entry : servers.entrySet()) {
+            String query = "SELECT uid FROM casino_server_user WHERE server_id = "
+                + entry.getKey() + ";";
+            entry.getValue().users = CasinoDB.executeSetQuery(query);
+        }
+    }
+
+    private static boolean logAddServerUser(long uid, long server) {
+        String query = "INSERT INTO casino_server_user (server_id, uid) VALUES ("
+            + server + ", " + uid + ");";
+        int result = CasinoDB.executeUpdate(query);
+        return CasinoDB.wasInsertSuccessful(result);
+    }
+
     private static boolean logAddServer(long server, String name, long uid) {
         String query = "INSERT INTO casino_server (server_id, name, added_by) VALUES ("
             + server + ", ?, " + uid + ") ON CONFLICT (server_id) DO NOTHING;";
