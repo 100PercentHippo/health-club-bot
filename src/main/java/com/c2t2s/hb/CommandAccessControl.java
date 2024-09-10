@@ -61,6 +61,7 @@ public class CommandAccessControl {
 
     static void addServerUser(long uid, long server) {
         if (logAddServerUser(uid, server)) {
+            System.out.println("Added user " + uid + " to server " + server);
             servers.get(server).users.add(uid);
         }
     }
@@ -234,8 +235,9 @@ public class CommandAccessControl {
     }
 
     private static boolean logAddServerUser(long uid, long server) {
-        String query = "INSERT INTO casino_server_user (server_id, uid) VALUES ("
-            + server + ", " + uid + ");";
+        String query = "INSERT INTO casino_server_user (server_id, uid) SELECT "
+            + server + ", " + uid + " WHERE EXISTS (SELECT uid FROM money_user WHERE uid = "
+            + uid + ");";
         int result = CasinoDB.executeUpdate(query);
         return CasinoDB.wasInsertSuccessful(result);
     }
