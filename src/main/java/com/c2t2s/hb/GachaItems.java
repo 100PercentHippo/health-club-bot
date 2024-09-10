@@ -118,7 +118,7 @@ public class GachaItems {
             // e.g. [-0.1W 0.4F 1.1P 0.2R -0.5M]
             StringBuilder builder = new StringBuilder();
             for (ITEM_STAT stat : ITEM_STAT.values()) {
-                builder.append(builder.isEmpty() ? '[' : ' ');
+                builder.append(builder.length() == 0 ? '[' : ' ');
                 builder.append(Stats.oneDecimal.format(stat));
                 builder.append(stat.getLetter());
             }
@@ -223,7 +223,7 @@ public class GachaItems {
             for (ITEM_STAT stat : ITEM_STAT.values()) {
                 int initialBonus = bonuses[INITIAL_BONUS_INDEX].getStat(stat);
                 int gemBonus = bonuses[GEM_BONUS_INDEX].getStat(stat);
-                if (!builder.isEmpty()) { builder.append('\n'); }
+                if (builder.length() != 0) { builder.append('\n'); }
                 builder.append(stat.getStatName());
                 builder.append(": ");
                 builder.append(ITEM_STAT.format(getModifier(stat)));

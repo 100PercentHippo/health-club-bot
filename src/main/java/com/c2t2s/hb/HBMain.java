@@ -630,7 +630,7 @@ public class HBMain {
 
     private static String handleRegisterChannel(long uid, Optional<Server> serverOptional,
             Optional<TextChannel> channelOptional, long subcommand) {
-        if (serverOptional.isEmpty() || channelOptional.isEmpty()) {
+        if (!serverOptional.isPresent() || !channelOptional.isPresent()) {
             return "Unable to register channel: Server or channel is empty";
         }
         if (!(channelOptional.get() instanceof ServerTextChannel)) {
