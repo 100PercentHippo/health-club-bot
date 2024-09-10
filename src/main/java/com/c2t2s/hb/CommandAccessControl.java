@@ -43,13 +43,15 @@ public class CommandAccessControl {
     }
 
     static boolean isValid(long uid, CasinoCommand command, long server, long channel) {
+        if (adminUsers.contains(uid)) {
+            return true;
+        }
         if (!servers.containsKey(server)) {
             return false;
         }
         CasinoServer casinoServer = servers.get(server);
         return (command.isValidInCasinoChannels() && casinoServer.casinioChannels.contains(channel))
-            || (command.isValidInGachaChannels() && casinoServer.eventChannel == channel)
-            || adminUsers.contains(uid);
+            || (command.isValidInGachaChannels() && casinoServer.eventChannel == channel);
     }
 
     static boolean addServer(long server, String serverName, long uid) {
