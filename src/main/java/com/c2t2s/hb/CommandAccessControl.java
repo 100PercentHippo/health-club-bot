@@ -15,7 +15,7 @@ public class CommandAccessControl {
     private static Set<Long> adminUsers = new HashSet<>();
     private static Map<Long, CasinoServer> servers = new HashMap<>();
 
-    private static final long CHANNEL_NOT_FOUND = -1;
+    private static final long CHANNEL_NOT_FOUND = 0;
 
     private static class CasinoServer {
         String serverName;
@@ -116,7 +116,7 @@ public class CommandAccessControl {
 
         CasinoServer casinoServer = servers.get(server);
 
-        if (casinoServer.casinioChannels.contains(channel)) {
+        if (!casinoServer.casinioChannels.contains(channel)) {
             return "Unable to deregister casino channel: Specified channel is not registered";
         }
 
