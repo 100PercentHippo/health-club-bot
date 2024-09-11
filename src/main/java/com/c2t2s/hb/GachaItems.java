@@ -351,6 +351,7 @@ public class GachaItems {
                         BASE_STAT_AMOUNT, BASE_STAT_AMOUNT),
                     new StatArray()
                 };
+            this.gems             = new ArrayList<>();
             this.positiveTendency = positiveTendency;
             this.negativeTendency = negativeTendency;
             this.bonusStat        = bonusStat;
