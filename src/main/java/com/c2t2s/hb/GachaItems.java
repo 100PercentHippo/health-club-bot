@@ -451,7 +451,8 @@ public class GachaItems {
             builder.append(item.getName());
             builder.append('\n');
             builder.append(item.getBriefDescription());
-            builder.append('\n');
+            builder.append("\n\n");
+            builder.append(item.getFullDescription());
             item.awardTo(uid);
         }
         return builder.toString();
