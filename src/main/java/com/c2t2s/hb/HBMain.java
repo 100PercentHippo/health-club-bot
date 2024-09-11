@@ -407,7 +407,7 @@ public class HBMain {
                 false,
                 false)),
             entry(TEST_COMMAND, new SimpleCasinoCommand(
-                GachaItems::handleTest,
+                i -> GachaItems.handleTest(i.getUser().getId()),
                 false,
                 false,
                 false))

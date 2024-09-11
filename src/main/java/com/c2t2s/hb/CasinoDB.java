@@ -91,7 +91,7 @@ class CasinoDB {
         return error;
     }
 
-    static int executeUpdate(String query) {
+    static boolean executeUpdate(String query) {
         Connection connection = null;
         Statement statement = null;
         int result = DEFAULT_UPDATE_RETURN;
@@ -119,10 +119,10 @@ class CasinoDB {
                 e.printStackTrace();
             }
         }
-        return result;
+        return result > 0;
     }
 
-    static int executeValidatedUpdate(String query, String... userArgs) {
+    static boolean executeValidatedUpdate(String query, String... userArgs) {
         Connection connection = null;
         PreparedStatement statement = null;
         int result = DEFAULT_UPDATE_RETURN;
@@ -154,7 +154,7 @@ class CasinoDB {
                 e.printStackTrace();
             }
         }
-        return result;
+        return result > 0;
     }
 
     interface ResultSetConsumer <T> {
@@ -303,9 +303,5 @@ class CasinoDB {
             }
             return output;
         }, defaultValue);
-    }
-
-    static boolean wasInsertSuccessful(int result) {
-        return result == 1;
     }
 }

@@ -238,29 +238,25 @@ public class CommandAccessControl {
         String query = "INSERT INTO casino_server_user (server_id, uid) SELECT "
             + server + ", " + uid + " WHERE EXISTS (SELECT uid FROM money_user WHERE uid = "
             + uid + ");";
-        int result = CasinoDB.executeUpdate(query);
-        return CasinoDB.wasInsertSuccessful(result);
+        return CasinoDB.executeUpdate(query);
     }
 
     private static boolean logAddServer(long server, String name, long uid) {
         String query = "INSERT INTO casino_server (server_id, name, added_by) VALUES ("
             + server + ", ?, " + uid + ") ON CONFLICT (server_id) DO NOTHING;";
-        int result = CasinoDB.executeValidatedUpdate(query, name);
-        return CasinoDB.wasInsertSuccessful(result);
+        return CasinoDB.executeValidatedUpdate(query, name);
     }
 
     private static boolean logAddCasinoChannel(long server, long channel, String channelName, long uid) {
         String query = "INSERT INTO casino_channel (channel_id, server_id, name, added_by) VALUES ("
             + channel + ", " + server + ",?," + uid + ");";
-        int result = CasinoDB.executeValidatedUpdate(query, channelName);
-        return CasinoDB.wasInsertSuccessful(result);
+        return CasinoDB.executeValidatedUpdate(query, channelName);
     }
 
     private static boolean logSetEventChannel(long server, long channel, String channelName) {
         String query = "UPDATE casino_server SET (event_channel, event_channel_name) = ("
             + channel + ", ?) WHERE server_id = " + server + ";";
-        int result = CasinoDB.executeValidatedUpdate(query, channelName);
-        return CasinoDB.wasInsertSuccessful(result);
+        return CasinoDB.executeValidatedUpdate(query, channelName);
     }
 
     // Returns name of removed channel, null if the operation was unsuccessful
@@ -273,8 +269,7 @@ public class CommandAccessControl {
     private static boolean logRemoveEventChannel(long server) {
         String query = "UPDATE casino_server SET (event_channel, event_channel_name) = (NULL, NULL) WHERE server_id = "
             + server + ";";
-        int result = CasinoDB.executeUpdate(query);
-        return CasinoDB.wasInsertSuccessful(result);
+        return CasinoDB.executeUpdate(query);
     }
 
 }

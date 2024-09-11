@@ -151,6 +151,11 @@ public class GachaGems {
 
         void addStat(GachaItems.ITEM_STAT stat, int amount, boolean isTendency, String tendencyAdjective) {
             result.modifiedStats.addStat(stat, amount);
+            if (amount > 0) {
+                result.additions += amount;
+            } else {
+                result.subtractions += amount;
+            }
             output.add(formatStatApplication(stat, amount, isTendency, tendencyAdjective));
         }
     }
@@ -389,11 +394,17 @@ public class GachaGems {
     static class AppliedGem {
         private int gemType;
         private GachaItems.StatArray modifiedStats;
-        private long gemId;
+        private int addedGemSlots;
+        private int additions;
+        private int subtractions;
+        private int gemId;
 
         int getGemType() { return gemType; }
         GachaItems.StatArray getModifiedStats() { return modifiedStats; }
-        long getGemId() { return gemId; }
+        int getAddedGemSlots() { return addedGemSlots; }
+        int getAdditions() { return additions; }
+        int getSubtractions() { return subtractions; }
+        int getGemId() { return gemId; }
 
         // e.g. "Cursed Gem: Work +0.1, Fish -0.3"
         String getDescription() {
@@ -420,9 +431,13 @@ public class GachaGems {
             modifiedStats = new GachaItems.StatArray();
         }
 
-        AppliedGem(int gemType, GachaItems.StatArray modifiedStats, long gemId) {
+        AppliedGem(int gemType, GachaItems.StatArray modifiedStats, int addedGemSlots,
+                int additions, int subtractions, int gemId) {
             this.gemType = gemType;
             this.modifiedStats = modifiedStats;
+            this.addedGemSlots = addedGemSlots;
+            this.additions = additions;
+            this.subtractions = subtractions;
             this.gemId = gemId;
         }
     }
