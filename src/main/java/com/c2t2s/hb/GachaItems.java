@@ -446,10 +446,7 @@ public class GachaItems {
 
     static String handleTest(long uid) {
         StringBuilder builder = new StringBuilder();
-        builder.append('v');
-        builder.append(G0Item.GENERATOR_VERSION);
-        builder.append('\n');
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
             Item item = G0Item.generate();
             builder.append(item.getName());
             builder.append('\n');
