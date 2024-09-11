@@ -119,7 +119,7 @@ public class GachaItems {
             StringBuilder builder = new StringBuilder();
             for (ITEM_STAT stat : ITEM_STAT.values()) {
                 builder.append(builder.length() == 0 ? '[' : ' ');
-                builder.append(Stats.oneDecimal.format(stat));
+                builder.append(Stats.oneDecimal.format(stats[stat.index] / 10.0));
                 builder.append(stat.getLetter());
             }
             builder.append(']');
