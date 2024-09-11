@@ -115,10 +115,11 @@ public class GachaItems {
 
         @Override
         public String toString() {
-            // e.g. [-0.1W 0.4F 1.1P 0.2R -0.5M]
+            // e.g. [-0.1W +0.4F +1.1P +0.2R -0.5M]
             StringBuilder builder = new StringBuilder();
             for (ITEM_STAT stat : ITEM_STAT.values()) {
                 builder.append(builder.length() == 0 ? '[' : ' ');
+                if (stats[stat.index] > 0) { builder.append('+'); }
                 builder.append(Stats.oneDecimal.format(stats[stat.index] / 10.0));
                 builder.append(stat.getLetter());
             }
