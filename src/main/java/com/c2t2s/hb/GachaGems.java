@@ -45,9 +45,9 @@ public class GachaGems {
         = {CHAOTIC_GEM_ID, INVERTED_GEM_ID, COMPOUNDING_GEM_ID, FRACTAL_GEM_ID};
 
     abstract static class Gem {
-        int id;
-        String name;
-        String description;
+        protected int id;
+        protected String name;
+        protected String description;
 
         abstract GemApplicationResult apply(GachaItems.Item item);
 
@@ -64,6 +64,10 @@ public class GachaGems {
                 return "Selected item has no gem slots";
             }
             return "";
+        }
+
+        String getAwardMessage() {
+            return ":gem: " + name + " (" + description + ")";
         }
 
         static Gem fromId(int id) {

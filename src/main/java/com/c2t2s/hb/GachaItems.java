@@ -167,6 +167,7 @@ public class GachaItems {
 
         abstract int getModifier(ITEM_STAT stat);
         abstract StatArray getModifiers();
+        abstract double getBonusModifier();
         abstract int getBonusModifierContribution(int baseModifier);
         abstract int getTier();
         abstract String getName();
@@ -215,21 +216,37 @@ public class GachaItems {
         }
 
         public String getBriefDescription() {
-            return getModifiers().toString();
+            return getName() + '\n' + getModifiers().toString() + '\n' + gemSlots + " gem slots";
         }
 
         public String getFullDescription() {
             StringBuilder builder = new StringBuilder();
+            builder.append(getName());
+            builder.append("\n\n");
+            builder.append(positiveTendency.getPositiveAdjective());
+            builder.append(": Randomly rolled positive stats are more likely to go into ");
+            builder.append(positiveTendency.getStatName());
+            builder.append('\n');
+            builder.append(negativeTendency.getNegativeAdjective());
+            builder.append(": Randomly rolled negative stats are more likely to go into ");
+            builder.append(negativeTendency.getStatName());
+            builder.append('\n');
+            builder.append(bonusStat.getItemName(enhancementLevel));
+            builder.append(": x");
+            builder.append(Stats.twoDecimals.format(getBonusModifier() + 1));
+            builder.append(" to ");
+            builder.append(bonusStat.getStatName());
+            builder.append(" (if positive)\n");
             for (ITEM_STAT stat : ITEM_STAT.values()) {
                 int initialBonus = bonuses[INITIAL_BONUS_INDEX].getStat(stat);
                 int gemBonus = bonuses[GEM_BONUS_INDEX].getStat(stat);
-                if (builder.length() != 0) { builder.append('\n'); }
+                builder.append('\n');
                 builder.append(stat.getStatName());
                 builder.append(": ");
                 builder.append(ITEM_STAT.format(getModifier(stat)));
-                builder.append(" (");
+                builder.append("% (");
                 builder.append(ITEM_STAT.format(initialBonus));
-                builder.append(" Base");
+                builder.append("% Base");
                 if (gemBonus != 0) {
                     builder.append(", ");
                     builder.append(ITEM_STAT.format(gemBonus));
@@ -240,7 +257,7 @@ public class GachaItems {
                     if (bonusContribution != 0.0) {
                         builder.append(", ");
                         builder.append(ITEM_STAT.format(bonusContribution));
-                        builder.append(" from Item Type");
+                        builder.append("% from Item Type");
                     }
                 }
                 builder.append(')');
@@ -313,6 +330,8 @@ public class GachaItems {
         private static final int BASE_STAT_AMOUNT = 2;
         private static final int BASE_GEM_SLOTS = 2;
         private static final double TENDENCY_CHANCE = 0.1;
+        private static final double UNENHANCED_BONUS_STAT_MODIFIER = 0.25;
+        private static final double ENHANCED_BONUS_STAT_MODIFIER = 0.5;
 
         static G0Item generate() {
             // Repeating 50% chance per additional gem slots
@@ -433,10 +452,19 @@ public class GachaItems {
         }
 
         @Override
+        double getBonusModifier() {
+            if (enhancementLevel > 0) {
+                return ENHANCED_BONUS_STAT_MODIFIER;
+            } else {
+                return UNENHANCED_BONUS_STAT_MODIFIER;
+            }
+        }
+
+        @Override
         int getBonusModifierContribution(int baseModifier) {
             if (baseModifier <= 0) { return 0; }
-            // Add 50%, using int math as a floor
-            return baseModifier / 2;
+            Double contribution = baseModifier * getBonusModifier();
+            return contribution.intValue();
         }
 
         @Override
@@ -449,14 +477,46 @@ public class GachaItems {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < 1; i++) {
             Item item = G0Item.generate();
-            builder.append(item.getName());
-            builder.append('\n');
             builder.append(item.getBriefDescription());
-            builder.append("\n\n");
-            builder.append(item.getFullDescription());
+            builder.append("\n");
             item.awardTo(uid);
         }
+        for (int i = 0; i < 1; ++i) {
+            builder.append('\n');
+            builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(0)));
+        }
         return builder.toString();
+    }
+
+    static String handleItemInfo(long iid) {
+        Item item = fetchItem(iid);
+        if (item == null) {
+            return "Failed to fetch item " + iid;
+        }
+        return item.getFullDescription();
+    }
+
+    static String handleAwardGem(long uid, GachaGems.Gem gem) {
+        if (logAwardGem(uid, gem.getId())) {
+            return gem.getAwardMessage();
+        }
+        return "Failed to award gem " + gem.getId();
+    }
+
+    static HBMain.MultistepResponse handleApplyGem(long uid, long iid, long gemId) {
+        int gid = (int)gemId;
+        List<String> results = new ArrayList<>();
+        int quantity = fetchGemQuantity(uid, gid);
+        if (quantity < 1) {
+            results.add("Unable to apply gem: You don't have any " + GachaGems.Gem.fromId(gid).getName());
+            return new HBMain.MultistepResponse(results);
+        }
+        Item item = fetchItem(iid);
+        if (item == null) {
+            results.add("Unable to apply gem: Item " + iid + " not found");
+            return new HBMain.MultistepResponse(results);
+        }
+        return new HBMain.MultistepResponse(item.applyGem(GachaGems.Gem.fromId(gid)));
     }
 
     // CREATE TABLE IF NOT EXISTS gacha_item (
@@ -496,11 +556,10 @@ public class GachaItems {
 
     // CREATE TABLE IF NOT EXISTS gacha_user_gem (
     //  gid int NOT NULL,
-    //  uid long NOT NULL,
+    //  uid bigint NOT NULL,
     //  quantity int NOT NULL DEFAULT 0,
     //  PRIMARY KEY(gid, uid),
-    //  CONSTRAINT gacha_user_gem_gid(gid) REFERENCES gacha_gem(gid),
-    //  CONSTRAINT gacha_user_gem_uid(uid) REFERENCES money_user(uid)
+    //  CONSTRAINT gacha_user_gem_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     static boolean logAppliedGem(long itemId, int gemId, StatArray stats, int additions,
@@ -524,6 +583,17 @@ public class GachaItems {
             + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", "
             + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
         return CasinoDB.executeUpdate(query);
+    }
+
+    static boolean logAwardGem(long uid, int gid) {
+        String query = "INSERT INTO gacha_user_gem (gid, uid, quantity) VALUES (" + gid + ", " + uid
+            + ", 1) ON CONFLICT (gid, uid) DO UPDATE SET quantity = gacha_user_gem.quantity + 1;";
+        return CasinoDB.executeUpdate(query);
+    }
+
+    static int fetchGemQuantity(long uid, int gid) {
+        String query = "SELECT quantity FROM gacha_user_gem WHERE uid = " + uid + " AND gid = " + gid + ";";
+        return CasinoDB.executeIntQuery(query);
     }
 
     private static class FetchedItem {
