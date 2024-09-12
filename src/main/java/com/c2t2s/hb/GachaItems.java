@@ -315,12 +315,12 @@ public class GachaItems {
 
     private static class G0Item extends Item {
 
-        private static final int GENERATOR_VERSION = 3; // 0.03
+        private static final int GENERATOR_VERSION = 4; // 0.04
         private static final double LN_ONE_HALF = Math.log(0.5);
         private static final int AVERAGE_ADDITIONS = 50;
         private static final int AVERAGE_SUBTRACTIONS = 50;
         private static final int ADDITIONS_STDDEV = 25;
-        private static final int BASE_STAT_AMOUNT = 2;
+        private static final int BASE_STAT_AMOUNT = 10;
         private static final int BASE_GEM_SLOTS = 2;
         private static final double TENDENCY_CHANCE = 0.1;
         private static final double UNENHANCED_BONUS_STAT_MODIFIER = 0.25;
@@ -338,7 +338,7 @@ public class GachaItems {
             G0Item item = new G0Item(positiveTendency, negativeTendency, bonusStat, gemSlots);
 
             // Roll for initial additions and subtractions
-            int additions    = HBMain.generateBoundedNormal(AVERAGE_ADDITIONS, ADDITIONS_STDDEV, 0);
+            int additions    = BASE_STAT_AMOUNT + HBMain.generateBoundedNormal(AVERAGE_ADDITIONS, ADDITIONS_STDDEV, 0);
             int subtractions = HBMain.generateBoundedNormal(AVERAGE_SUBTRACTIONS, ADDITIONS_STDDEV, 0);
 
             // Award 1/3 of the stats 3 at a time, 1/3 2 at a time, and the last 1/3 1 at a time
@@ -358,11 +358,7 @@ public class GachaItems {
         G0Item(ITEM_STAT positiveTendency, ITEM_STAT negativeTendency, ITEM_STAT bonusStat,
                 int gemSlots) {
             generatorVersion = GENERATOR_VERSION;
-            bonuses = new StatArray[] {
-                    new StatArray(BASE_STAT_AMOUNT, BASE_STAT_AMOUNT, BASE_STAT_AMOUNT,
-                        BASE_STAT_AMOUNT, BASE_STAT_AMOUNT),
-                    new StatArray()
-                };
+            bonuses = new StatArray[] { new StatArray(), new StatArray() };
             this.gems             = new ArrayList<>();
             this.positiveTendency = positiveTendency;
             this.negativeTendency = negativeTendency;
