@@ -468,15 +468,15 @@ public class GachaItems {
 
     static String handleTest(long uid) {
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < 1; i++) {
-            Item item = G0Item.generate();
-            builder.append(item.getBriefDescription());
-            builder.append("\n");
-            item.awardTo(uid);
-        }
-        for (int i = 0; i < 1; ++i) {
+
+        Item item = G0Item.generate();
+        builder.append(item.getBriefDescription());
+        builder.append("\n");
+        item.awardTo(uid);
+
+        for (int i = 0; i < item.gemSlots; ++i) {
             builder.append('\n');
-            builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(0)));
+            builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(i % 2)));
         }
         return builder.toString();
     }
@@ -516,10 +516,10 @@ public class GachaItems {
             return new HBMain.MultistepResponse(results);
         }
 
+        String oldStats = item.getModifiers().toString();
         List<String> steps = item.applyGem(gem);
         logGemConsumed(uid, gem.getId());
 
-        String oldStats = item.getModifiers().toString();
         StringBuilder builder = new StringBuilder();
         builder.append("Applying ");
         builder.append(gem.getName());
