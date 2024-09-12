@@ -404,7 +404,7 @@ public class HBMain {
             entry(GACHA_BANNER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
             entry(GACHA_ITEM_INFO_COMMAND, new SimpleCasinoCommand(
-                i -> GachaItems.handleItemInfo(i.getArgumentLongValueByIndex(0).get()))),
+                i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
                 i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
                     i.getArgumentLongValueByIndex(1).get()))),

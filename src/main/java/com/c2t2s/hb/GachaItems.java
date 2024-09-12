@@ -488,8 +488,8 @@ public class GachaItems {
         return builder.toString();
     }
 
-    static String handleItemInfo(long iid) {
-        Item item = fetchItem(iid);
+    static String handleItemInfo(long uid, long iid) {
+        Item item = fetchItem(uid, iid);
         if (item == null) {
             return "Failed to fetch item " + iid;
         }
@@ -503,7 +503,7 @@ public class GachaItems {
         return "Failed to award gem " + gem.getId();
     }
 
-    static HBMain.MultistepResponse handleApplyGem(long uid, long iid, long gemId) {
+    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, long iid) {
         int gid = (int)gemId;
         List<String> results = new ArrayList<>();
         int quantity = fetchGemQuantity(uid, gid);
@@ -511,7 +511,7 @@ public class GachaItems {
             results.add("Unable to apply gem: You don't have any " + GachaGems.Gem.fromId(gid).getName());
             return new HBMain.MultistepResponse(results);
         }
-        Item item = fetchItem(iid);
+        Item item = fetchItem(uid, iid);
         if (item == null) {
             results.add("Unable to apply gem: Item " + iid + " not found");
             return new HBMain.MultistepResponse(results);
@@ -639,11 +639,12 @@ public class GachaItems {
         }, gems);
     }
 
-    static Item fetchItem(long iid) {
+    static Item fetchItem(long uid, long iid) {
         List<GachaGems.AppliedGem> gems = fetchGems(iid);
         String query = "SELECT generator, iid, initial_work, initial_fish, initial_pick, initial_rob, "
             + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, "
-            + "initial_subtractions, enhancement_level, gem_slots FROM gacha_item WHERE iid = " + iid + ";";
+            + "initial_subtractions, enhancement_level, gem_slots FROM gacha_item WHERE iid = " + iid
+            + " AND uid = " + uid + ";";
         FetchedItem item = CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 return new FetchedItem(results.getInt(1), results.getLong(2), results.getInt(3),
