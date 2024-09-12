@@ -516,13 +516,15 @@ public class GachaItems {
             return new HBMain.MultistepResponse(results);
         }
 
+        List<String> steps = item.applyGem(gem);
+        logGemConsumed(uid, gem.getId());
+
         String oldStats = item.getModifiers().toString();
         StringBuilder builder = new StringBuilder();
         builder.append("Applying ");
         builder.append(gem.getName());
         builder.append(':');
         results.add(builder.toString());
-        List<String> steps = item.applyGem(gem);
         for (String step : steps) {
             builder.append("\n  ");
             builder.append(step);
@@ -586,6 +588,12 @@ public class GachaItems {
             + "rob_modifier, misc_modifier, additions, subtractions, gem_slots_added) VALUES (" + itemId + ", "
             + gemId + ", " + stats.formatForDB() + ", " + additions + ", " + subtractions + ", "+ addedGemSlots + ");";
         return CasinoDB.executeUpdate(query);
+    }
+
+    static void logGemConsumed(long uid, int gemId) {
+        String query = "UPDATE gacha_user_gem SET quantity = quantity - 1 WHERE uid = "
+            + uid + " AND gid = " + gemId + ";";
+        CasinoDB.executeUpdate(query);
     }
 
     static boolean logGemRemoval(long gemId) {
