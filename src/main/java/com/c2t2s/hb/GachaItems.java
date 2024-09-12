@@ -524,7 +524,7 @@ public class GachaItems {
         results.add(builder.toString());
         List<String> steps = item.applyGem(gem);
         for (String step : steps) {
-            builder.append('\n');
+            builder.append("\n  ");
             builder.append(step);
             results.add(builder.toString());
         }
@@ -584,7 +584,7 @@ public class GachaItems {
             int subtractions, int addedGemSlots) {
         String query = "INSERT INTO gacha_item_gem (iid, gem_type, work_modifier, fish_modifier, pick_modifier, "
             + "rob_modifier, misc_modifier, additions, subtractions, gem_slots_added) VALUES (" + itemId + ", "
-            + gemId + ", " + stats.formatForDB() + ", " + additions + ", " + subtractions + ", "+ addedGemSlots + ";";
+            + gemId + ", " + stats.formatForDB() + ", " + additions + ", " + subtractions + ", "+ addedGemSlots + ");";
         return CasinoDB.executeUpdate(query);
     }
 
