@@ -189,13 +189,6 @@ public class GachaItems {
         }
 
         List<String> applyGem(GachaGems.Gem gem) {
-            // TODO: Move this to command handling
-            if (!gem.isEligible(this)) {
-                List<String> result = new ArrayList<>();
-                result.add(gem.getIneligibilityReason(this));
-                return result;
-            }
-
             GachaGems.GemApplicationResult applicationResult = gem.apply(this);
             gems.add(applicationResult.result);
             bonuses[GEM_BONUS_INDEX].addArray(applicationResult.result.getModifiedStats());
@@ -504,11 +497,11 @@ public class GachaItems {
     }
 
     static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, long iid) {
-        int gid = (int)gemId;
+        GachaGems.Gem gem = GachaGems.Gem.fromId((int)gemId);
         List<String> results = new ArrayList<>();
-        int quantity = fetchGemQuantity(uid, gid);
+        int quantity = fetchGemQuantity(uid, gem.getId());
         if (quantity < 1) {
-            results.add("Unable to apply gem: You don't have any " + GachaGems.Gem.fromId(gid).getName());
+            results.add("Unable to apply gem: You don't have any " + gem.getName());
             return new HBMain.MultistepResponse(results);
         }
         Item item = fetchItem(uid, iid);
@@ -516,7 +509,32 @@ public class GachaItems {
             results.add("Unable to apply gem: Item " + iid + " not found");
             return new HBMain.MultistepResponse(results);
         }
-        return new HBMain.MultistepResponse(item.applyGem(GachaGems.Gem.fromId(gid)));
+
+        if (!gem.isEligible(item)) {
+            List<String> result = new ArrayList<>();
+            result.add(gem.getIneligibilityReason(item));
+            return new HBMain.MultistepResponse(results);
+        }
+
+        String oldStats = item.getModifiers().toString();
+        StringBuilder builder = new StringBuilder();
+        builder.append("Applying ");
+        builder.append(gem.getName());
+        builder.append(':');
+        results.add(builder.toString());
+        List<String> steps = item.applyGem(gem);
+        for (String step : steps) {
+            builder.append('\n');
+            builder.append(step);
+            results.add(builder.toString());
+        }
+        builder.append("\n\nResult:\n");
+        builder.append(oldStats);
+        builder.append(" -> ");
+        builder.append(item.getModifiers().toString());
+        results.add(builder.toString());
+
+        return new HBMain.MultistepResponse(results);
     }
 
     // CREATE TABLE IF NOT EXISTS gacha_item (
@@ -654,6 +672,6 @@ public class GachaItems {
             }
             return null;
         }, null);
-        return Item.getItem(item, gems);
+        return item == null ? null : Item.getItem(item, gems);
     }
 }
