@@ -1,6 +1,7 @@
 package com.c2t2s.hb;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -70,7 +71,7 @@ public class GachaGems {
             return ":gem: " + name + " (" + description + ")";
         }
 
-        static Gem fromId(int id) {
+        static Gem fromId(int id) throws IllegalArgumentException {
             switch (id) {
                 case FRACTURED_GEM_ID:
                     return new BasicGem(FRACTURED_GEM_ID, "Fractured Gem",
@@ -107,6 +108,8 @@ public class GachaGems {
                     return new PutridGem();
                 case FORGETFUL_GEM_ID:
                     return new ForgetfulGem();
+                case EQUALIZING_GEM_ID:
+                    return new EqualizingGem();
                 default:
                     throw new IllegalArgumentException("Encountered unexpected gem id: " + id);
             }
@@ -114,14 +117,15 @@ public class GachaGems {
 
         static Gem getRandomGem(int rarity) {
             switch (rarity) {
+                default:
+                    new IllegalArgumentException("Unexpected gem rarity encountered: " + rarity).printStackTrace();
+                    // Fall through and give common gem
                 case COMMON_GEM_RARITY:
                     return fromId(COMMON_GEMS[HBMain.RNG_SOURCE.nextInt(COMMON_GEMS.length)]);
                 case UNCOMMON_GEM_RARITY:
                     return fromId(UNCOMMON_GEMS[HBMain.RNG_SOURCE.nextInt(UNCOMMON_GEMS.length)]);
                 case RARE_GEM_RARITY:
                     return fromId(RARE_GEMS[HBMain.RNG_SOURCE.nextInt(RARE_GEMS.length)]);
-                default:
-                    throw new IllegalArgumentException("Unexpected gem rarity encountered: " + rarity);
             }
         }
     }
@@ -391,6 +395,59 @@ public class GachaGems {
             GemApplicationResult applicationResult = new GemApplicationResult(id);
             int removedGems = item.removeAllGems();
             applicationResult.output.add(removedGems + " gems removed");
+            return applicationResult;
+        }
+    }
+
+    private static class EqualizingGem extends Gem {
+        EqualizingGem() {
+            id = EQUALIZING_GEM_ID;
+            name = "Equalizing Gem";
+            description = "Average all stat bonuses (ties broken randomly)";
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            GemApplicationResult applicationResult = new GemApplicationResult(id);
+
+            int totalStats = 0;
+            GachaItems.StatArray initialStats = new GachaItems.StatArray();
+            for (GachaItems.StatArray statArray : item.bonuses) {
+                for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                    totalStats += statArray.getStat(stat);
+                    initialStats.addStat(stat, statArray.getStat(stat));
+                }
+            }
+
+            int averageStat = totalStats / 5;
+            int remainder = totalStats % 5;
+            GachaItems.StatArray targetStats
+                = new GachaItems.StatArray(averageStat, averageStat, averageStat, averageStat,
+                    averageStat);
+
+            // Assign remaining stats randomly, considering tendency weight for first roll
+            List<GachaItems.ITEM_STAT> remainingStats
+                = new ArrayList<>(Arrays.asList(GachaItems.ITEM_STAT.values()));
+            GachaItems.StatRollResult firstStat = item.rollStat(true);
+            if (remainder > 0) {
+                targetStats.addStat(firstStat.stat, 1);
+                remainingStats.remove(firstStat.stat);
+            }
+            // Start at 1 as we've already awarded one above
+            for (int i = 1; i < remainder; ++i) {
+                int nextStat = HBMain.RNG_SOURCE.nextInt(remainingStats.size());
+                targetStats.addStat(remainingStats.get(nextStat), 1);
+                remainingStats.remove(nextStat);
+            }
+
+            // Now award enough stats to reach targets
+            for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                applicationResult.addStat(stat,
+                    targetStats.getStat(stat) - initialStats.getStat(stat),
+                    remainder > 0 && firstStat.stat == stat && firstStat.isTendency,
+                    stat.getPositiveAdjective());
+            }
+
             return applicationResult;
         }
     }

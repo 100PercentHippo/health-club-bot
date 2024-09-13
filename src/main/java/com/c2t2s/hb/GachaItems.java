@@ -493,8 +493,14 @@ public class GachaItems {
     }
 
     static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, long iid) {
-        GachaGems.Gem gem = GachaGems.Gem.fromId((int)gemId);
         List<String> results = new ArrayList<>();
+        GachaGems.Gem gem;
+        try {
+             gem = GachaGems.Gem.fromId((int)gemId);
+        } catch (IllegalArgumentException e) {
+            results.add("Unable to apply gem: Unable to fetch gem " + gemId);
+            return new HBMain.MultistepResponse(results);
+        }
         int quantity = fetchGemQuantity(uid, gem.getId());
         if (quantity < 1) {
             results.add("Unable to apply gem: You don't have any " + gem.getName());
