@@ -2,6 +2,7 @@ package com.c2t2s.hb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,7 +17,7 @@ public class GachaGems {
     private static final int UNSTABLE_GEM_ID = 2;
     private static final int BOLSTERING_GEM_ID = 3;
     private static final int BALANCED_GEM_ID = 4;
-    private static final int GAMBLERS_GEM_ID = 5;
+    private static final int GEM_OF_CHANCE_ID = 5;
     private static final int RECKLESS_GEM_ID = 6;
     private static final int HARDWORKING_GEM_ID = 7;
     private static final int PATIENT_GEM_ID = 8;
@@ -30,6 +31,7 @@ public class GachaGems {
     private static final int INVERTED_GEM_ID = 16;
     private static final int COMPOUNDING_GEM_ID = 17;
     private static final int FRACTAL_GEM_ID = 18;
+    private static final int GAMBLERS_GEM_ID = 19;
 
 
     static final int COMMON_GEM_RARITY = 0;
@@ -37,7 +39,7 @@ public class GachaGems {
     static final int RARE_GEM_RARITY = 2;
     private static final int[] COMMON_GEMS
         = {FRACTURED_GEM_ID, PURE_GEM_ID, UNSTABLE_GEM_ID, BOLSTERING_GEM_ID, BALANCED_GEM_ID,
-           GAMBLERS_GEM_ID, RECKLESS_GEM_ID};
+           GAMBLERS_GEM_ID, RECKLESS_GEM_ID, GAMBLERS_GEM_ID};
     private static final int[] UNCOMMON_GEMS
         = {HARDWORKING_GEM_ID, PATIENT_GEM_ID, SHADOWY_GEM_ID,
            INTIMIDATING_GEM_ID, VERSATILE_GEM_ID, PUTRID_GEM_ID, FORGETFUL_GEM_ID,
@@ -71,6 +73,63 @@ public class GachaGems {
             return ":gem: " + name + " (" + description + ")";
         }
 
+        static GachaItems.StatArray getInitialStats(GachaItems.Item item) {
+            GachaItems.StatArray initialStats = new GachaItems.StatArray();
+            for (GachaItems.StatArray statArray : item.bonuses) {
+                for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                    initialStats.addStat(stat, statArray.getStat(stat));
+                }
+            }
+            return initialStats;
+        }
+
+        static GachaItems.ITEM_STAT getLowestStat(GachaItems.Item item) {
+            GachaItems.StatArray initialStats = getInitialStats(item);
+            List<GachaItems.ITEM_STAT> lowestStat = new ArrayList<>();
+            int lowestValue = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(0));
+            for (int i = 1; i < GachaItems.ITEM_STAT.values().length; ++i) {
+                int value = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(i));
+                if (value < lowestValue) {
+                    lowestValue = value;
+                    lowestStat.clear();
+                    lowestStat.add(GachaItems.ITEM_STAT.fromIndex(i));
+                } else if (value == lowestValue) {
+                    lowestStat.add(GachaItems.ITEM_STAT.fromIndex(i));
+                }
+            }
+            GachaItems.ITEM_STAT selectedStat;
+            if (lowestStat.size() > 1) {
+                selectedStat = lowestStat.get(HBMain.RNG_SOURCE.nextInt(lowestStat.size()));
+            } else {
+                selectedStat = lowestStat.get(0);
+            }
+            return selectedStat;
+        }
+
+        static GachaItems.ITEM_STAT getHighestStat(GachaItems.Item item) {
+            List<GachaItems.ITEM_STAT> highestStats = new ArrayList<>();
+            GachaItems.StatArray initialStats = getInitialStats(item);
+            int highestModifier = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(0));
+            highestStats.add(GachaItems.ITEM_STAT.fromIndex(0));
+            for (int i = 1; i < GachaItems.ITEM_STAT.values().length; ++i) {
+                int modifier = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(i));
+                if (modifier > highestModifier) {
+                    highestModifier = modifier;
+                    highestStats.clear();
+                    highestStats.add(GachaItems.ITEM_STAT.fromIndex(i));
+                } else if (modifier == highestModifier) {
+                    highestStats.add(GachaItems.ITEM_STAT.fromIndex(i));
+                }
+            }
+            GachaItems.ITEM_STAT selectedStat;
+            if (highestStats.size() == 1) {
+                selectedStat = highestStats.get(0);
+            } else {
+                selectedStat = highestStats.get(HBMain.RNG_SOURCE.nextInt(highestStats.size()));
+            }
+            return selectedStat;
+        }
+
         static Gem fromId(int id) throws IllegalArgumentException {
             switch (id) {
                 case FRACTURED_GEM_ID:
@@ -86,8 +145,8 @@ public class GachaGems {
                     return new BolsteringGem();
                 case BALANCED_GEM_ID:
                     return new BalancedGem();
-                case GAMBLERS_GEM_ID:
-                    return new GamblersGem();
+                case GEM_OF_CHANCE_ID:
+                    return new GemOfChance();
                 case RECKLESS_GEM_ID:
                     return new RecklessGem();
                 case HARDWORKING_GEM_ID:
@@ -110,6 +169,16 @@ public class GachaGems {
                     return new ForgetfulGem();
                 case EQUALIZING_GEM_ID:
                     return new EqualizingGem();
+                case CHAOTIC_GEM_ID:
+                    return new ChaoticGem();
+                case INVERTED_GEM_ID:
+                    return new InvertedGem();
+                case COMPOUNDING_GEM_ID:
+                    return new CompoundingGem();
+                case FRACTAL_GEM_ID:
+                    return new FractalGem();
+                case GAMBLERS_GEM_ID:
+                    return new GamblersGem();
                 default:
                     throw new IllegalArgumentException("Encountered unexpected gem id: " + id);
             }
@@ -199,25 +268,7 @@ public class GachaGems {
         @Override
         GemApplicationResult apply(GachaItems.Item item) {
             GemApplicationResult applicationResult = new GemApplicationResult(id);
-            List<GachaItems.ITEM_STAT> lowestStat = new ArrayList<>();
-            int lowestValue = item.getModifier(GachaItems.ITEM_STAT.fromIndex(0));
-            for (int i = 1; i < GachaItems.ITEM_STAT.values().length; ++i) {
-                int value = item.getModifier(GachaItems.ITEM_STAT.fromIndex(i));
-                if (value < lowestValue) {
-                    lowestValue = value;
-                    lowestStat.clear();
-                    lowestStat.add(GachaItems.ITEM_STAT.fromIndex(i));
-                } else if (value == lowestValue) {
-                    lowestStat.add(GachaItems.ITEM_STAT.fromIndex(i));
-                }
-            }
-            GachaItems.ITEM_STAT selectedStat;
-            if (lowestStat.size() > 1) {
-                selectedStat = lowestStat.get(HBMain.RNG_SOURCE.nextInt(lowestStat.size()));
-            } else {
-                selectedStat = lowestStat.get(0);
-            }
-            applicationResult.addStat(selectedStat, 3);
+            applicationResult.addStat(getLowestStat(item), 3);
             return applicationResult;
         }
     }
@@ -249,37 +300,19 @@ public class GachaGems {
         }
     }
 
-    private static class GamblersGem extends Gem {
+    private static class GemOfChance extends Gem {
         private static double jackpotChance = 0.2;
 
-        GamblersGem() {
-            id = GAMBLERS_GEM_ID;
-            name = "Gambler's Gem";
+        GemOfChance() {
+            id = GEM_OF_CHANCE_ID;
+            name = "Gem of Chance";
             description = "20% chance of +0.4 to highest stat, -0.1 to highest stat otherwise";
         }
 
         @Override
         GemApplicationResult apply(GachaItems.Item item) {
             GemApplicationResult applicationResult = new GemApplicationResult(id);
-            List<GachaItems.ITEM_STAT> highestStats = new ArrayList<>();
-            int highestModifier = item.getModifier(GachaItems.ITEM_STAT.fromIndex(0));
-            highestStats.add(GachaItems.ITEM_STAT.fromIndex(0));
-            for (int i = 1; i < GachaItems.ITEM_STAT.values().length; ++i) {
-                int modifier = item.getModifier(GachaItems.ITEM_STAT.fromIndex(i));
-                if (modifier > highestModifier) {
-                    highestModifier = modifier;
-                    highestStats.clear();
-                    highestStats.add(GachaItems.ITEM_STAT.fromIndex(i));
-                } else if (modifier == highestModifier) {
-                    highestStats.add(GachaItems.ITEM_STAT.fromIndex(i));
-                }
-            }
-            GachaItems.ITEM_STAT selectedStat;
-            if (highestStats.size() == 1) {
-                selectedStat = highestStats.get(0);
-            } else {
-                selectedStat = highestStats.get(HBMain.RNG_SOURCE.nextInt(highestStats.size()));
-            }
+            GachaItems.ITEM_STAT selectedStat = getHighestStat(item);
             if (HBMain.RNG_SOURCE.nextDouble() < jackpotChance) {
                 applicationResult.addStat(selectedStat, 4);
             } else {
@@ -399,7 +432,27 @@ public class GachaGems {
         }
     }
 
-    private static class EqualizingGem extends Gem {
+    private abstract static class StatShuffleGem extends Gem {
+        GachaItems.StatArray initialStats = new GachaItems.StatArray();
+        GachaItems.StatArray targetStats = new GachaItems.StatArray();
+
+        abstract String getApplicationTendencyString(GachaItems.ITEM_STAT stat);
+
+        GemApplicationResult applyToTarget() {
+            GemApplicationResult applicationResult = new GemApplicationResult(id);
+            for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                String tendencyString = getApplicationTendencyString(stat);
+                applicationResult.addStat(stat,
+                    targetStats.getStat(stat) - initialStats.getStat(stat),
+                    !tendencyString.isEmpty(), tendencyString);
+            }
+            return applicationResult;
+        }
+    }
+
+    private static class EqualizingGem extends StatShuffleGem {
+        GachaItems.StatRollResult firstStat;
+
         EqualizingGem() {
             id = EQUALIZING_GEM_ID;
             name = "Equalizing Gem";
@@ -408,27 +461,23 @@ public class GachaGems {
 
         @Override
         GemApplicationResult apply(GachaItems.Item item) {
-            GemApplicationResult applicationResult = new GemApplicationResult(id);
+            initialStats = getInitialStats(item);
 
             int totalStats = 0;
-            GachaItems.StatArray initialStats = new GachaItems.StatArray();
-            for (GachaItems.StatArray statArray : item.bonuses) {
-                for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
-                    totalStats += statArray.getStat(stat);
-                    initialStats.addStat(stat, statArray.getStat(stat));
-                }
+            for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                totalStats += initialStats.getStat(stat);
             }
 
             int averageStat = totalStats / 5;
             int remainder = totalStats % 5;
-            GachaItems.StatArray targetStats
+            targetStats
                 = new GachaItems.StatArray(averageStat, averageStat, averageStat, averageStat,
                     averageStat);
 
             // Assign remaining stats randomly, considering tendency weight for first roll
             List<GachaItems.ITEM_STAT> remainingStats
                 = new ArrayList<>(Arrays.asList(GachaItems.ITEM_STAT.values()));
-            GachaItems.StatRollResult firstStat = item.rollStat(true);
+            firstStat = item.rollStat(true);
             if (remainder > 0) {
                 targetStats.addStat(firstStat.stat, 1);
                 remainingStats.remove(firstStat.stat);
@@ -441,12 +490,169 @@ public class GachaGems {
             }
 
             // Now award enough stats to reach targets
-            for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
-                applicationResult.addStat(stat,
-                    targetStats.getStat(stat) - initialStats.getStat(stat),
-                    remainder > 0 && firstStat.stat == stat && firstStat.isTendency,
-                    stat.getPositiveAdjective());
+            return applyToTarget();
+        }
+
+        @Override
+        String getApplicationTendencyString(GachaItems.ITEM_STAT stat) {
+            if (stat == firstStat.stat && firstStat.isTendency) {
+                return stat.getPositiveAdjective();
             }
+            return "";
+        }
+    }
+
+    private static class ChaoticGem extends StatShuffleGem {
+        GachaItems.StatRollResult highestStatRoll;
+        GachaItems.StatRollResult lowestStatRoll;
+
+        ChaoticGem() {
+            id = CHAOTIC_GEM_ID;
+            name = "Chaotic Gem";
+            description = "Shuffle all stats";
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            initialStats = getInitialStats(item);
+
+            // Track the initial stats that still need a destination
+            List<GachaItems.ITEM_STAT> remainingStats
+                = new ArrayList<>(Arrays.asList(GachaItems.ITEM_STAT.values()));
+
+            // Figure out highest and lowest so we can use weighted rolls for them
+            int highestIndex = 0;
+            int highest = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(highestIndex));
+            int lowestIndex = highestIndex;
+            int lowest = highest;
+            for (int i = 1; i < GachaItems.ITEM_STAT.values().length; ++i) {
+                int value = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(i));
+                if (value < lowest) {
+                    lowest = value;
+                    lowestIndex = i;
+                } else if (value > highest) {
+                    highest = value;
+                    highestIndex = i;
+                }
+            }
+
+            // Award highest and lowest using tendency weighted rolls
+            GachaItems.ITEM_STAT highestStat = GachaItems.ITEM_STAT.fromIndex(highestIndex);
+            highestStatRoll = item.rollStat(true);
+            targetStats.setStat(highestStatRoll.stat, initialStats.getStat(highestStat));
+            remainingStats.remove(highestStat);
+            GachaItems.ITEM_STAT lowestStat = GachaItems.ITEM_STAT.fromIndex(lowestIndex);
+            GachaItems.StatRollResult roll = item.rollStat(false);
+            if (roll.stat != highestStatRoll.stat) {
+                lowestStatRoll = roll;
+                targetStats.setStat(lowestStatRoll.stat, initialStats.getStat(lowestStat));
+                remainingStats.remove(lowestStat);
+            }
+
+            // Now shuffle and award the 3 remaining stats without tendencies
+            Collections.shuffle(remainingStats);
+            int index = 0;
+            for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                if (targetStats.getStat(stat) != 0) {
+                    // This was awarded the previous high or low
+                    continue;
+                }
+                targetStats.setStat(stat, initialStats.getStat(remainingStats.get(index)));
+                index++;
+            }
+
+            return applyToTarget();
+        }
+
+        @Override
+        String getApplicationTendencyString(GachaItems.ITEM_STAT stat) {
+            if (stat == highestStatRoll.stat && highestStatRoll.isTendency) {
+                return stat.getPositiveAdjective();
+            } else if (lowestStatRoll != null && stat == lowestStatRoll.stat
+                    && lowestStatRoll.isTendency) {
+                return stat.getNegativeAdjective();
+            }
+            return "";
+        }
+    }
+
+    private static class InvertedGem extends StatShuffleGem {
+        InvertedGem() {
+            id = INVERTED_GEM_ID;
+            name = "Inverted Gem";
+            description = "Invert all bonuses";
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            initialStats = getInitialStats(item);
+            for (GachaItems.ITEM_STAT stat : GachaItems.ITEM_STAT.values()) {
+                targetStats.setStat(stat, -1 * initialStats.getStat(stat));
+            }
+            return applyToTarget();
+        }
+
+        @Override
+        String getApplicationTendencyString(GachaItems.ITEM_STAT stat) {
+            return "";
+        }
+    }
+
+    private static class CompoundingGem extends Gem {
+        CompoundingGem() {
+            id = COMPOUNDING_GEM_ID;
+            name = "Compounding Gem";
+            description = "+0.2 to highest stat (ties broken randomly)";
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            GemApplicationResult applicationResult = new GemApplicationResult(id);
+            applicationResult.addStat(getHighestStat(item), 2);
+            return applicationResult;
+        }
+    }
+
+    private static class FractalGem extends Gem {
+        FractalGem() {
+            id = FRACTAL_GEM_ID;
+            name = "Fractal Gem";
+            description = "After socketed, grants +3 Gem Slots";
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            GemApplicationResult applicationResult = new GemApplicationResult(id);
+            applicationResult.result.addedGemSlots = 3;
+            applicationResult.output.add("Added 3 Gem Slots");
+            return applicationResult;
+        }
+    }
+
+    private static class GamblersGem extends Gem {
+        GamblersGem() {
+            id = GAMBLERS_GEM_ID;
+            name = "Gambler's Gem";
+            description = "Mimics another random gem";
+        }
+
+        @Override
+        GemApplicationResult apply(GachaItems.Item item) {
+            int totalGems = COMMON_GEMS.length + UNCOMMON_GEMS.length + RARE_GEMS.length;
+            Gem mimickedGem = Gem.fromId(HBMain.RNG_SOURCE.nextInt(totalGems));
+            GemApplicationResult applicationResult = mimickedGem.apply(item);
+
+            // Update the stored gem id to this
+            applicationResult.result.gemId = id;
+
+            // Add a new prefix to each output line
+            List<String> newOutput = new ArrayList<>();
+            String prefix = "Mimicked " + mimickedGem.name + ":\n\n";
+            newOutput.add(prefix);
+            for (String line : applicationResult.output) {
+                newOutput.add(prefix + line);
+            }
+            applicationResult.output = newOutput;
 
             return applicationResult;
         }

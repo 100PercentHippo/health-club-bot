@@ -470,9 +470,9 @@ public class GachaItems {
         builder.append("\n");
         item.awardTo(uid);
 
-        for (int i = 0; i < item.gemSlots; ++i) {
+        for (int i = 0; i < 9; ++i) {
             builder.append('\n');
-            builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(i % 2)));
+            builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(i % 3)));
         }
         return builder.toString();
     }
@@ -513,8 +513,7 @@ public class GachaItems {
         }
 
         if (!gem.isEligible(item)) {
-            List<String> result = new ArrayList<>();
-            result.add(gem.getIneligibilityReason(item));
+            results.add(gem.getIneligibilityReason(item));
             return new HBMain.MultistepResponse(results);
         }
 
