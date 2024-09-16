@@ -172,6 +172,8 @@ public class GachaItems {
         abstract int getTier();
         abstract String getName();
 
+        long getItemId() { return itemId; }
+
         void addRandomStats(int amount, boolean initial, int repetitions) {
             for (int i = 0; i < repetitions; ++i) {
                 addRandomStat(amount, initial);
@@ -206,6 +208,10 @@ public class GachaItems {
             }
             gems.clear();
             return removedGems;
+        }
+
+        public String getAutoCompleteDescription() {
+            return getModifiers().toString() + " " + getName();
         }
 
         public String getBriefDescription() {
@@ -540,6 +546,54 @@ public class GachaItems {
         return new HBMain.MultistepResponse(results);
     }
 
+    // TODO: Include string search functionality
+    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid) {
+        return new ArrayList<>();
+
+        // TODO: Complete
+
+        // List<Item> items = queryItems(uid);
+        // if (items == null) { return new ArrayList<>(); }
+
+        // List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
+        // items.forEach(i -> output.add(new HBMain.AutocompleteIdOption(i.getItemId(),
+        //     i.getAutoCompleteDescription())));
+        // return output;
+    }
+
+    private static class UnappliedGem {
+        int gemId;
+        int quantityOwned;
+
+        UnappliedGem(int gemId, int quantityOwned) {
+            this.gemId = gemId;
+            this.quantityOwned = quantityOwned;
+        }
+
+        long getGemId() { return gemId; }
+
+        @Override
+        public String toString() {
+            GachaGems.Gem gem = GachaGems.Gem.fromId(gemId);
+            StringBuilder builder = new StringBuilder();
+            builder.append(gem.getName());
+            builder.append(" (");
+            builder.append(quantityOwned);
+            builder.append(" owned): ");
+            builder.append(gem.getDescription());
+            return builder.toString();
+        }
+    }
+
+    static List<HBMain.AutocompleteIdOption> handleGemAutocomplete(long uid) {
+        List<UnappliedGem> gems = queryGems(uid);
+        if (gems == null) { return new ArrayList<>(); }
+
+        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(gems.size());
+        gems.forEach(g -> output.add(new HBMain.AutocompleteIdOption(g.getGemId(), g.toString())));
+        return output;
+    }
+
     // CREATE TABLE IF NOT EXISTS gacha_item (
     //  iid SERIAL PRIMARY KEY,
     //  uid bigint NOT NULL,
@@ -683,4 +737,16 @@ public class GachaItems {
         }, null);
         return item == null ? null : Item.getItem(item, gems);
     }
+
+    static List<UnappliedGem> queryGems(long uid) {
+        String query = "SELECT gid, quantity FROM gacha_user_gem WHERE uid = " + uid + ";";
+        List<UnappliedGem> unappliedGems = new ArrayList<>();
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            while (results.next()) {
+                unappliedGems.add(new UnappliedGem(results.getInt(1), results.getInt(2)));
+            }
+            return unappliedGems;
+        }, unappliedGems);
+    }
+
 }

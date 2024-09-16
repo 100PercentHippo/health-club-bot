@@ -314,6 +314,8 @@ public class HBMain {
     private static final String GACHA_BANNER_INFO_COMMAND = "gacha banner info";
     private static final String GACHA_ITEM_INFO_COMMAND = "gacha item info";
     private static final String APPLY_GEM_COMMAND = "applygem";
+    private static final String APPLY_GEM_ITEM_OPTION = "Item";
+    private static final String APPLY_GEM_GEM_OPTION = "Gem";
     private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
     private static final String TEST_COMMAND = "test";
 
@@ -326,6 +328,8 @@ public class HBMain {
     private static final long DEFAULT_CASINO_WAGER = 100L;
     private static final long DEFAULT_ALLORNOTHING_WAGER = 500L;
     private static final long DEFAULT_PULL_AMOUNT = 1L;
+
+    private static final int MAX_AUTOCOMPLETE_OPTIONS = 25;
 
     static DiscordApi api;
 
@@ -494,24 +498,34 @@ public class HBMain {
         });
         api.addAutocompleteCreateListener(event -> {
             AutocompleteInteraction interaction = event.getAutocompleteInteraction();
-            List<SlashCommandOptionChoice> choices = new ArrayList<>();
+            List<AutocompleteIdOption> options = null;
             switch (interaction.getFullCommandName()) {
                 case STATS_COMMAND:
+                    List<SlashCommandOptionChoice> choices = new ArrayList<>();
                     Arrays.stream(Stats.StatsOption.values())
                         .forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getName())));
-                    break;
+                    interaction.respondWithChoices(choices);
+                    return;
                 case PULL_COMMAND:
                 case PITY_COMMAND:
                 case GACHA_BANNER_INFO_COMMAND:
-                    Gacha.getBanners().forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+                    options = Gacha.getBanners();
                     break;
                 case GACHA_CHARACTER_INFO_COMMAND:
-                    Gacha.getCharacters(interaction.getUser().getId())
-                        .forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+                    options = Gacha.getCharacters(interaction.getUser().getId());
+                    break;
+                case APPLY_GEM_COMMAND:
+                    if (interaction.getFocusedOption().getName() == APPLY_GEM_ITEM_OPTION) {
+                        options = GachaItems.handleItemAutocomplete(interaction.getUser().getId());
+                    } else { // Gem Option
+                        options = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
+                    }
                     break;
                 default:
                     return;
             }
+            List<SlashCommandOptionChoice> choices = new ArrayList<>();
+            options.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
             interaction.respondWithChoices(choices);
         });
         System.out.println("Server started");
@@ -778,8 +792,8 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName(TEST_COMMAND).setDescription("[Placeholder]")
                     .setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName(APPLY_GEM_COMMAND).setDescription("Apply a gem to an item")
-            .addOption(SlashCommandOption.createLongOption("gem", "Which gem to apply", true))
-            .addOption(SlashCommandOption.createLongOption("item", "Item to apply gem to", true)));
+            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true))
+            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true)));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");
