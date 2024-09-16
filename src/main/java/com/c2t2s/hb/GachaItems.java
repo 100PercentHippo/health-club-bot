@@ -281,18 +281,9 @@ public class GachaItems {
             int appliedGemSlots = 0;
 
             for (GachaGems.AppliedGem gem : gems) {
-                for (ITEM_STAT stat : ITEM_STAT.values()) {
-                    int value = gem.getModifiedStats().getStat(stat);
-                    // Most values will be 0
-                    if (value != 0) {
-                        gemBonuses.addStat(stat, value);
-                        if (value > 0) {
-                            item.additions += value;
-                        } else {
-                            item.subtractions += value;
-                        }
-                    }
-                }
+                gemBonuses.addArray(gem.getModifiedStats());
+                item.additions = gem.getAdditions();
+                item.subtractions = gem.getSubtractions();
                 appliedGemSlots += gem.getAddedGemSlots();
             }
 
@@ -739,7 +730,7 @@ public class GachaItems {
     }
 
     static List<UnappliedGem> queryGems(long uid) {
-        String query = "SELECT gid, quantity FROM gacha_user_gem WHERE uid = " + uid + ";";
+        String query = "SELECT gid, quantity FROM gacha_user_gem WHERE quantity > 0 AND uid = " + uid + ";";
         List<UnappliedGem> unappliedGems = new ArrayList<>();
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {

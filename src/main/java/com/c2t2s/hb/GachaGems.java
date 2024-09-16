@@ -334,7 +334,7 @@ public class GachaGems {
             GemApplicationResult applicationResult = new GemApplicationResult(id);
             boolean isPositive = HBMain.RNG_SOURCE.nextBoolean();
             GachaItems.StatRollResult roll = item.rollStat(isPositive);
-            applicationResult.addStat(roll, 1);
+            applicationResult.addStat(roll, isPositive ? 1 : -1);
             return applicationResult;
         }
     }
