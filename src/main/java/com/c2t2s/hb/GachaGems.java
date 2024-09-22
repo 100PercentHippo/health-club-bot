@@ -63,7 +63,7 @@ public class GachaGems {
         }
 
         String getIneligibilityReason(GachaItems.Item item) {
-            if (item.gems.size() < item.gemSlots) {
+            if (!isEligible(item)) {
                 return "Selected item has no gem slots";
             }
             return "";
@@ -646,13 +646,7 @@ public class GachaGems {
             applicationResult.result.gemId = id;
 
             // Add a new prefix to each output line
-            List<String> newOutput = new ArrayList<>();
-            String prefix = "Mimicked " + mimickedGem.name + ":\n\n";
-            newOutput.add(prefix);
-            for (String line : applicationResult.output) {
-                newOutput.add(prefix + line);
-            }
-            applicationResult.output = newOutput;
+            applicationResult.output.add(0, "Mimicked " + mimickedGem.name + ":\n");
 
             return applicationResult;
         }

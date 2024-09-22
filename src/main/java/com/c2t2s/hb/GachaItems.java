@@ -148,6 +148,8 @@ public class GachaItems {
         // { StatArray of inital stats, StatArray of gem stats }
         StatArray[] bonuses;
         List<GachaGems.AppliedGem> gems;
+        // Indicates gem stats are included in the item's base stats to save DB fetches
+        int abstractedGems = 0;
 
         // Stat selected is more likely to be rolled when adding stats
         ITEM_STAT positiveTendency;
@@ -282,8 +284,8 @@ public class GachaItems {
 
             for (GachaGems.AppliedGem gem : gems) {
                 gemBonuses.addArray(gem.getModifiedStats());
-                item.additions = gem.getAdditions();
-                item.subtractions = gem.getSubtractions();
+                item.additions += gem.getAdditions();
+                item.subtractions += gem.getSubtractions();
                 appliedGemSlots += gem.getAddedGemSlots();
             }
 
@@ -295,6 +297,17 @@ public class GachaItems {
                 ITEM_STAT.fromIndex(item.negativeTendency), ITEM_STAT.fromIndex(item.bonusStat),
                 item.additions, item.subtractions, item.enhancementLevel,
                 item.gemSlots + appliedGemSlots);
+        }
+
+        static Item getItem(FetchedItem item, StatArray gemStats, int gemAdditions,
+                int gemSubtractions, int slotsFromGems, int gemCount) {
+            StatArray[] bonuses = { item.stats, gemStats };
+
+            return new G0Item(item.generator, item.iid, bonuses, new ArrayList<>(),
+                ITEM_STAT.fromIndex(item.positiveTendency),
+                ITEM_STAT.fromIndex(item.negativeTendency), ITEM_STAT.fromIndex(item.bonusStat),
+                item.additions + gemAdditions, item.subtractions + gemSubtractions,
+                item.enhancementLevel, item.gemSlots + slotsFromGems, gemCount);
         }
     }
 
@@ -367,6 +380,14 @@ public class GachaItems {
                 List<GachaGems.AppliedGem> gems, ITEM_STAT positiveTendency,
                 ITEM_STAT negativeTendency, ITEM_STAT bonusStat, int additions,
                 int subtractions, int enhancementLevel, int gemSlots) {
+            this(generatorVersion, itemId, bonuses, gems, positiveTendency, negativeTendency,
+                bonusStat, additions, subtractions, enhancementLevel, gemSlots, 0);
+        }
+
+        G0Item(int generatorVersion, long itemId, StatArray[] bonuses,
+                List<GachaGems.AppliedGem> gems, ITEM_STAT positiveTendency,
+                ITEM_STAT negativeTendency, ITEM_STAT bonusStat, int additions,
+                int subtractions, int enhancementLevel, int gemSlots, int abstractedGems) {
             this.generatorVersion = generatorVersion;
             this.itemId           = itemId;
             this.bonuses          = bonuses;
@@ -378,6 +399,7 @@ public class GachaItems {
             this.subtractions     = subtractions;
             this.enhancementLevel = enhancementLevel;
             this.gemSlots         = gemSlots;
+            this.abstractedGems   = abstractedGems;
         }
 
         @Override
@@ -515,6 +537,7 @@ public class GachaItems {
         }
 
         String oldStats = item.getModifiers().toString();
+        int oldTier = item.getTier();
         List<String> steps = item.applyGem(gem);
         logGemConsumed(uid, gem.getId());
 
@@ -532,6 +555,12 @@ public class GachaItems {
         builder.append(oldStats);
         builder.append(" -> ");
         builder.append(item.getModifiers().toString());
+        if (oldTier != item.getTier()) {
+            builder.append("\nTier ");
+            builder.append(oldTier);
+            builder.append(" -> ");
+            builder.append(item.getTier());
+        }
         results.add(builder.toString());
 
         return new HBMain.MultistepResponse(results);
@@ -698,7 +727,7 @@ public class GachaItems {
 
     static List<GachaGems.AppliedGem> fetchGems(long iid) {
         String query = "SELECT gem_type, work_modifier, fish_modifier, pick_modifier, rob_modifier, misc_modifier, "
-            + "gem_slots_added, additions, subtractions, gid FROM gacha_item_gem WHERE iid = " + iid + ";";
+            + "gem_slots_added, additions, subtractions, gid FROM gacha_item_gem WHERE negated = false AND iid = " + iid + ";";
         List<GachaGems.AppliedGem> gems = new ArrayList<>();
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {
