@@ -568,17 +568,13 @@ public class GachaItems {
 
     // TODO: Include string search functionality
     static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid) {
-        return new ArrayList<>();
+        List<Item> items = fetchItems(uid);
+        if (items == null) { return new ArrayList<>(); }
 
-        // TODO: Complete
-
-        // List<Item> items = queryItems(uid);
-        // if (items == null) { return new ArrayList<>(); }
-
-        // List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
-        // items.forEach(i -> output.add(new HBMain.AutocompleteIdOption(i.getItemId(),
-        //     i.getAutoCompleteDescription())));
-        // return output;
+        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
+        items.forEach(i -> output.add(new HBMain.AutocompleteIdOption(i.getItemId(),
+            i.getAutoCompleteDescription())));
+        return output;
     }
 
     private static class UnappliedGem {
@@ -756,6 +752,32 @@ public class GachaItems {
             return null;
         }, null);
         return item == null ? null : Item.getItem(item, gems);
+    }
+
+    static List<Item> fetchItems(long uid) {
+        List<Item> items = new ArrayList<>();
+        String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid == " + uid + "), gem_stats AS "
+            + "(SELECT iid, SUM(work_modifier) AS gem_work, SUM(fish_modifier) AS gem_fish, SUM(pick_modifier) "
+            + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
+            + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
+            + "COUNT(*) AS gem_count FROM gacha_item_gem WHERE negated = false AND iid IN (SELECT iid FROM user_iids) "
+            + "GROUP BY iid) SELECT generator, gacha_item.iid, initial_work, initial_fish, initial_pick, initial_rob, "
+            + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, initial_subtractions, "
+            + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
+            + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
+            + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            while (results.next()) {
+                items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2),
+                    results.getInt(3), results.getInt(4), results.getInt(5), results.getInt(6),
+                    results.getInt(7), results.getInt(8), results.getInt(9), results.getInt(10),
+                    results.getInt(11), results.getInt(12), results.getInt(13), results.getInt(14)),
+                    new StatArray(results.getInt(15), results.getInt(16), results.getInt(17),
+                    results.getInt(18), results.getInt(19)), results.getInt(20), results.getInt(21),
+                    results.getInt(22), results.getInt(23)));
+            }
+            return items;
+        }, items);
     }
 
     static List<UnappliedGem> queryGems(long uid) {

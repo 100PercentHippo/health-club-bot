@@ -515,7 +515,7 @@ public class HBMain {
                     options = Gacha.getCharacters(interaction.getUser().getId());
                     break;
                 case APPLY_GEM_COMMAND:
-                    if (interaction.getFocusedOption().getName() == APPLY_GEM_ITEM_OPTION) {
+                    if (interaction.getFocusedOption().getName().equals(APPLY_GEM_ITEM_OPTION)) {
                         options = GachaItems.handleItemAutocomplete(interaction.getUser().getId());
                     } else { // Gem Option
                         options = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
