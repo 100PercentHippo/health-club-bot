@@ -196,6 +196,9 @@ public class GachaItems {
             GachaGems.GemApplicationResult applicationResult = gem.apply(this);
             gems.add(applicationResult.result);
             bonuses[GEM_BONUS_INDEX].addArray(applicationResult.result.getModifiedStats());
+            additions += applicationResult.result.getAdditions();
+            subtractions += applicationResult.result.getSubtractions();
+            gemSlots += applicationResult.result.getAddedGemSlots();
             logAppliedGem(itemId, gem.id, applicationResult.result.getModifiedStats(),
                 applicationResult.result.getAdditions(),
                 applicationResult.result.getSubtractions(),

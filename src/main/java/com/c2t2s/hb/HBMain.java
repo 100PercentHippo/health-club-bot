@@ -521,6 +521,9 @@ public class HBMain {
                         options = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
                     }
                     break;
+                case GACHA_ITEM_INFO_COMMAND:
+                    options = GachaItems.handleItemAutocomplete(interaction.getUser().getId());
+                    break;
                 default:
                     return;
             }
@@ -766,7 +769,7 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "item", "View your items",
                 Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single item",
-                    Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to view", true))))))
+                    Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to view", true, true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(ALLORNOTHING_COMMAND).setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
@@ -793,7 +796,7 @@ public class HBMain {
                     .setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName(APPLY_GEM_COMMAND).setDescription("Apply a gem to an item")
             .addOption(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true))
-            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true)));
+            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true)));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");
