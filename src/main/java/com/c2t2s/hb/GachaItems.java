@@ -542,8 +542,12 @@ public class GachaItems {
 
         String oldStats = item.getModifiers().toString();
         int oldTier = item.getTier();
+        String oldName = item.getName();
         List<String> steps = item.applyGem(gem);
         logGemConsumed(uid, gem.getId());
+        if (!oldName.equals(item.getName())) {
+            logName(item);
+        }
 
         StringBuilder builder = new StringBuilder();
         builder.append("Applying ");
@@ -630,6 +634,7 @@ public class GachaItems {
     //  initial_pick integer NOT NULL,
     //  initial_rob integer NOT NULL,
     //  initial_misc integer NOT NULL,
+    //  name varchar(100) NOT NULL,
     //  CONSTRAINT gacha_item_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
@@ -665,6 +670,11 @@ public class GachaItems {
         return CasinoDB.executeUpdate(query);
     }
 
+    static boolean logName(Item item) {
+        String query = "UPDATE gacha_item SET name = '" + item.getName() + "' WHERE iid = " + item.getItemId() + ";";
+        return CasinoDB.executeUpdate(query);
+    }
+
     static void logGemConsumed(long uid, int gemId) {
         String query = "UPDATE gacha_user_gem SET quantity = quantity - 1 WHERE uid = "
             + uid + " AND gid = " + gemId + ";";
@@ -678,11 +688,11 @@ public class GachaItems {
 
     static boolean logAwardItem(long uid, Item item, StatArray initialStats) {
         String query = "INSERT INTO gacha_item (uid, generator, enhancement_level, gem_slots, positive_tendency, "
-            + "negative_tendency, bonus_stat, initial_additions, initial_subtractions, initial_work, initial_fish, "
+            + "negative_tendency, bonus_stat, initial_additions, initial_subtractions, name, initial_work, initial_fish, "
             + "initial_pick, initial_rob, initial_misc) VALUES (" + uid + ", " + item.generatorVersion + ", 0,"
-            + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", "
+            + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", '"
             + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", "
-            + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
+            + item.getName() + "', " + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
         return CasinoDB.executeUpdate(query);
     }
 
@@ -760,8 +770,8 @@ public class GachaItems {
 
     static List<Item> fetchItems(long uid) {
         List<Item> items = new ArrayList<>();
-        String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid = " + uid + "), gem_stats AS "
-            + "(SELECT iid, SUM(work_modifier) AS gem_work, SUM(fish_modifier) AS gem_fish, SUM(pick_modifier) "
+        String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid = " + uid + " ORDER BY iid DESC LIMIT 10), "
+            + "gem_stats AS (SELECT iid, SUM(work_modifier) AS gem_work, SUM(fish_modifier) AS gem_fish, SUM(pick_modifier) "
             + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
             + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
             + "COUNT(*) AS gem_count FROM gacha_item_gem WHERE negated = false AND iid IN (SELECT iid FROM user_iids) "
@@ -769,7 +779,7 @@ public class GachaItems {
             + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, initial_subtractions, "
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
-            + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid + ";";
+            + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid + " ORDER BY iid DESC LIMIT 10;";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {
                 items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2),
