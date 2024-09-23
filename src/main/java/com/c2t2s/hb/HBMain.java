@@ -201,6 +201,24 @@ public class HBMain {
         }
     }
 
+    static class AutocompleteStringOption {
+        String id;
+        String description;
+
+        AutocompleteStringOption(String id, String description) {
+            this.id = id;
+            this.description = description;
+        }
+
+        String getId() {
+            return id;
+        }
+
+        String getDescription() {
+            return description;
+        }
+    }
+
     abstract static class CasinoCommand {
         Consumer<SlashCommandInteraction> responder;
         // If the number of channel options expands greatly, replace these with a bitmask
@@ -498,7 +516,8 @@ public class HBMain {
         });
         api.addAutocompleteCreateListener(event -> {
             AutocompleteInteraction interaction = event.getAutocompleteInteraction();
-            List<AutocompleteIdOption> options = null;
+            List<AutocompleteIdOption> idOptions = null;
+            List<AutocompleteStringOption> stringOptions = null;
             switch (interaction.getFullCommandName()) {
                 case STATS_COMMAND:
                     List<SlashCommandOptionChoice> choices = new ArrayList<>();
@@ -509,28 +528,33 @@ public class HBMain {
                 case PULL_COMMAND:
                 case PITY_COMMAND:
                 case GACHA_BANNER_INFO_COMMAND:
-                    options = Gacha.getBanners();
+                    idOptions = Gacha.getBanners();
                     break;
                 case GACHA_CHARACTER_INFO_COMMAND:
-                    options = Gacha.getCharacters(interaction.getUser().getId());
+                    idOptions = Gacha.getCharacters(interaction.getUser().getId());
                     break;
                 case APPLY_GEM_COMMAND:
                     if (interaction.getFocusedOption().getName().equals(APPLY_GEM_ITEM_OPTION)) {
-                        options = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                        stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                             interaction.getArgumentStringValueByIndex(1));
                     } else { // Gem Option
-                        options = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
+                        idOptions = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
                     }
                     break;
                 case GACHA_ITEM_INFO_COMMAND:
-                    options = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                    stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                         interaction.getArgumentStringValueByIndex(0));
                     break;
                 default:
                     return;
             }
             List<SlashCommandOptionChoice> choices = new ArrayList<>();
-            options.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+            if (idOptions != null) {
+                idOptions.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+            }
+            if (stringOptions != null) {
+                stringOptions.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+            }
             interaction.respondWithChoices(choices);
         });
         System.out.println("Server started");

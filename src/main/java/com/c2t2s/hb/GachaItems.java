@@ -588,7 +588,7 @@ public class GachaItems {
         return new HBMain.MultistepResponse(results);
     }
 
-    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
+    static List<HBMain.AutocompleteStringOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
         List<Item> items;
         if (!partialName.isPresent() || partialName.get().isEmpty()) {
             items = fetchItems(uid);
@@ -597,8 +597,8 @@ public class GachaItems {
         }
         if (items == null) { return new ArrayList<>(); }
 
-        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
-        items.forEach(i -> output.add(new HBMain.AutocompleteIdOption(i.getItemId(),
+        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(items.size());
+        items.forEach(i -> output.add(new HBMain.AutocompleteStringOption(Long.toString(i.getItemId()),
             i.getAutoCompleteDescription())));
         return output;
     }
