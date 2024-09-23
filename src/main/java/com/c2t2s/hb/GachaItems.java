@@ -501,7 +501,13 @@ public class GachaItems {
         return builder.toString();
     }
 
-    static String handleItemInfo(long uid, long iid) {
+    static String handleItemInfo(long uid, String iidString) {
+        int iid;
+        try {
+            iid = Integer.parseInt(iidString);
+        } catch (NumberFormatException e) {
+            return "Invalid item id format [" + iidString + "]";
+        }
         Item item = fetchItem(uid, iid);
         if (item == null) {
             return "Failed to fetch item " + iid;
@@ -516,9 +522,16 @@ public class GachaItems {
         return "Failed to award gem " + gem.getId();
     }
 
-    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, long iid) {
+    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, String iidString) {
         List<String> results = new ArrayList<>();
         GachaGems.Gem gem;
+        int iid;
+        try {
+            iid = Integer.parseInt(iidString);
+        } catch (NumberFormatException e) {
+            results.add("Invalid item id format [" + iidString + "]");
+            return new HBMain.MultistepResponse(results);
+        }
         try {
              gem = GachaGems.Gem.fromId((int)gemId);
         } catch (IllegalArgumentException e) {
@@ -577,10 +590,10 @@ public class GachaItems {
 
     static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
         List<Item> items;
-        if (!partialName.isPresent()) {
+        if (!partialName.isPresent() || partialName.get().isEmpty()) {
             items = fetchItems(uid);
         } else {
-            items = fetchItems(uid, partialName.get());
+            items = fetchItems(uid, partialName.get().toLowerCase());
         }
         if (items == null) { return new ArrayList<>(); }
 
@@ -676,7 +689,8 @@ public class GachaItems {
     }
 
     static boolean logName(Item item) {
-        String query = "UPDATE gacha_item SET name = '" + item.getName() + "' WHERE iid = " + item.getItemId() + ";";
+        String query = "UPDATE gacha_item SET name = '" + item.getName().toLowerCase()
+            + "' WHERE iid = " + item.getItemId() + ";";
         return CasinoDB.executeUpdate(query);
     }
 
@@ -697,7 +711,7 @@ public class GachaItems {
             + "initial_pick, initial_rob, initial_misc) VALUES (" + uid + ", " + item.generatorVersion + ", 0,"
             + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", "
             + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", '"
-            + item.getName() + "', " + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
+            + item.getName().toLowerCase() + "', " + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
         return CasinoDB.executeUpdate(query);
     }
 

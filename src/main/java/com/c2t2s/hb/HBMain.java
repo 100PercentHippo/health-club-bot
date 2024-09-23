@@ -408,10 +408,10 @@ public class HBMain {
             entry(GACHA_BANNER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
             entry(GACHA_ITEM_INFO_COMMAND, new SimpleCasinoCommand(
-                i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
+                i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
                 i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
-                    i.getArgumentLongValueByIndex(1).get()))),
+                    i.getArgumentStringValueByIndex(1).get()))),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
                 i -> handleRegisterChannel(i.getUser().getId(), i.getServer(), i.getChannel(), i.getArgumentLongValueByIndex(0).get()),
                 false,
@@ -517,14 +517,14 @@ public class HBMain {
                 case APPLY_GEM_COMMAND:
                     if (interaction.getFocusedOption().getName().equals(APPLY_GEM_ITEM_OPTION)) {
                         options = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
-                            interaction.getFocusedOption().getStringValue());
+                            interaction.getArgumentStringValueByIndex(1));
                     } else { // Gem Option
                         options = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
                     }
                     break;
                 case GACHA_ITEM_INFO_COMMAND:
                     options = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
-                        interaction.getFocusedOption().getStringValue());
+                        interaction.getArgumentStringValueByIndex(0));
                     break;
                 default:
                     return;
@@ -771,7 +771,7 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "item", "View your items",
                 Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single item",
-                    Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to view", true, true))))))
+                    Arrays.asList(SlashCommandOption.createStringOption("item", "Which item to view", true, true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(ALLORNOTHING_COMMAND).setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
@@ -798,7 +798,7 @@ public class HBMain {
                     .setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName(APPLY_GEM_COMMAND).setDescription("Apply a gem to an item")
             .addOption(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true))
-            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true)));
+            .addOption(SlashCommandOption.createStringOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true)));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");
