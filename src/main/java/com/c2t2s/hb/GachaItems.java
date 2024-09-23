@@ -2,6 +2,7 @@ package com.c2t2s.hb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class GachaItems {
 
@@ -574,12 +575,12 @@ public class GachaItems {
         return new HBMain.MultistepResponse(results);
     }
 
-    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, String partialName) {
+    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
         List<Item> items;
-        if (partialName == null || partialName.isEmpty()) {
+        if (!partialName.isPresent()) {
             items = fetchItems(uid);
         } else {
-            items = fetchItems(uid, partialName);
+            items = fetchItems(uid, partialName.get());
         }
         if (items == null) { return new ArrayList<>(); }
 
