@@ -574,9 +574,13 @@ public class GachaItems {
         return new HBMain.MultistepResponse(results);
     }
 
-    // TODO: Include string search functionality
-    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid) {
-        List<Item> items = fetchItems(uid);
+    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, String partialName) {
+        List<Item> items;
+        if (partialName == null || partialName.isEmpty()) {
+            items = fetchItems(uid);
+        } else {
+            items = fetchItems(uid, partialName);
+        }
         if (items == null) { return new ArrayList<>(); }
 
         List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
@@ -690,8 +694,8 @@ public class GachaItems {
         String query = "INSERT INTO gacha_item (uid, generator, enhancement_level, gem_slots, positive_tendency, "
             + "negative_tendency, bonus_stat, initial_additions, initial_subtractions, name, initial_work, initial_fish, "
             + "initial_pick, initial_rob, initial_misc) VALUES (" + uid + ", " + item.generatorVersion + ", 0,"
-            + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", '"
-            + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", "
+            + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", "
+            + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", '"
             + item.getName() + "', " + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
         return CasinoDB.executeUpdate(query);
     }
@@ -792,6 +796,34 @@ public class GachaItems {
             }
             return items;
         }, items);
+    }
+
+    static List<Item> fetchItems(long uid, String partialName) {
+        List<Item> items = new ArrayList<>();
+        String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid = " + uid
+            + " AND POSITION(? IN name) > 0 ORDER BY iid DESC LIMIT 10), "
+            + "gem_stats AS (SELECT iid, SUM(work_modifier) AS gem_work, SUM(fish_modifier) AS gem_fish, SUM(pick_modifier) "
+            + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
+            + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
+            + "COUNT(*) AS gem_count FROM gacha_item_gem WHERE negated = false AND iid IN (SELECT iid FROM user_iids) "
+            + "GROUP BY iid) SELECT generator, gacha_item.iid, initial_work, initial_fish, initial_pick, initial_rob, "
+            + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, initial_subtractions, "
+            + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
+            + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
+            + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid
+            + " AND POSITION(? IN name) > 0 ORDER BY iid DESC LIMIT 10;";
+        return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
+            while (results.next()) {
+                items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2),
+                    results.getInt(3), results.getInt(4), results.getInt(5), results.getInt(6),
+                    results.getInt(7), results.getInt(8), results.getInt(9), results.getInt(10),
+                    results.getInt(11), results.getInt(12), results.getInt(13), results.getInt(14)),
+                    new StatArray(results.getInt(15), results.getInt(16), results.getInt(17),
+                    results.getInt(18), results.getInt(19)), results.getInt(20), results.getInt(21),
+                    results.getInt(22), results.getInt(23)));
+            }
+            return items;
+        }, items, partialName, partialName);
     }
 
     static List<UnappliedGem> queryGems(long uid) {

@@ -516,13 +516,15 @@ public class HBMain {
                     break;
                 case APPLY_GEM_COMMAND:
                     if (interaction.getFocusedOption().getName().equals(APPLY_GEM_ITEM_OPTION)) {
-                        options = GachaItems.handleItemAutocomplete(interaction.getUser().getId());
+                        options = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                            interaction.getArgumentStringValueByName(APPLY_GEM_ITEM_OPTION).get());
                     } else { // Gem Option
                         options = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
                     }
                     break;
                 case GACHA_ITEM_INFO_COMMAND:
-                    options = GachaItems.handleItemAutocomplete(interaction.getUser().getId());
+                    options = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                        interaction.getArgumentStringValueByIndex(0).get());
                     break;
                 default:
                     return;
