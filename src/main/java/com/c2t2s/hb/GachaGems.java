@@ -37,15 +37,18 @@ public class GachaGems {
     static final int COMMON_GEM_RARITY = 0;
     static final int UNCOMMON_GEM_RARITY = 1;
     static final int RARE_GEM_RARITY = 2;
-    private static final int[] COMMON_GEMS
+    private static final Integer[] COMMON_GEMS
         = {FRACTURED_GEM_ID, PURE_GEM_ID, UNSTABLE_GEM_ID, BOLSTERING_GEM_ID, BALANCED_GEM_ID,
            GAMBLERS_GEM_ID, RECKLESS_GEM_ID, GAMBLERS_GEM_ID};
-    private static final int[] UNCOMMON_GEMS
+    private static final Integer[] UNCOMMON_GEMS
         = {HARDWORKING_GEM_ID, PATIENT_GEM_ID, SHADOWY_GEM_ID,
            INTIMIDATING_GEM_ID, VERSATILE_GEM_ID, PUTRID_GEM_ID, FORGETFUL_GEM_ID,
            EQUALIZING_GEM_ID};
-    private static final int[] RARE_GEMS
+    private static final Integer[] RARE_GEMS
         = {CHAOTIC_GEM_ID, INVERTED_GEM_ID, COMPOUNDING_GEM_ID, FRACTAL_GEM_ID};
+    static final Set<Integer> COMMON_GEM_SET = Set.of(COMMON_GEMS);
+    static final Set<Integer> UNCOMMON_GEM_SET = Set.of(UNCOMMON_GEMS);
+    static final Set<Integer> RARE_GEM_SET = Set.of(RARE_GEMS);
 
     abstract static class Gem {
         protected int id;

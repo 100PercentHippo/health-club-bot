@@ -334,6 +334,7 @@ public class HBMain {
     private static final String APPLY_GEM_COMMAND = "applygem";
     private static final String APPLY_GEM_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
+    private static final String LIST_GEMS_COMMAND = "listgems";
     private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
     private static final String TEST_COMMAND = "test";
 
@@ -346,8 +347,6 @@ public class HBMain {
     private static final long DEFAULT_CASINO_WAGER = 100L;
     private static final long DEFAULT_ALLORNOTHING_WAGER = 500L;
     private static final long DEFAULT_PULL_AMOUNT = 1L;
-
-    private static final int MAX_AUTOCOMPLETE_OPTIONS = 25;
 
     static DiscordApi api;
 
@@ -430,6 +429,8 @@ public class HBMain {
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
                 i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
                     i.getArgumentStringValueByIndex(1).get()))),
+            entry(LIST_GEMS_COMMAND, new SimpleCasinoCommand(
+                i -> GachaItems.handleListGems(i.getUser().getId()))),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
                 i -> handleRegisterChannel(i.getUser().getId(), i.getServer(), i.getChannel(), i.getArgumentLongValueByIndex(0).get()),
                 false,
@@ -817,12 +818,15 @@ public class HBMain {
                 Arrays.asList(SlashCommandOptionChoice.create("Register this as a casino channel", REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL),
                     SlashCommandOptionChoice.create("Register this as an event channel", REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL),
                     SlashCommandOptionChoice.create("Deregister this casino channel", REGISTER_SUBCOMMAND_REMOVE_CASINO_CHANNEL),
-                    SlashCommandOptionChoice.create("Deregister this event channel", REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL)))));
+                    SlashCommandOptionChoice.create("Deregister this event channel", REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL))))
+            .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(TEST_COMMAND).setDescription("[Placeholder]")
                     .setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName(APPLY_GEM_COMMAND).setDescription("Apply a gem to an item")
             .addOption(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true))
-            .addOption(SlashCommandOption.createStringOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true)));
+            .addOption(SlashCommandOption.createStringOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true))
+            .setEnabledInDms(false));
+        builders.add(new SlashCommandBuilder().setName(LIST_GEMS_COMMAND).setDescription("List your gems").setEnabledInDms(false));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");

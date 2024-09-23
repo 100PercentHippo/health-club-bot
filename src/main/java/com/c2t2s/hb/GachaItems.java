@@ -71,7 +71,7 @@ public class GachaItems {
         }
 
         static String format(int amount) {
-            return (amount > 0 ? "+" : "") + Stats.oneDecimal.format(amount / 10.0);
+            return (amount >= 0 ? "+" : "") + Stats.oneDecimal.format(amount / 10.0);
         }
     }
 
@@ -612,7 +612,7 @@ public class GachaItems {
             this.quantityOwned = quantityOwned;
         }
 
-        long getGemId() { return gemId; }
+        int getGemId() { return gemId; }
 
         @Override
         public String toString() {
@@ -634,6 +634,46 @@ public class GachaItems {
         List<HBMain.AutocompleteIdOption> output = new ArrayList<>(gems.size());
         gems.forEach(g -> output.add(new HBMain.AutocompleteIdOption(g.getGemId(), g.toString())));
         return output;
+    }
+
+    static String handleListGems(long uid) {
+        List<UnappliedGem> gems = queryGems(uid);
+        if (gems.isEmpty()) {
+            return "You currently have no gems";
+        }
+        StringBuilder commonGems = new StringBuilder();
+        StringBuilder uncommonGems = new StringBuilder();
+        StringBuilder rareGems = new StringBuilder();
+        for (UnappliedGem gem : gems) {
+            String line = "\n  " + gem.toString();
+            if (GachaGems.RARE_GEM_SET.contains(gem.getGemId())) {
+                rareGems.append(line);
+            } else if (GachaGems.UNCOMMON_GEM_SET.contains(gem.getGemId())) {
+                uncommonGems.append(line);
+            } else {
+                commonGems.append(line);
+            }
+        }
+        StringBuilder output = new StringBuilder();
+        if (commonGems.length() != 0) {
+            output.append("Common Gems:");
+            output.append(commonGems.toString());
+        }
+        if (uncommonGems.length() != 0) {
+            if (output.length() != 0) {
+                output.append("\n\n");
+            }
+            output.append("Uncommon Gems:");
+            output.append(uncommonGems.toString());
+        }
+        if (rareGems.length() != 0) {
+            if (output.length() != 0) {
+                output.append("\n\n");
+            }
+            output.append("Rare Gems:");
+            output.append(rareGems.toString());
+        }
+        return output.toString();
     }
 
     // CREATE TABLE IF NOT EXISTS gacha_item (
