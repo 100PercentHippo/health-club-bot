@@ -209,6 +209,7 @@ public class GachaItems {
                 logGemRemoval(gem.getGemId());
             }
             gems.clear();
+            bonuses[GEM_BONUS_INDEX] = new StatArray();
             return removedGems;
         }
 

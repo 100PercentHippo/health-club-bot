@@ -64,7 +64,7 @@ public class GachaGems {
 
         String getIneligibilityReason(GachaItems.Item item) {
             if (!isEligible(item)) {
-                return "Selected item has no gem slots";
+                return "Selected item has no empty gem slots";
             }
             return "";
         }
@@ -231,7 +231,7 @@ public class GachaGems {
             if (amount > 0) {
                 result.additions += amount;
             } else {
-                result.subtractions += amount;
+                result.subtractions += -1 * amount;
             }
             output.add(formatStatApplication(stat, amount, isTendency, tendencyAdjective));
         }
@@ -418,7 +418,7 @@ public class GachaGems {
         @Override
         String getIneligibilityReason(GachaItems.Item item) {
             if (item.gems.isEmpty()) {
-                return "No gems to remove";
+                return "Selected item has no gems to remove";
             }
             return super.getIneligibilityReason(item);
         }
@@ -646,7 +646,8 @@ public class GachaGems {
             applicationResult.result.gemId = id;
 
             // Add a new prefix to each output line
-            applicationResult.output.add(0, "Mimicked " + mimickedGem.name + ":\n");
+            applicationResult.output.add(0, "Mimicked " + mimickedGem.name + ": "
+                + mimickedGem.description + '\n');
 
             return applicationResult;
         }
