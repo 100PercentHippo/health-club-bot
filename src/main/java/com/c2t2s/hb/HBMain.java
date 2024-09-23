@@ -314,8 +314,8 @@ public class HBMain {
     private static final String GACHA_BANNER_INFO_COMMAND = "gacha banner info";
     private static final String GACHA_ITEM_INFO_COMMAND = "gacha item info";
     private static final String APPLY_GEM_COMMAND = "applygem";
-    private static final String APPLY_GEM_ITEM_OPTION = "Item";
-    private static final String APPLY_GEM_GEM_OPTION = "Gem";
+    private static final String APPLY_GEM_ITEM_OPTION = "item";
+    private static final String APPLY_GEM_GEM_OPTION = "gem";
     private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
     private static final String TEST_COMMAND = "test";
 

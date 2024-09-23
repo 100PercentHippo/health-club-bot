@@ -760,7 +760,7 @@ public class GachaItems {
 
     static List<Item> fetchItems(long uid) {
         List<Item> items = new ArrayList<>();
-        String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid == " + uid + "), gem_stats AS "
+        String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid = " + uid + "), gem_stats AS "
             + "(SELECT iid, SUM(work_modifier) AS gem_work, SUM(fish_modifier) AS gem_fish, SUM(pick_modifier) "
             + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
             + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
