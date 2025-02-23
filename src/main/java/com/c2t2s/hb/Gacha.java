@@ -63,9 +63,17 @@ class Gacha {
         private String shinyUrl;
         private String prismaticUrl;
 
+        private double workBonus;
+        private double fishBonus;
+        private double pickBonus;
+        private double robBonus;
+        private double miscBonus;
+        private GachaItems.Item item;
+
         private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny, String type, int level,
                 int xp, int duplicates, String description, String pictureUrl, String shinyUrl,
-                String prismaticUrl) {
+                String prismaticUrl, double workBonus, double fishBonus, double pickBonus, double robBonus,
+                double miscBonus, GachaItems.Item item) {
             this.id = id;
             this.name = name;
             this.rarity = rarity;
@@ -78,6 +86,13 @@ class Gacha {
             this.pictureUrl = pictureUrl;
             this.shinyUrl = shinyUrl;
             this.prismaticUrl = prismaticUrl;
+
+            this.workBonus = workBonus;
+            this.fishBonus = fishBonus;
+            this.pickBonus = pickBonus;
+            this.robBonus = robBonus;
+            this.miscBonus = miscBonus;
+            this.item = item;
 
             if (duplicates > MAX_CHARACTER_DUPLICATES) {
                 duplicates = MAX_CHARACTER_DUPLICATES;
@@ -111,19 +126,57 @@ class Gacha {
             }
         }
 
-        private String toAbbreviatedString() {
-            return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
-                    + " (" + rarity + " Star " + type + ") - Level " + level
-                    + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
-                    + " - +" + getBuffPercent() + "% Bonus";
+        @Override
+        public String toString() {
+            return toString(false);
         }
 
-        private String toFullString() {
-            return getDisplayName() + (duplicates > 0 ? " +" + duplicates : "")
-                    + "\n\t" + rarity + " Star " + type
-                    + "\n\tLevel " + level + (level < MAX_CHARACTER_LEVEL ? " [" + xp + "/" + getXpToLevel() + "]" : " [Max Level]")
-                    + "\n\t+" + getBuffPercent() + "% Bonus"
-                    + (description.isEmpty() ? "" : "\n\t" + description);
+        private String toString(boolean compact) {
+            StringBuilder display = new StringBuilder();
+            display.append(getDisplayName());
+            if (duplicates > 0) {
+                display.append(" +");
+                display.append(duplicates);
+            }
+            display.append(" (");
+            display.append(rarity);
+            display.append(" Star ");
+            display.append(type);
+            display.append(')');
+            if (compact) {
+                display.append(" - ");
+            } else {
+                display.append("\n\t");
+            }
+            display.append("Level ");
+            display.append(level);
+            if (level >= MAX_CHARACTER_LEVEL) {
+                display.append(" [Max Level]");
+            } else {
+                display.append(" [");
+                display.append(xp);
+                display.append('/');
+                display.append(getXpToLevel());
+                display.append(']');
+            }
+            display.append("\n\t");
+            if (item != null) {
+                GachaItems.StatArray stats = item.getModifiers();
+                String itemStatString = stats.toString();
+                stats.addArray(getCharacterStats());
+                display.append(stats.toString());
+                display.append(" (");
+                display.append(itemStatString);
+                display.append(" from item)");
+            } else {
+                display.append(getCharacterStats().toString());
+            }
+            if (!compact) {
+                display.append("\n\t\"");
+                display.append(description);
+                display.append('\"');
+            }
+            return display.toString();
         }
 
         private String generateAwardText(boolean useBriefResponse, boolean alreadyMaxed) {
@@ -144,13 +197,11 @@ class Gacha {
             }
             if (useBriefResponse) {
                 return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
-                    + duplicateString //+ getPictureLink()
-                    + (!description.isEmpty() ? "\n\tThis character has a unique ability" : "");
+                    + duplicateString; //+ getPictureLink()
             } else {
                 return stars + " " + getDisplayName() + " " + stars
                     + "\n" + rarity + " Star " + type
-                    + duplicateString // + getPictureLink()
-                    + (!description.isEmpty() ? "\n\tUnique Ability:" + description : "");
+                    + duplicateString; // + getPictureLink()
             }
         }
 
@@ -160,14 +211,24 @@ class Gacha {
             return 50 * (int)Math.pow(2, level + 1);
         }
 
-        private double getBuffPercent() {
-            return 2.5 + (rarity * 2.5)
-                + ((duplicates > MAX_CHARACTER_DUPLICATES ? MAX_CHARACTER_DUPLICATES : duplicates) /* * 1.0 */)
-                + (level /* * 1.0 */);
+        private int getBaseBuffAmount() {
+            return 25 + (rarity * 25)
+                + ((duplicates > MAX_CHARACTER_DUPLICATES ? MAX_CHARACTER_DUPLICATES : duplicates) * 10)
+                + (level * 10);
         }
 
-        private double getBuffDecimal() {
-            return getBuffPercent() / 100;
+        private GachaItems.StatArray getCharacterStats() {
+            int baseAmount = getBaseBuffAmount();
+            return new GachaItems.StatArray((int)workBonus * baseAmount, (int)fishBonus * baseAmount,
+                (int)pickBonus * baseAmount, (int)workBonus * baseAmount, (int)miscBonus * baseAmount);
+        }
+
+        private GachaItems.StatArray getTotalStatArray() {
+            if (item == null) {
+                return getCharacterStats();
+            } else {
+                return item.getModifiers().addArray(getCharacterStats());
+            }
         }
 
         private long getMaxedCharacterCoinEquivalent() {
@@ -626,7 +687,7 @@ class Gacha {
 
         StringBuilder output = new StringBuilder("Your characters:");
         for (GachaCharacter character : characters) {
-            output.append("\n" + character.toAbbreviatedString());
+            output.append("\n" + character.toString(true));
         }
         return output.toString();
     }
@@ -643,7 +704,7 @@ class Gacha {
                 return new HBMain.MultistepResponse("Unable to fetch details for provided character");
             }
         }
-        HBMain.MultistepResponse response = new HBMain.MultistepResponse(character.toFullString());
+        HBMain.MultistepResponse response = new HBMain.MultistepResponse(character.toString());
         try {
             response.images.put(0, new URL(character.getPictureLink()));
         } catch (MalformedURLException e) {
@@ -711,6 +772,48 @@ class Gacha {
         List<HBMain.AutocompleteIdOption> output = new ArrayList<>(characters.size());
         characters.forEach(c -> output.add(new HBMain.AutocompleteIdOption(c.getUniqueId(), c.getDisplayName())));
         return output;
+    }
+
+    static String handleGiveItem(long uid, long iid, long uniqueId) {
+        GachaItems.Item item = GachaItems.fetchItem(uid, iid);
+        if (item == null) {
+            return "Unable to give item: Specified item not found";
+        }
+
+        long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
+        SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
+        GachaCharacter character = getCharacter(uid, cid, shiny);
+        if (character == null) {
+            return "Unable to give item: Specified character not found";
+        }
+
+        StringBuilder response = new StringBuilder();
+        GachaItems.Item oldItem = character.item;
+        if (oldItem != null && oldItem.itemId == item.itemId) {
+            return character.name + " is already using " + item.getName();
+        }
+        GachaCharacter oldCharacter = getCharacterByItem(uid, iid);
+        if (oldCharacter != null) {
+            response.append("Unequipped ");
+            response.append(item.getName());
+            response.append(" from ");
+            response.append(oldCharacter.name);
+            response.append(".\n");
+        }
+        if (oldItem != null) {
+            response.append("Unequipped ");
+            response.append(oldItem.getName());
+            response.append(" from ");
+            response.append(character.name);
+            response.append(".\n");
+        }
+        response.append("Gave ");
+        response.append(item.getName());
+        response.append(" to ");
+        response.append(character.name);
+        response.append(".\nTheir stats are now: ");
+        response.append(character.getTotalStatArray());
+        return response.toString();
     }
 
     //////////////////////////////////////////////////////////
@@ -793,14 +896,11 @@ class Gacha {
     //   duplicates integer NOT NULL DEFAULT 0,
     //   level integer NOT NULL DEFAULT 0,
     //   xp integer NOT NULL DEFAULT 0,
-    //   rob_modifier float8 NOT NULL DEFAULT 0.0,
-    //   pick_modifier float8 NOT NULL DEFAULT 0.0,
-    //   fish_modifier float8 NOT NULL DEFAULT 0.0,
-    //   work_modifier float8 NOT NULL DEFAULT 0.0,
-    //   misc_modifier float8 NOT NULL DEFAULT 0.0,
+    //   iid bigint,
     //   PRIMARY KEY(uid, cid, foil),
     //   CONSTRAINT gacha_user_character_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
-    //   CONSTRAINT gacha_user_character_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid)
+    //   CONSTRAINT gacha_user_character_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid),
+    //   CONSTRAINT gacha_user_character_iid FOREIGN KEY(iid) REFERENCES gacha_item(iid)
     // );
 
     // CREATE TABLE IF NOT EXISTS gacha_gem (
@@ -906,6 +1006,20 @@ class Gacha {
     private static GachaCharacter getCharacter(long uid, long cid, SHINY_TYPE shiny) {
         String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
+                + " AND foil = " + shiny.getId() + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
+                        results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
+                        results.getString(9), results.getString(10), results.getString(11), results.getString(12));
+            }
+            return null;
+        }, null);
+    }
+
+    private static GachaCharacter getCharacterByItem(long uid, long iid) {
+        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM "
+                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND iid = " + iid
                 + " AND foil = " + shiny.getId() + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {

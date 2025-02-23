@@ -19,7 +19,7 @@ public class EventDriver {
     Timer timer = new Timer();
 
     public void initialize() {
-        List<EventServer> servers = fetchEventServers(timer);
+        List<EventServer> servers = fetchEventServers();
         if (servers == null) {
             System.out.println("Error fetching event servers during initialization");
             return;
@@ -127,7 +127,7 @@ public class EventDriver {
     //   CONSTRAINT user_event_server_cid FOREIGN KEY(uid, cid) REFERENCES gacha_user_character(uid, cid)
     // );
 
-    private List<EventServer> fetchEventServers(Timer timer) {
+    private List<EventServer> fetchEventServers() {
         // TODO
         return null;
     }

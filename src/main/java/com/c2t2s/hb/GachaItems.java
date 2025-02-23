@@ -108,20 +108,21 @@ public class GachaItems {
             stats[stat.index] -= amount;
         }
 
-        void addArray(StatArray array) {
+        StatArray addArray(StatArray array) {
             for (ITEM_STAT stat : ITEM_STAT.values()) {
                 addStat(stat, array.getStat(stat));
             }
+            return this;
         }
 
         @Override
         public String toString() {
-            // e.g. [-0.1W +0.4F +1.1P +0.2R -0.5M]
+            // e.g. [-1W +4F +11P +2R -5M]
             StringBuilder builder = new StringBuilder();
             for (ITEM_STAT stat : ITEM_STAT.values()) {
                 builder.append(builder.length() == 0 ? '[' : ' ');
                 if (stats[stat.index] > 0) { builder.append('+'); }
-                builder.append(Stats.oneDecimal.format(stats[stat.index] / 10.0));
+                builder.append(stats[stat.index]);
                 builder.append(stat.getLetter());
             }
             builder.append(']');

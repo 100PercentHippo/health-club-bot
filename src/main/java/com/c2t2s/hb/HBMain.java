@@ -824,7 +824,7 @@ public class HBMain {
                     .setEnabledInDms(true));
         builders.add(new SlashCommandBuilder().setName(APPLY_GEM_COMMAND).setDescription("Apply a gem to an item")
             .addOption(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true))
-            .addOption(SlashCommandOption.createStringOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true))
+            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(LIST_GEMS_COMMAND).setDescription("List your gems").setEnabledInDms(false));
 
