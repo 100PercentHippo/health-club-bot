@@ -147,6 +147,7 @@ public class GachaItems {
     abstract static class Item {
         int generatorVersion;
         long itemId;
+        long itemUid;
         // { StatArray of inital stats, StatArray of gem stats }
         StatArray[] bonuses;
         List<GachaGems.AppliedGem> gems;
@@ -178,6 +179,8 @@ public class GachaItems {
 
         long getItemId() { return itemId; }
 
+        long getItemUid() { return itemUid; }
+
         void addRandomStats(int amount, boolean initial, int repetitions) {
             for (int i = 0; i < repetitions; ++i) {
                 addRandomStat(amount, initial);
@@ -201,7 +204,7 @@ public class GachaItems {
             additions += applicationResult.result.getAdditions();
             subtractions += applicationResult.result.getSubtractions();
             gemSlots += applicationResult.result.getAddedGemSlots();
-            logAppliedGem(itemId, gem.id, applicationResult.result.getModifiedStats(),
+            logAppliedGem(itemUid, itemId, gem.id, applicationResult.result.getModifiedStats(),
                 applicationResult.result.getAdditions(),
                 applicationResult.result.getSubtractions(),
                 applicationResult.result.getAddedGemSlots());
@@ -298,7 +301,7 @@ public class GachaItems {
             StatArray[] bonuses = { item.stats, gemBonuses };
 
             // In the future use the generator version to pick the right item generation
-            return new G0Item(item.generator, item.iid, bonuses, gems,
+            return new G0Item(item.generator, item.uid, item.iid, bonuses, gems,
                 ITEM_STAT.fromIndex(item.positiveTendency),
                 ITEM_STAT.fromIndex(item.negativeTendency), ITEM_STAT.fromIndex(item.bonusStat),
                 item.additions, item.subtractions, item.enhancementLevel,
@@ -309,7 +312,7 @@ public class GachaItems {
                 int gemSubtractions, int slotsFromGems, int gemCount) {
             StatArray[] bonuses = { item.stats, gemStats };
 
-            return new G0Item(item.generator, item.iid, bonuses, new ArrayList<>(),
+            return new G0Item(item.generator, item.uid, item.iid, bonuses, new ArrayList<>(),
                 ITEM_STAT.fromIndex(item.positiveTendency),
                 ITEM_STAT.fromIndex(item.negativeTendency), ITEM_STAT.fromIndex(item.bonusStat),
                 item.additions + gemAdditions, item.subtractions + gemSubtractions,
@@ -382,19 +385,20 @@ public class GachaItems {
             this.gemSlots         = gemSlots;
         }
 
-        G0Item(int generatorVersion, long itemId, StatArray[] bonuses,
+        G0Item(int generatorVersion, long itemUid, long itemId, StatArray[] bonuses,
                 List<GachaGems.AppliedGem> gems, ITEM_STAT positiveTendency,
                 ITEM_STAT negativeTendency, ITEM_STAT bonusStat, int additions,
                 int subtractions, int enhancementLevel, int gemSlots) {
-            this(generatorVersion, itemId, bonuses, gems, positiveTendency, negativeTendency,
+            this(generatorVersion, itemUid, itemId, bonuses, gems, positiveTendency, negativeTendency,
                 bonusStat, additions, subtractions, enhancementLevel, gemSlots, 0);
         }
 
-        G0Item(int generatorVersion, long itemId, StatArray[] bonuses,
+        G0Item(int generatorVersion, long itemUid, long itemId, StatArray[] bonuses,
                 List<GachaGems.AppliedGem> gems, ITEM_STAT positiveTendency,
                 ITEM_STAT negativeTendency, ITEM_STAT bonusStat, int additions,
                 int subtractions, int enhancementLevel, int gemSlots, int abstractedGems) {
             this.generatorVersion = generatorVersion;
+            this.itemUid          = itemUid;
             this.itemId           = itemId;
             this.bonuses          = bonuses;
             this.gems             = gems;
@@ -678,7 +682,7 @@ public class GachaItems {
     }
 
     // CREATE TABLE IF NOT EXISTS gacha_item (
-    //  iid SERIAL PRIMARY KEY,
+    //  iid SERIAL,
     //  uid bigint NOT NULL,
     //  generator int NOT NULL,
     //  enhancement_level integer NOT NULL,
@@ -694,11 +698,13 @@ public class GachaItems {
     //  initial_rob integer NOT NULL,
     //  initial_misc integer NOT NULL,
     //  name varchar(100) NOT NULL,
+    //  PRIMARY KEY(iid, uid),
     //  CONSTRAINT gacha_item_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
     // CREATE TABLE IF NOT EXISTS gacha_item_gem (
     //  gid SERIAL PRIMARY KEY,
+    //  uid bigint NOT NULL,
     //  iid bigint NOT NULL,
     //  gem_type integer NOT NULL,
     //  work_modifier integer NOT NULL DEFAULT 0,
@@ -710,7 +716,7 @@ public class GachaItems {
     //  subtractions integer NOT NULL DEFAULT 0,
     //  gem_slots_added integer NOT NULL DEFAULT 0,
     //  negated boolean NOT NULL DEFAULT false,
-    //  CONSTRAINT gacha_item_gem_iid FOREIGN KEY(iid) REFERENCES gacha_item(iid)
+    //  CONSTRAINT gacha_item_gem_iid FOREIGN KEY(uid, iid) REFERENCES gacha_item(uid, iid)
     // );
 
     // CREATE TABLE IF NOT EXISTS gacha_user_gem (
@@ -721,17 +727,18 @@ public class GachaItems {
     //  CONSTRAINT gacha_user_gem_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
-    static boolean logAppliedGem(long itemId, int gemId, StatArray stats, int additions,
+    static boolean logAppliedGem(long uid, long itemId, int gemId, StatArray stats, int additions,
             int subtractions, int addedGemSlots) {
-        String query = "INSERT INTO gacha_item_gem (iid, gem_type, work_modifier, fish_modifier, pick_modifier, "
-            + "rob_modifier, misc_modifier, additions, subtractions, gem_slots_added) VALUES (" + itemId + ", "
-            + gemId + ", " + stats.formatForDB() + ", " + additions + ", " + subtractions + ", "+ addedGemSlots + ");";
+        String query = "INSERT INTO gacha_item_gem (uid, iid, gem_type, work_modifier, fish_modifier, pick_modifier, "
+            + "rob_modifier, misc_modifier, additions, subtractions, gem_slots_added) VALUES (" + uid + ","
+            + itemId + ", " + gemId + ", " + stats.formatForDB() + ", " + additions + ", " + subtractions
+            + ", " + addedGemSlots + ");";
         return CasinoDB.executeUpdate(query);
     }
 
     static boolean logName(Item item) {
         String query = "UPDATE gacha_item SET name = '" + item.getName().toLowerCase()
-            + "' WHERE iid = " + item.getItemId() + ";";
+            + "' WHERE iid = " + item.getItemId() + " AND uid = " + item.getItemUid() + ";";
         return CasinoDB.executeUpdate(query);
     }
 
@@ -747,9 +754,9 @@ public class GachaItems {
     }
 
     static boolean logAwardItem(long uid, Item item, StatArray initialStats) {
-        String query = "INSERT INTO gacha_item (uid, generator, enhancement_level, gem_slots, positive_tendency, "
+        String query = "INSERT INTO gacha_item (iid, uid, generator, enhancement_level, gem_slots, positive_tendency, "
             + "negative_tendency, bonus_stat, initial_additions, initial_subtractions, name, initial_work, initial_fish, "
-            + "initial_pick, initial_rob, initial_misc) VALUES (" + uid + ", " + item.generatorVersion + ", 0,"
+            + "initial_pick, initial_rob, initial_misc) VALUES (DEFAULT, " + uid + ", " + item.generatorVersion + ", 0,"
             + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", "
             + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", '"
             + item.getName().toLowerCase() + "', " + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
@@ -769,6 +776,7 @@ public class GachaItems {
 
     private static class FetchedItem {
         int generator;
+        long uid;
         long iid;
         StatArray stats;
         int positiveTendency;
@@ -779,10 +787,11 @@ public class GachaItems {
         int enhancementLevel;
         int gemSlots;
 
-        FetchedItem(int generator, long iid, int work, int fish, int pick, int rob, int misc,
+        FetchedItem(int generator, long uid, long iid, int work, int fish, int pick, int rob, int misc,
                 int positiveTendency, int negativeTendency, int bonusStat, int additions,
                 int subtractions, int enhancementLevel, int gemSlots) {
             this.generator = generator;
+            this.uid = uid;
             this.iid = iid;
             this.stats = new StatArray(work, fish, pick, rob, misc);
             this.positiveTendency = positiveTendency;
@@ -795,9 +804,10 @@ public class GachaItems {
         }
     }
 
-    static List<GachaGems.AppliedGem> fetchGems(long iid) {
+    static List<GachaGems.AppliedGem> fetchGems(long uid, long iid) {
         String query = "SELECT gem_type, work_modifier, fish_modifier, pick_modifier, rob_modifier, misc_modifier, "
-            + "gem_slots_added, additions, subtractions, gid FROM gacha_item_gem WHERE negated = false AND iid = " + iid + ";";
+            + "gem_slots_added, additions, subtractions, gid FROM gacha_item_gem WHERE negated = false AND iid = "
+            + iid + "AND uid = " + uid + ";";
         List<GachaGems.AppliedGem> gems = new ArrayList<>();
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {
@@ -811,17 +821,17 @@ public class GachaItems {
     }
 
     static Item fetchItem(long uid, long iid) {
-        List<GachaGems.AppliedGem> gems = fetchGems(iid);
-        String query = "SELECT generator, iid, initial_work, initial_fish, initial_pick, initial_rob, "
+        List<GachaGems.AppliedGem> gems = fetchGems(uid, iid);
+        String query = "SELECT generator, uid, iid, initial_work, initial_fish, initial_pick, initial_rob, "
             + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, "
             + "initial_subtractions, enhancement_level, gem_slots FROM gacha_item WHERE iid = " + iid
             + " AND uid = " + uid + ";";
         FetchedItem item = CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                return new FetchedItem(results.getInt(1), results.getLong(2), results.getInt(3),
+                return new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),
                     results.getInt(4), results.getInt(5), results.getInt(6), results.getInt(7),
                     results.getInt(8), results.getInt(9), results.getInt(10), results.getInt(11),
-                    results.getInt(12), results.getInt(13), results.getInt(14));
+                    results.getInt(12), results.getInt(13), results.getInt(14), results.getInt(15));
             }
             return null;
         }, null);
@@ -835,20 +845,20 @@ public class GachaItems {
             + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
             + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
             + "COUNT(*) AS gem_count FROM gacha_item_gem WHERE negated = false AND iid IN (SELECT iid FROM user_iids) "
-            + "GROUP BY iid) SELECT generator, gacha_item.iid, initial_work, initial_fish, initial_pick, initial_rob, "
+            + "GROUP BY iid) SELECT generator, gacha_item.uid, gacha_item.iid, initial_work, initial_fish, initial_pick, initial_rob, "
             + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, initial_subtractions, "
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
             + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid + " ORDER BY iid DESC LIMIT 10;";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {
-                items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2),
-                    results.getInt(3), results.getInt(4), results.getInt(5), results.getInt(6),
-                    results.getInt(7), results.getInt(8), results.getInt(9), results.getInt(10),
-                    results.getInt(11), results.getInt(12), results.getInt(13), results.getInt(14)),
-                    new StatArray(results.getInt(15), results.getInt(16), results.getInt(17),
-                    results.getInt(18), results.getInt(19)), results.getInt(20), results.getInt(21),
-                    results.getInt(22), results.getInt(23)));
+                items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),
+                    results.getInt(4), results.getInt(5), results.getInt(6), results.getInt(7),
+                    results.getInt(8), results.getInt(9), results.getInt(10), results.getInt(11),
+                    results.getInt(12), results.getInt(13), results.getInt(14), results.getInt(15)),
+                    new StatArray(results.getInt(16), results.getInt(17), results.getInt(18),
+                    results.getInt(19), results.getInt(20)), results.getInt(21), results.getInt(22),
+                    results.getInt(23), results.getInt(24)));
             }
             return items;
         }, items);
@@ -862,7 +872,7 @@ public class GachaItems {
             + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
             + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
             + "COUNT(*) AS gem_count FROM gacha_item_gem WHERE negated = false AND iid IN (SELECT iid FROM user_iids) "
-            + "GROUP BY iid) SELECT generator, gacha_item.iid, initial_work, initial_fish, initial_pick, initial_rob, "
+            + "GROUP BY iid) SELECT generator, gacha_item.uid, gacha_item.iid, initial_work, initial_fish, initial_pick, initial_rob, "
             + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, initial_subtractions, "
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
@@ -870,13 +880,13 @@ public class GachaItems {
             + " AND POSITION(? IN name) > 0 ORDER BY iid DESC LIMIT 10;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
-                items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2),
-                    results.getInt(3), results.getInt(4), results.getInt(5), results.getInt(6),
-                    results.getInt(7), results.getInt(8), results.getInt(9), results.getInt(10),
-                    results.getInt(11), results.getInt(12), results.getInt(13), results.getInt(14)),
-                    new StatArray(results.getInt(15), results.getInt(16), results.getInt(17),
-                    results.getInt(18), results.getInt(19)), results.getInt(20), results.getInt(21),
-                    results.getInt(22), results.getInt(23)));
+                items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),
+                    results.getInt(4), results.getInt(5), results.getInt(6), results.getInt(7),
+                    results.getInt(8), results.getInt(9), results.getInt(10), results.getInt(11),
+                    results.getInt(12), results.getInt(13), results.getInt(14), results.getInt(15)),
+                    new StatArray(results.getInt(16), results.getInt(17), results.getInt(18),
+                    results.getInt(19), results.getInt(20)), results.getInt(21), results.getInt(22),
+                    results.getInt(23), results.getInt(24)));
             }
             return items;
         }, items, partialName, partialName);

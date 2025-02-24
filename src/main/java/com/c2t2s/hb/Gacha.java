@@ -896,11 +896,11 @@ class Gacha {
     //   duplicates integer NOT NULL DEFAULT 0,
     //   level integer NOT NULL DEFAULT 0,
     //   xp integer NOT NULL DEFAULT 0,
-    //   iid bigint,
+    //   iid bigint DEFAULT NULL,
     //   PRIMARY KEY(uid, cid, foil),
     //   CONSTRAINT gacha_user_character_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
     //   CONSTRAINT gacha_user_character_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid),
-    //   CONSTRAINT gacha_user_character_iid FOREIGN KEY(iid) REFERENCES gacha_item(iid)
+    //   CONSTRAINT gacha_user_character_iid FOREIGN KEY(uid, iid) REFERENCES gacha_item(uid, iid)
     // );
 
     // CREATE TABLE IF NOT EXISTS gacha_gem (
@@ -1004,42 +1004,63 @@ class Gacha {
     }
 
     private static GachaCharacter getCharacter(long uid, long cid, SHINY_TYPE shiny) {
-        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM "
+        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url, "
+                + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
                 + " AND foil = " + shiny.getId() + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
+                GachaItems.Item item = null;
+                if (results.getString(18) != null) {
+                    item = GachaItems.fetchItem(uid, results.getLong(18));
+                }
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
-                        results.getString(9), results.getString(10), results.getString(11), results.getString(12));
+                        results.getString(9), results.getString(10), results.getString(11), results.getString(12),
+                        results.getLong(13), results.getLong(14), results.getLong(15), results.getLong(16),
+                        results.getLong(17), item);
             }
             return null;
         }, null);
     }
 
     private static GachaCharacter getCharacterByItem(long uid, long iid) {
-        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM "
-                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND iid = " + iid
-                + " AND foil = " + shiny.getId() + ";";
+        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
+                + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
+                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND iid = " + iid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
+                GachaItems.Item item = null;
+                if (results.getString(18) != null) {
+                    item = GachaItems.fetchItem(uid, results.getLong(18));
+                }
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
-                        results.getString(9), results.getString(10), results.getString(11), results.getString(12));
+                        results.getString(9), results.getString(10), results.getString(11), results.getString(12),
+                        results.getLong(13), results.getLong(14), results.getLong(15), results.getLong(16),
+                        results.getLong(17), item);
             }
             return null;
         }, null);
     }
 
     private static List<GachaCharacter> queryCharacters(long uid) {
-        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url FROM " +
-                "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, name ASC;";
+        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
+                + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
+                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, name ASC;";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
+                // This is inefficient and should be refactored to involve fewer queries
+                GachaItems.Item item = null;
+                if (results.getString(18) != null) {
+                    item = GachaItems.fetchItem(uid, results.getLong(18));
+                }
                 output.add(new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
-                        results.getString(9), results.getString(10), results.getString(11), results.getString(12)));
+                        results.getString(9), results.getString(10), results.getString(11), results.getString(12),
+                        results.getLong(13), results.getLong(14), results.getLong(15), results.getLong(16),
+                        results.getLong(17), item));
             }
             return output;
         }, new ArrayList<>());
