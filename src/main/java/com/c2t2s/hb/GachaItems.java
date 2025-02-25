@@ -506,13 +506,7 @@ public class GachaItems {
         return builder.toString();
     }
 
-    static String handleItemInfo(long uid, String iidString) {
-        int iid;
-        try {
-            iid = Integer.parseInt(iidString);
-        } catch (NumberFormatException e) {
-            return "Invalid item id format [" + iidString + "]";
-        }
+    static String handleItemInfo(long uid, long iid) {
         Item item = fetchItem(uid, iid);
         if (item == null) {
             return "Failed to fetch item " + iid;
@@ -527,16 +521,9 @@ public class GachaItems {
         return "Failed to award gem " + gem.getId();
     }
 
-    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, String iidString) {
+    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, long iid) {
         List<String> results = new ArrayList<>();
         GachaGems.Gem gem;
-        int iid;
-        try {
-            iid = Integer.parseInt(iidString);
-        } catch (NumberFormatException e) {
-            results.add("Invalid item id format [" + iidString + "]");
-            return new HBMain.MultistepResponse(results);
-        }
         try {
              gem = GachaGems.Gem.fromId((int)gemId);
         } catch (IllegalArgumentException e) {
@@ -593,7 +580,7 @@ public class GachaItems {
         return new HBMain.MultistepResponse(results);
     }
 
-    static List<HBMain.AutocompleteStringOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
+    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
         List<Item> items;
         if (!partialName.isPresent() || partialName.get().isEmpty()) {
             items = fetchItems(uid);
@@ -602,8 +589,8 @@ public class GachaItems {
         }
         if (items == null) { return new ArrayList<>(); }
 
-        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(items.size());
-        items.forEach(i -> output.add(new HBMain.AutocompleteStringOption(Long.toString(i.getItemId()),
+        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
+        items.forEach(i -> output.add(new HBMain.AutocompleteIdOption(i.getItemId(),
             i.getAutoCompleteDescription())));
         return output;
     }

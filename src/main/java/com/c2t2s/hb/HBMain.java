@@ -323,20 +323,23 @@ public class HBMain {
     private static final String STATS_COMMAND = "stats";
     private static final String WORKOUT_COMMAND = "workout";
     private static final String SELECT_WORKOUT_REWARD_COMMAND = "selectworkoutreward";
-    private static final String PULL_COMMAND = "pull";
-    private static final String PULLS_COMMAND = "pulls";
-    private static final String PITY_COMMAND = "pity";
+    private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
+    private static final String TEST_COMMAND = "test";
+
+    // Gacha Commands
+    private static final String PULL_COMMAND = "gacha pull";
+    private static final String PULLS_COMMAND = "gacha pulls";
+    private static final String PITY_COMMAND = "gacha pity";
     private static final String GACHA_CHARACTER_LIST_COMMAND = "gacha character list";
     private static final String GACHA_CHARACTER_INFO_COMMAND = "gacha character info";
     private static final String GACHA_BANNER_LIST_COMMAND = "gacha banner list";
     private static final String GACHA_BANNER_INFO_COMMAND = "gacha banner info";
     private static final String GACHA_ITEM_INFO_COMMAND = "gacha item info";
-    private static final String APPLY_GEM_COMMAND = "applygem";
-    private static final String APPLY_GEM_ITEM_OPTION = "item";
+    private static final String GACHA_ITEM_EQUIP_COMMAND = "gacha item equip";
+    private static final String APPLY_GEM_COMMAND = "gacha gem apply";
+    private static final String GACHA_COMMAND_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
-    private static final String LIST_GEMS_COMMAND = "listgems";
-    private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
-    private static final String TEST_COMMAND = "test";
+    private static final String LIST_GEMS_COMMAND = "gacha gem list";
 
     private static final int REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL = 0;
     private static final int REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL = 1;
@@ -425,10 +428,13 @@ public class HBMain {
             entry(GACHA_BANNER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
             entry(GACHA_ITEM_INFO_COMMAND, new SimpleCasinoCommand(
-                i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
+                i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
                 i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
-                    i.getArgumentStringValueByIndex(1).get()))),
+                    i.getArgumentLongValueByIndex(1).get()))),
+            entry(GACHA_ITEM_EQUIP_COMMAND, new SimpleCasinoCommand(
+                i -> Gacha.handleGiveItem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
+                    i.getArgumentLongValueByIndex(1).get()))),
             entry(LIST_GEMS_COMMAND, new SimpleCasinoCommand(
                 i -> GachaItems.handleListGems(i.getUser().getId()))),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
@@ -518,7 +524,7 @@ public class HBMain {
         api.addAutocompleteCreateListener(event -> {
             AutocompleteInteraction interaction = event.getAutocompleteInteraction();
             List<AutocompleteIdOption> idOptions = null;
-            List<AutocompleteStringOption> stringOptions = null;
+            // List<AutocompleteStringOption> stringOptions = null;
             switch (interaction.getFullCommandName()) {
                 case STATS_COMMAND:
                     List<SlashCommandOptionChoice> choices = new ArrayList<>();
@@ -535,16 +541,24 @@ public class HBMain {
                     idOptions = Gacha.getCharacters(interaction.getUser().getId());
                     break;
                 case APPLY_GEM_COMMAND:
-                    if (interaction.getFocusedOption().getName().equals(APPLY_GEM_ITEM_OPTION)) {
-                        stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                    if (interaction.getFocusedOption().getName().equals(GACHA_COMMAND_ITEM_OPTION)) {
+                        idOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                             interaction.getArgumentStringValueByIndex(1));
                     } else { // Gem Option
                         idOptions = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
                     }
                     break;
                 case GACHA_ITEM_INFO_COMMAND:
-                    stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                    idOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                         interaction.getArgumentStringValueByIndex(0));
+                    break;
+                case GACHA_ITEM_EQUIP_COMMAND:
+                    if (interaction.getFocusedOption().getName().equals(GACHA_COMMAND_ITEM_OPTION)) {
+                        idOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                            interaction.getArgumentStringValueByIndex(0));
+                    } else { // Character Option
+                        idOptions = Gacha.getCharacters(interaction.getUser().getId());
+                    }
                     break;
                 default:
                     return;
@@ -553,9 +567,9 @@ public class HBMain {
             if (idOptions != null) {
                 idOptions.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
             }
-            if (stringOptions != null) {
-                stringOptions.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
-            }
+            // if (stringOptions != null) {
+            //     stringOptions.forEach(o -> choices.add(SlashCommandOptionChoice.create(o.getDescription(), o.getId())));
+            // }
             interaction.respondWithChoices(choices);
         });
         System.out.println("Server started");
@@ -776,16 +790,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createUserOption("recipient", "Person to give coins to", true))
             .addOption(SlashCommandOption.createLongOption("amount", "Amount to transfer", true, 1, 100000))
             .setEnabledInDms(false));
-        builders.add(new SlashCommandBuilder().setName(PULL_COMMAND).setDescription("Try to win a gacha character!")
-            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true))
-            .addOption(SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 25", false, 1, 25))
-            .setEnabledInDms(false));
-        builders.add(new SlashCommandBuilder().setName(PULLS_COMMAND).setDescription("Check how many gacha pulls you have")
-            .setEnabledInDms(false));
-        builders.add(new SlashCommandBuilder().setName(PITY_COMMAND).setDescription("Check your gacha pity")
-            .addOption(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))
-            .setEnabledInDms(false));
-        builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Character management commands")
+        builders.add(new SlashCommandBuilder().setName("gacha").setDescription("Seasonal Gacha Commands")
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your characters"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single character",
@@ -796,7 +801,21 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "item", "View your items",
                 Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single item",
-                    Arrays.asList(SlashCommandOption.createStringOption("item", "Which item to view", true, true))))))
+                        Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to view", true, true))),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "equip", "Given an item to a character",
+                        Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to equip", true, true),
+                            SlashCommandOption.createLongOption("character", "Which character to give the item to", true, true))))))
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "gem", "View and apply your gems",
+                Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your gems"),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "apply", "Apply a gem to an item",
+                        Arrays.asList(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true),
+                            SlashCommandOption.createLongOption(GACHA_COMMAND_ITEM_OPTION, "Item to apply gem to", true, true))))))
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pull", "Try to win a gacha character!",
+                Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true),
+                SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 25", false, 1, 25))))
+            .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "pulls", "Check how many gacha pulls you have"))
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pity", "Check your gacha pity",
+                Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(ALLORNOTHING_COMMAND).setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,
@@ -822,11 +841,6 @@ public class HBMain {
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(TEST_COMMAND).setDescription("[Placeholder]")
                     .setEnabledInDms(true));
-        builders.add(new SlashCommandBuilder().setName(APPLY_GEM_COMMAND).setDescription("Apply a gem to an item")
-            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true))
-            .addOption(SlashCommandOption.createLongOption(APPLY_GEM_ITEM_OPTION, "Item to apply gem to", true, true))
-            .setEnabledInDms(false));
-        builders.add(new SlashCommandBuilder().setName(LIST_GEMS_COMMAND).setDescription("List your gems").setEnabledInDms(false));
 
         api.bulkOverwriteGlobalApplicationCommands(builders).join();
         System.out.println("Command registration complete");

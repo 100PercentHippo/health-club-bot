@@ -171,7 +171,7 @@ class Gacha {
             } else {
                 display.append(getCharacterStats().toString());
             }
-            if (!compact) {
+            if (!compact && !description.isEmpty()) {
                 display.append("\n\t\"");
                 display.append(description);
                 display.append('\"');
