@@ -70,6 +70,8 @@ class Gacha {
         private double miscBonus;
         private GachaItems.Item item;
 
+        private static String pictureReplacement = "​";
+
         private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny, String type, int level,
                 int xp, int duplicates, String description, String pictureUrl, String shinyUrl,
                 String prismaticUrl, double workBonus, double fishBonus, double pickBonus, double robBonus,
@@ -146,7 +148,11 @@ class Gacha {
             if (compact) {
                 display.append(" - ");
             } else {
-                display.append("\n\t");
+                display.append('[');
+                display.append(pictureReplacement);
+                display.append("](");
+                display.append(getPictureLink());
+                display.append(")\n\t");
             }
             display.append("Level ");
             display.append(level);
@@ -1048,7 +1054,7 @@ class Gacha {
     private static List<GachaCharacter> queryCharacters(long uid) {
         String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
                 + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
-                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, name ASC;";
+                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, foil DESC, name ASC;";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
