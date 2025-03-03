@@ -179,7 +179,7 @@ class Gacha {
             return display.toString();
         }
 
-        private String generateAwardText(boolean useBriefResponse, boolean alreadyMaxed) {
+        void appendAwardText(GachaResponse response, boolean useBriefResponse, boolean alreadyMaxed, long uid) {
             String star = (shiny.getId() > 0 ? ":star2:" : ":star:");
             String stars = "";
             if (rarity > 0) {
@@ -190,19 +190,23 @@ class Gacha {
                 long coinEquivalent = getMaxedCharacterCoinEquivalent();
                 duplicateString = "\n" + (useBriefResponse ? "\t" : "") + getDisplayName() + " +" + duplicates
                     + " already maxed, converted to " + coinEquivalent + " coin" + Casino.getPluralSuffix(coinEquivalent);
+                    response.coinBalance = Casino.addMoney(uid, coinEquivalent);
+                    response.coinsAwarded += coinEquivalent;
             } else if (duplicates > 0) {
                 duplicateString = "\n" + (useBriefResponse ? "\t" : "") + "Upgraded " + getDisplayName()
                     + (duplicates > 1 ? " +" + (duplicates - 1) : "")
                     + " -> " + getDisplayName() + " +" + duplicates;
             }
+            String awardText = "";
             if (useBriefResponse) {
-                return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
+                awardText = stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
                     + duplicateString; //+ getPictureLink()
             } else {
-                return stars + " " + getDisplayName() + " " + stars
+                awardText = stars + " " + getDisplayName() + " " + stars
                     + "\n" + rarity + " Star " + type
                     + duplicateString; // + getPictureLink()
             }
+            response.addCharacterMessagePart(awardText, rarity, getPictureLink());
         }
 
         private int getXpToLevel() {
@@ -220,7 +224,7 @@ class Gacha {
         private GachaItems.StatArray getCharacterStats() {
             int baseAmount = getBaseBuffAmount();
             return new GachaItems.StatArray((int)workBonus * baseAmount, (int)fishBonus * baseAmount,
-                (int)pickBonus * baseAmount, (int)workBonus * baseAmount, (int)miscBonus * baseAmount);
+                (int)pickBonus * baseAmount, (int)robBonus * baseAmount, (int)miscBonus * baseAmount);
         }
 
         private GachaItems.StatArray getTotalStatArray() {
@@ -614,13 +618,13 @@ class Gacha {
         if (character == null) {
             System.out.println("Failed to award character: " + uid + ", " + cid + ", " + shiny);
             response.addMessagePart("Failed to award character. Error: (" + cid + ", " + shiny + ")");
+            return null;
         }
         if (alreadyMaxed) {
             awardMaxedCharacter(uid, character.getMaxedCharacterCoinEquivalent());
             response.coinsAwarded += character.getMaxedCharacterCoinEquivalent();
         }
-        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse, alreadyMaxed), character.rarity,
-            character.getPictureLink());
+        character.appendAwardText(response, useBriefResponse, alreadyMaxed, uid);
         return logCharacterAward(uid, banner.bannerId, character.rarity);
     }
 
