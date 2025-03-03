@@ -419,7 +419,7 @@ public class HBMain {
                 i -> Gacha.handlePulls(i.getUser().getId()))),
             entry(PITY_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handlePity(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
-            entry(GACHA_CHARACTER_INFO_COMMAND, new MultistepCasinoCommand(
+            entry(GACHA_CHARACTER_INFO_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleCharacterInfo(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
             entry(GACHA_CHARACTER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleCharacterList(i.getUser().getId()))),

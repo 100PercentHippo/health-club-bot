@@ -70,7 +70,7 @@ class Gacha {
         private double miscBonus;
         private GachaItems.Item item;
 
-        private static String pictureReplacement = "​";
+        private static String pictureReplacement = ".";
 
         private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny, String type, int level,
                 int xp, int duplicates, String description, String pictureUrl, String shinyUrl,
@@ -699,25 +699,19 @@ class Gacha {
         return output.toString();
     }
 
-    static HBMain.MultistepResponse handleCharacterInfo(long uid, long uniqueId) {
+    static String handleCharacterInfo(long uid, long uniqueId) {
         long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
         SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
             long pullBalance = getPullCount(uid);
             if (pullBalance < 0) {
-                return new HBMain.MultistepResponse(Casino.USER_NOT_FOUND_MESSAGE);
+                return Casino.USER_NOT_FOUND_MESSAGE;
             } else {
-                return new HBMain.MultistepResponse("Unable to fetch details for provided character");
+                return "Unable to fetch details for provided character";
             }
         }
-        HBMain.MultistepResponse response = new HBMain.MultistepResponse(character.toString());
-        try {
-            response.images.put(0, new URL(character.getPictureLink()));
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return response;
+        return character.toString();
     }
 
     static String handleBannerList(long uid) {
