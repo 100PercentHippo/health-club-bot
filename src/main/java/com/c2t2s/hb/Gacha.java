@@ -1158,11 +1158,12 @@ class Gacha {
 
     private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean withItems) {
         if (substring == null) { substring = ""; }
+        substring = '%' + substring + '%';
         String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
                 + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid;
         if (withItems) { query += " AND iid IS NOT NULL"; }
-        query += " AND name LIKE '%?%' ORDER BY rarity DESC, foil DESC, name ASC;";
+        query += " AND name LIKE ? ORDER BY rarity DESC, foil DESC, name ASC;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
