@@ -71,7 +71,7 @@ public class GachaItems {
         }
 
         static String format(int amount) {
-            return (amount >= 0 ? "+" : "") + Stats.oneDecimal.format(amount / 10.0);
+            return (amount >= 0 ? "+" : "") + amount;
         }
     }
 
@@ -217,6 +217,12 @@ public class GachaItems {
                 logGemRemoval(gem.getGemId());
             }
             gems.clear();
+            for (ITEM_STAT stat : ITEM_STAT.values()) {
+                // This won't be exactly right, but it'll accurately
+                // calculate the item's tier. The DB will contain
+                // correct values
+                additions -= bonuses[GEM_BONUS_INDEX].getStat(stat);
+            }
             bonuses[GEM_BONUS_INDEX] = new StatArray();
             return removedGems;
         }
@@ -254,9 +260,9 @@ public class GachaItems {
                 builder.append(stat.getStatName());
                 builder.append(": ");
                 builder.append(ITEM_STAT.format(getModifier(stat)));
-                builder.append("% (");
+                builder.append(" (");
                 builder.append(ITEM_STAT.format(initialBonus));
-                builder.append("% Base");
+                builder.append(" Base");
                 if (gemBonus != 0) {
                     builder.append(", ");
                     builder.append(ITEM_STAT.format(gemBonus));
@@ -264,10 +270,10 @@ public class GachaItems {
                 }
                 if (stat == bonusStat) {
                     int bonusContribution = getBonusModifierContribution(initialBonus + gemBonus);
-                    if (bonusContribution != 0.0) {
+                    if (bonusContribution != 0) {
                         builder.append(", ");
                         builder.append(ITEM_STAT.format(bonusContribution));
-                        builder.append("% from Item Type");
+                        builder.append(" from Item Type");
                     }
                 }
                 builder.append(')');

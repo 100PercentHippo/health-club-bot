@@ -137,13 +137,13 @@ public class GachaGems {
             switch (id) {
                 case FRACTURED_GEM_ID:
                     return new BasicGem(FRACTURED_GEM_ID, "Fractured Gem",
-                        "+0.2 x1, -0.1 x1, duplicate rolls permitted", new int[]{2, -1});
+                        "+2 to a stat and -1 to a stat, duplicate rolls permitted", new int[]{2, -1});
                 case PURE_GEM_ID:
-                    return new BasicGem(PURE_GEM_ID, "Pure Gem", "+0.1 x1",
+                    return new BasicGem(PURE_GEM_ID, "Pure Gem", "+1 to one stat",
                             new int[]{1});
                 case UNSTABLE_GEM_ID:
                     return new BasicGem(UNSTABLE_GEM_ID, "Unstable Gem",
-                        "+0.3 x1, -0.1 x2, duplicate rolls permitted", new int[]{3, -1, -1});
+                        "+3 to a stat and -1 to two stats, duplicate rolls permitted", new int[]{3, -1, -1});
                 case BOLSTERING_GEM_ID:
                     return new BolsteringGem();
                 case BALANCED_GEM_ID:
@@ -213,8 +213,7 @@ public class GachaGems {
 
         static String formatStatApplication(GachaItems.ITEM_STAT stat, int amount,
                 boolean isTendency, String tendencyAdjective) {
-            String result = stat.getStatName() + (amount >= 0 ? " +" : " ")
-                + Stats.oneDecimal.format(amount / 10.0);
+            String result = stat.getStatName() + (amount >= 0 ? " +" : " ") + amount;
             if (isTendency) {
                 result += " (selected with " + tendencyAdjective + ")";
             }
@@ -265,7 +264,7 @@ public class GachaGems {
         BolsteringGem() {
             this.id = BOLSTERING_GEM_ID;
             this.name = "Bolstering Gem";
-            this.description = "+0.3 to lowest stat (ties broken randomly)";
+            this.description = "+3 to lowest stat (ties broken randomly)";
         }
 
         @Override
@@ -280,7 +279,7 @@ public class GachaGems {
         BalancedGem() {
             this.id = BALANCED_GEM_ID;
             this.name = "Balanced Gem";
-            this.description = "+0.2 x1, -0.2 x1, +0.1 x1, -0.1 x1 to unique stats";
+            this.description = "+2, +1, -1, and -2 to unique stats";
         }
 
         @Override
@@ -309,7 +308,7 @@ public class GachaGems {
         GemOfChance() {
             id = GEM_OF_CHANCE_ID;
             name = "Gem of Chance";
-            description = "20% chance of +0.4 to highest stat, -0.1 to highest stat otherwise";
+            description = "20% chance of +4 to highest stat, -1 to highest stat otherwise";
         }
 
         @Override
@@ -329,7 +328,7 @@ public class GachaGems {
         RecklessGem() {
             id = RECKLESS_GEM_ID;
             name = "Reckless Gem";
-            description = "Either +0.1 x1 or -0.1 x1 (50%/50% odds respectively)";
+            description = "Either +1 or -1 to a stat (50%/50% odds)";
         }
 
         @Override
@@ -350,7 +349,7 @@ public class GachaGems {
                 GachaItems.ITEM_STAT inverse) {
             this.id = id;
             this.name = name;
-            this.description = "+0.1 to " + target.getStatName() + ", -0.3 to "
+            this.description = "+1 to " + target.getStatName() + ", -3 to "
                 + inverse.getStatName();
             this.target = target;
             this.inverse = inverse;
@@ -369,7 +368,7 @@ public class GachaGems {
         VersatileGem() {
             id = VERSATILE_GEM_ID;
             name = "Versatile Gem";
-            description = "+0.2 to Misc, -0.2 to all other stats";
+            description = "+2 to Misc, -2 to all other stats";
         }
 
         @Override
@@ -390,7 +389,7 @@ public class GachaGems {
         PutridGem() {
             id = PUTRID_GEM_ID;
             name = "Putrid Gem";
-            description = "-0.1 to all stats";
+            description = "-1 to all stats";
         }
 
         @Override
@@ -407,7 +406,7 @@ public class GachaGems {
         ForgetfulGem() {
             id = FORGETFUL_GEM_ID;
             name = "Forgetful Gem";
-            description = "Negate all existing gem bonuses and refund their gem slots";
+            description = "Remove all previous applied gems (this one remains socketed)";
         }
 
         @Override
@@ -605,7 +604,7 @@ public class GachaGems {
         CompoundingGem() {
             id = COMPOUNDING_GEM_ID;
             name = "Compounding Gem";
-            description = "+0.2 to highest stat (ties broken randomly)";
+            description = "+2 to highest stat (ties broken randomly)";
         }
 
         @Override
@@ -650,7 +649,7 @@ public class GachaGems {
 
             // Add a new prefix to each output line
             applicationResult.output.add(0, "Mimicked " + mimickedGem.name + ": "
-                + mimickedGem.description + '\n');
+                + mimickedGem.description);
 
             return applicationResult;
         }
@@ -671,7 +670,7 @@ public class GachaGems {
         int getSubtractions() { return subtractions; }
         int getGemId() { return gemId; }
 
-        // e.g. "Cursed Gem: Work +0.1, Fish -0.3"
+        // e.g. "Cursed Gem: Work +1, Fish -3"
         String getDescription() {
             StringBuilder builder = new StringBuilder();
             builder.append(Gem.fromId(gemType).getName());
@@ -682,7 +681,7 @@ public class GachaGems {
                 if (loggedStats > 0) { builder.append(", "); }
                 builder.append(stat.getStatName());
                 builder.append(modifiedStats.getStat(stat) > 0 ? " +" : " ");
-                builder.append(Stats.oneDecimal.format(modifiedStats.getStat(stat) / 10.0));
+                builder.append(modifiedStats.getStat(stat));
                 ++loggedStats;
             }
             if (loggedStats == 0) {

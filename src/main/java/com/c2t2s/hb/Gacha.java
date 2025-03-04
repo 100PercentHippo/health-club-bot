@@ -794,6 +794,13 @@ class Gacha {
             return character.name + " is already using " + item.getName();
         }
         GachaCharacter oldCharacter = getCharacterByItem(uid, iid);
+
+        if (oldCharacter != null) {
+            moveItem(uid, oldCharacter.id, oldCharacter.shiny.getId(), cid, shiny.getId(), iid);
+        } else {
+            giveItem(uid, cid, shiny.getId(), iid);
+        }
+
         if (oldCharacter != null) {
             response.append("Unequipped ");
             response.append(item.getName());
@@ -1184,5 +1191,16 @@ class Gacha {
                 }
                 return output;
             }, new ArrayList<>());
+    }
+
+    private static void giveItem(long uid, long cid, int foil, long iid) {
+        CasinoDB.executeUpdate("UPDATE gacha_user_character SET iid = " + iid + " WHERE cid = " + cid
+            + " AND foil = " + foil + " ANDWHERE uid = " + uid + ";");
+    }
+
+    private static void moveItem(long uid, long oldCid, int oldFoil, long newCid, int newFoil, long iid) {
+        CasinoDB.executeUpdate("UPDATE gacha_user_character AS g SET iid = c.iid FROM (VALUES (" + newCid + ", " + newFoil
+            + ", " + iid + "), (" + oldCid + ", " + oldFoil + ", NULL)) AS c(cid, foil, iid) "
+            + "WHERE g.cid = c.cid AND g.foil = c.foil AND g.uid = " + uid + ";");
     }
 }
