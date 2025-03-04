@@ -27,13 +27,18 @@ class Gacha {
     private static final int SHINY_TYPE_PRISMATIC = 2;
 
     private enum SHINY_TYPE {
-        NORMAL(SHINY_TYPE_NORMAL),
-        SHINY(SHINY_TYPE_SHINY),
-        PRISMATIC(SHINY_TYPE_PRISMATIC);
+        NORMAL(SHINY_TYPE_NORMAL, ""),
+        SHINY(SHINY_TYPE_SHINY, "Shiny"),
+        PRISMATIC(SHINY_TYPE_PRISMATIC, "Prismatic");
 
         private int typeId;
-        SHINY_TYPE(int id) { typeId = id; }
+        private String adjective;
+        SHINY_TYPE(int id, String adjective) {
+            typeId = id;
+            this.adjective = adjective;
+        }
         int getId() { return typeId; }
+        String getAdjective() { return adjective; }
 
         static SHINY_TYPE fromId(int id) {
             switch (id) {
@@ -255,6 +260,20 @@ class Gacha {
         private static long parseUniqueIdCid(long uniqueId) {
             return uniqueId >> 2;
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof GachaCharacter)) {
+                return false;
+            }
+            GachaCharacter otherCharacter = (GachaCharacter)other;
+            return hashCode() == otherCharacter.hashCode();
+        }
+
+        @Override
+        public int hashCode() {
+            return 17 * (int)id + 13 * shiny.getId();
+        }
     }
 
     private static class GachaBanner {
@@ -366,7 +385,7 @@ class Gacha {
             return SHINY_TYPE.NORMAL;
         }
 
-        private String getInfoString() {
+        private String getInfoString(long uid) {
             StringBuilder output = new StringBuilder();
             output.append(name);
             output.append(":");
@@ -376,18 +395,38 @@ class Gacha {
                 output.append('\n');
             }
 
-            List<GachaBannerCharacter> characters = getBannerCharacters(bannerId);
+            List<GachaBannerCharacter> characters = getBannerCharacters(bannerId, uid);
             int currentRarity = 6;
-            for (GachaBannerCharacter c: characters) {
+            for (int i = 0; i < characters.size(); i++) {
+                GachaBannerCharacter c = characters.get(i);
                 if (currentRarity > c.getRarity()) {
                     currentRarity = c.getRarity();
                     output.append('\n');
                     output.append(currentRarity);
-                    output.append(" Stars: ");
-                } else {
-                    output.append(", ");
+                    output.append(" Stars:");
                 }
+                output.append("\n  ");
                 output.append(c.getDisplayString());
+                output.append(": ");
+                if (c.getDuplicates() < 0) {
+                    output.append("Not owned");
+                    continue;
+                }
+                boolean multipleOwned = false;
+                for (SHINY_TYPE shiny: SHINY_TYPE.values()) {
+                    if (c.getShiny() != shiny.getId()) {
+                        continue;
+                    }
+                    if (multipleOwned) {
+                        output.append(", ");
+                    }
+                    output.append(c.getOwnedString());
+                    if (characters.size() > i + 1 && characters.get(i + 1).getName().equals(c.getName())) {
+                        multipleOwned = true;
+                        i++;
+                        c = characters.get(i);
+                    }
+                }
             }
 
             return output.toString();
@@ -398,6 +437,8 @@ class Gacha {
         private String name;
         private int rarity;
         private String type;
+        private int shiny = -1;
+        private int duplicates = -1;
 
         GachaBannerCharacter(String name, int rarity, String type) {
             this.name = name;
@@ -405,12 +446,46 @@ class Gacha {
             this.type = type;
         }
 
+        GachaBannerCharacter(String name, int rarity, String type, int shiny, int duplicates) {
+            this.name = name;
+            this.rarity = rarity;
+            this.type = type;
+            this.shiny = shiny;
+            this.duplicates = duplicates;
+        }
+
+        String getName() {
+            return name;
+        }
+
         int getRarity() {
             return rarity;
         }
 
+        int getShiny() {
+            return shiny;
+        }
+
+        int getDuplicates() {
+            return duplicates;
+        }
+
         String getDisplayString() {
-            return name + " (" + rarity + " Star " + type + ")";
+            return name + " - " + rarity + " Star " + type;
+        }
+
+        String getOwnedString() {
+            StringBuilder result = new StringBuilder();
+            if (shiny > 0) {
+                result.append(SHINY_TYPE.fromId(shiny).getAdjective());
+                result.append(' ');
+            }
+            result.append("Owned");
+            if (duplicates > 0) {
+                result.append(" +");
+                result.append(duplicates > MAX_CHARACTER_DUPLICATES ? MAX_CHARACTER_DUPLICATES : duplicates);
+            }
+            return result.toString();
         }
     }
 
@@ -725,12 +800,12 @@ class Gacha {
         return output.toString();
     }
 
-    static String handleBannerInfo(long bannerId) {
+    static String handleBannerInfo(long uid, long bannerId) {
         GachaBanner banner = getGachaBanner(bannerId);
         if (banner == null) {
             return "Specified banner was not found";
         }
-        return banner.getInfoString();
+        return banner.getInfoString(uid);
     }
 
     static String handlePity(long uid, long bannerId) {
@@ -795,7 +870,7 @@ class Gacha {
         }
         GachaCharacter oldCharacter = getCharacterByItem(uid, iid);
 
-        if (oldCharacter != null) {
+        if (oldCharacter != null && !oldCharacter.equals(character)) {
             moveItem(uid, oldCharacter.id, oldCharacter.shiny.getId(), cid, shiny.getId(), iid);
         } else {
             giveItem(uid, cid, shiny.getId(), iid);
@@ -1166,12 +1241,20 @@ class Gacha {
         return CasinoDB.executeAutocompleteIdQuery("SELECT banner_id, banner_name FROM gacha_banner WHERE enabled = true;");
     }
 
-    private static List<GachaBannerCharacter> getBannerCharacters(long bannerId) {
-        return CasinoDB.executeQueryWithReturn("SELECT name, rarity, type FROM gacha_character NATURAL JOIN gacha_character_banner WHERE banner_id = "
-            + bannerId + " ORDER BY rarity DESC, name ASC;", results -> {
+    private static List<GachaBannerCharacter> getBannerCharacters(long bannerId, long uid) {
+        return CasinoDB.executeQueryWithReturn("SELECT name, rarity, type, foil, duplicates FROM (SELECT cid, foil, duplicates FROM gacha_user_character "
+            + "WHERE uid = " + uid + ") AS u NATURAL RIGHT JOIN gacha_character_banner NATURAL JOIN gacha_character WHERE banner_id = " + bannerId
+            + " ORDER BY rarity DESC, name ASC, foil ASC;", results -> {
                 List<GachaBannerCharacter> output = new ArrayList<>();
                 while (results.next()) {
-                    output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2), results.getString(3)));
+                    // Have to call this for wasNull() to work
+                    results.getInt(4);
+                    if (results.wasNull()) {
+                        output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2), results.getString(3)));
+                    } else {
+                        output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2), results.getString(3),
+                            results.getInt(4), results.getInt(5)));
+                    }
                 }
                 return output;
             }, new ArrayList<>());
@@ -1195,7 +1278,7 @@ class Gacha {
 
     private static void giveItem(long uid, long cid, int foil, long iid) {
         CasinoDB.executeUpdate("UPDATE gacha_user_character SET iid = " + iid + " WHERE cid = " + cid
-            + " AND foil = " + foil + " ANDWHERE uid = " + uid + ";");
+            + " AND foil = " + foil + " AND uid = " + uid + ";");
     }
 
     private static void moveItem(long uid, long oldCid, int oldFoil, long newCid, int newFoil, long iid) {

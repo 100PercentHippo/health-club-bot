@@ -424,7 +424,7 @@ public class HBMain {
             entry(GACHA_CHARACTER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleCharacterList(i.getUser().getId()))),
             entry(GACHA_BANNER_INFO_COMMAND, new SimpleCasinoCommand(
-                i -> Gacha.handleBannerInfo(i.getArgumentLongValueByIndex(0).get()))),
+                i -> Gacha.handleBannerInfo(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
             entry(GACHA_BANNER_LIST_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
             entry(GACHA_ITEM_INFO_COMMAND, new SimpleCasinoCommand(
