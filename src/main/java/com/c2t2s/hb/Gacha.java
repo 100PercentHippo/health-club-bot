@@ -875,6 +875,7 @@ class Gacha {
         } else {
             giveItem(uid, cid, shiny.getId(), iid);
         }
+        character.item = item;
 
         if (oldCharacter != null) {
             response.append("Unequipped ");
@@ -887,16 +888,32 @@ class Gacha {
             response.append("Unequipped ");
             response.append(oldItem.getName());
             response.append(" from ");
-            response.append(character.name);
+            response.append(character.getDisplayName());
             response.append(".\n");
         }
         response.append("Gave ");
         response.append(item.getName());
         response.append(" to ");
-        response.append(character.name);
+        response.append(character.getDisplayName());
         response.append(".\nTheir stats are now: ");
         response.append(character.getTotalStatArray());
         return response.toString();
+    }
+
+    static String handleRemoveItem(long uid, long uniqueId) {
+        long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
+        SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
+        GachaCharacter character = getCharacter(uid, cid, shiny);
+        if (character == null) {
+            return "Unable to remove item: Specified character not found";
+        }
+        if (character.item == null) {
+            return "Unable to remove item: Character has no item equipped";
+        }
+
+        String itemName = character.item.getName();
+        removeItem(uid, cid, shiny.getId());
+        return "Unequipped " + itemName + " from " + character.getDisplayName();
     }
 
     //////////////////////////////////////////////////////////
@@ -1285,5 +1302,10 @@ class Gacha {
         CasinoDB.executeUpdate("UPDATE gacha_user_character AS g SET iid = c.iid FROM (VALUES (" + newCid + ", " + newFoil
             + ", " + iid + "), (" + oldCid + ", " + oldFoil + ", NULL)) AS c(cid, foil, iid) "
             + "WHERE g.cid = c.cid AND g.foil = c.foil AND g.uid = " + uid + ";");
+    }
+
+    private static void removeItem(long uid, long cid, int foil) {
+        CasinoDB.executeUpdate("UPDATE gacha_user_character SET iid = NULL WHERE uid = "
+            + uid + " AND cid = " + cid + " AND foil = " + foil + ";");
     }
 }

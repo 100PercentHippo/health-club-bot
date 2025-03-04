@@ -336,6 +336,7 @@ public class HBMain {
     private static final String GACHA_BANNER_INFO_COMMAND = "gacha banner info";
     private static final String GACHA_ITEM_INFO_COMMAND = "gacha item info";
     private static final String GACHA_ITEM_EQUIP_COMMAND = "gacha item equip";
+    private static final String GACHA_ITEM_UNEQUIP_COMMAND = "gacha item unequip";
     private static final String APPLY_GEM_COMMAND = "gacha gem apply";
     private static final String GACHA_COMMAND_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
@@ -435,6 +436,8 @@ public class HBMain {
             entry(GACHA_ITEM_EQUIP_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleGiveItem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
                     i.getArgumentLongValueByIndex(1).get()))),
+            entry(GACHA_ITEM_UNEQUIP_COMMAND, new SimpleCasinoCommand(
+                i -> Gacha.handleRemoveItem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
             entry(LIST_GEMS_COMMAND, new SimpleCasinoCommand(
                 i -> GachaItems.handleListGems(i.getUser().getId()))),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
@@ -804,7 +807,9 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to view", true, true))),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "equip", "Given an item to a character",
                         Arrays.asList(SlashCommandOption.createLongOption("item", "Which item to equip", true, true),
-                            SlashCommandOption.createLongOption("character", "Which character to give the item to", true, true))))))
+                            SlashCommandOption.createLongOption("character", "Which character to give the item to", true, true))),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "unequip", "Unequip the item in use by a character",
+                        Arrays.asList(SlashCommandOption.createLongOption("character", "Which character to give the item to", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "gem", "View and apply your gems",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your gems"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "apply", "Apply a gem to an item",
