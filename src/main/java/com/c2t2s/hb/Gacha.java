@@ -843,8 +843,12 @@ class Gacha {
         return queryBanners();
     }
 
-    static List<HBMain.AutocompleteIdOption> getCharacters(long uid) {
-        List<GachaCharacter> characters = queryCharacters(uid);
+    static List<HBMain.AutocompleteIdOption> getCharacters(long uid, String substring) {
+        return getCharacters(uid, substring, false);
+    }
+
+    static List<HBMain.AutocompleteIdOption> getCharacters(long uid, String substring, boolean withItems) {
+        List<GachaCharacter> characters = queryCharacters(uid, substring, withItems);
         List<HBMain.AutocompleteIdOption> output = new ArrayList<>(characters.size());
         characters.forEach(c -> output.add(new HBMain.AutocompleteIdOption(c.getUniqueId(), c.getDisplayName())));
         return output;
@@ -1145,10 +1149,21 @@ class Gacha {
     }
 
     private static List<GachaCharacter> queryCharacters(long uid) {
+        return queryCharacters(uid, "");
+    }
+
+    private static List<GachaCharacter> queryCharacters(long uid, String substring) {
+        return queryCharacters(uid, substring, false);
+    }
+
+    private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean withItems) {
+        if (substring == null) { substring = ""; }
         String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
                 + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
-                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " ORDER BY rarity DESC, foil DESC, name ASC;";
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid;
+        if (withItems) { query += " AND iid IS NOT NULL"; }
+        query += " AND name LIKE '%?%' ORDER BY rarity DESC, foil DESC, name ASC;";
+        return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
                 // This is inefficient and should be refactored to involve fewer queries
@@ -1163,7 +1178,7 @@ class Gacha {
                         results.getLong(17), item));
             }
             return output;
-        }, new ArrayList<>());
+        }, new ArrayList<>(), substring);
     }
 
     private static List<Long> getEligibleCharacters(long uid, long bannerId, int rarity, SHINY_TYPE shiny) {

@@ -66,13 +66,20 @@ class CasinoDB {
                     statement.addBatch(entry);
                 }
                 statement.executeBatch();
+                statement.close();
             }
-            statement.close();
             connection.close();
             AllOrNothing.addUserToCache(uid);
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
+            try {
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             try {
                 if (statement != null) {
                     statement.close();

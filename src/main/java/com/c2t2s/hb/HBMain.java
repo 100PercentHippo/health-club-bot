@@ -541,7 +541,8 @@ public class HBMain {
                     idOptions = Gacha.getBanners();
                     break;
                 case GACHA_CHARACTER_INFO_COMMAND:
-                    idOptions = Gacha.getCharacters(interaction.getUser().getId());
+                    idOptions = Gacha.getCharacters(interaction.getUser().getId(),
+                        interaction.getFocusedOption().getStringValue().orElse(""));
                     break;
                 case APPLY_GEM_COMMAND:
                     if (interaction.getFocusedOption().getName().equals(GACHA_COMMAND_ITEM_OPTION)) {
@@ -560,8 +561,13 @@ public class HBMain {
                         idOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                             interaction.getArgumentStringValueByIndex(0));
                     } else { // Character Option
-                        idOptions = Gacha.getCharacters(interaction.getUser().getId());
+                        idOptions = Gacha.getCharacters(interaction.getUser().getId(),
+                            interaction.getFocusedOption().getStringValue().orElse(""));
                     }
+                    break;
+                case GACHA_ITEM_UNEQUIP_COMMAND:
+                    idOptions = Gacha.getCharacters(interaction.getUser().getId(),
+                        interaction.getFocusedOption().getStringValue().orElse(""), true);
                     break;
                 default:
                     return;
