@@ -512,7 +512,13 @@ public class GachaItems {
         return builder.toString();
     }
 
-    static String handleItemInfo(long uid, long iid) {
+    static String handleItemInfo(long uid, String iidString) {
+        long iid = 0;
+        try {
+            iid = Long.parseLong(iidString);
+        } catch (NumberFormatException e) {
+            return "Unable to parse item id";
+        }
         Item item = fetchItem(uid, iid);
         if (item == null) {
             return "Failed to fetch item " + iid;
@@ -527,7 +533,7 @@ public class GachaItems {
         return "Failed to award gem " + gem.getId();
     }
 
-    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, long iid) {
+    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, String iidString) {
         List<String> results = new ArrayList<>();
         GachaGems.Gem gem;
         try {
@@ -539,6 +545,13 @@ public class GachaItems {
         int quantity = fetchGemQuantity(uid, gem.getId());
         if (quantity < 1) {
             results.add("Unable to apply gem: You don't have any " + gem.getName());
+            return new HBMain.MultistepResponse(results);
+        }
+        long iid = 0;
+        try {
+            iid = Long.parseLong(iidString);
+        } catch (NumberFormatException e) {
+            results.add("Unable to parse item id");
             return new HBMain.MultistepResponse(results);
         }
         Item item = fetchItem(uid, iid);
@@ -586,18 +599,18 @@ public class GachaItems {
         return new HBMain.MultistepResponse(results);
     }
 
-    static List<HBMain.AutocompleteIdOption> handleItemAutocomplete(long uid, Optional<String> partialName) {
+    static List<HBMain.AutocompleteStringOption> handleItemAutocomplete(long uid, String partialName) {
         List<Item> items;
-        if (!partialName.isPresent() || partialName.get().isEmpty()) {
+        if (partialName.isEmpty()) {
             items = fetchItems(uid);
         } else {
-            items = fetchItems(uid, partialName.get().toLowerCase());
+            items = fetchItems(uid, partialName);
         }
         if (items == null) { return new ArrayList<>(); }
 
-        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(items.size());
-        items.forEach(i -> output.add(new HBMain.AutocompleteIdOption(i.getItemId(),
-            i.getAutoCompleteDescription())));
+        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(items.size());
+        items.forEach(i -> output.add(new HBMain.AutocompleteStringOption(
+            String.valueOf(i.getItemId()), i.getAutoCompleteDescription())));
         return output;
     }
 

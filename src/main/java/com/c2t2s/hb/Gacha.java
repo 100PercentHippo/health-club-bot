@@ -75,7 +75,8 @@ class Gacha {
         private double miscBonus;
         private GachaItems.Item item;
 
-        private static String pictureReplacement = ".";
+        private static final String PICTURE_REPLACEMENT = ".";
+        private static final String UNIQUE_ID_SEPARATOR = "|";
 
         private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny, String type, int level,
                 int xp, int duplicates, String description, String pictureUrl, String shinyUrl,
@@ -154,7 +155,7 @@ class Gacha {
                 display.append(" - ");
             } else {
                 display.append('[');
-                display.append(pictureReplacement);
+                display.append(PICTURE_REPLACEMENT);
                 display.append("](");
                 display.append(getPictureLink());
                 display.append(")\n\t");
@@ -249,16 +250,30 @@ class Gacha {
             return 100L;
         }
 
-        private long getUniqueId() {
-            return (id << 2) + shiny.getId();
+        private String getUniqueId() {
+            return id + UNIQUE_ID_SEPARATOR + shiny.getId();
         }
 
-        private static SHINY_TYPE parseUniqueIdShiny(long uniqueId) {
-            return SHINY_TYPE.fromId((int)(uniqueId % 4));
+        private static SHINY_TYPE parseUniqueIdShiny(String uniqueId) {
+            try {
+                int index = uniqueId.indexOf(UNIQUE_ID_SEPARATOR);
+                return SHINY_TYPE.fromId(Integer.parseInt(uniqueId.substring(index + 1)));
+            } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                System.out.println("Failed to parse Shiny type from character unique id string: "
+                    + uniqueId);
+                return SHINY_TYPE.NORMAL;
+            }
         }
 
-        private static long parseUniqueIdCid(long uniqueId) {
-            return uniqueId >> 2;
+        private static long parseUniqueIdCid(String uniqueId) {
+            try {
+                int index = uniqueId.indexOf(UNIQUE_ID_SEPARATOR);
+                return Long.parseLong(uniqueId.substring(0, index));
+            } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                System.out.println("Failed to parse cid from character unique id string: "
+                    + uniqueId);
+                return -1;
+            }
         }
 
         @Override
@@ -774,9 +789,12 @@ class Gacha {
         return output.toString();
     }
 
-    static String handleCharacterInfo(long uid, long uniqueId) {
+    static String handleCharacterInfo(long uid, String uniqueId) {
         long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
         SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
+        if (cid < 0) {
+            return "Unrecognized character id";
+        }
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
             long pullBalance = getPullCount(uid);
@@ -843,18 +861,24 @@ class Gacha {
         return queryBanners();
     }
 
-    static List<HBMain.AutocompleteIdOption> getCharacters(long uid, String substring) {
+    static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring) {
         return getCharacters(uid, substring, false);
     }
 
-    static List<HBMain.AutocompleteIdOption> getCharacters(long uid, String substring, boolean withItems) {
+    static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring, boolean withItems) {
         List<GachaCharacter> characters = queryCharacters(uid, substring, withItems);
-        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(characters.size());
-        characters.forEach(c -> output.add(new HBMain.AutocompleteIdOption(c.getUniqueId(), c.getDisplayName())));
+        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
+        characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));
         return output;
     }
 
-    static String handleGiveItem(long uid, long iid, long uniqueId) {
+    static String handleGiveItem(long uid, String iidString, String uniqueId) {
+        long iid = 0;
+        try {
+            iid = Long.parseLong(iidString);
+        } catch (NumberFormatException e) {
+            return "Unable to give item: Unrecognized item id";
+        }
         GachaItems.Item item = GachaItems.fetchItem(uid, iid);
         if (item == null) {
             return "Unable to give item: Specified item not found";
@@ -862,6 +886,9 @@ class Gacha {
 
         long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
         SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
+        if (cid < 0) {
+            return "Unable to give item: Unrecognized character id";
+        }
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
             return "Unable to give item: Specified character not found";
@@ -904,9 +931,12 @@ class Gacha {
         return response.toString();
     }
 
-    static String handleRemoveItem(long uid, long uniqueId) {
+    static String handleRemoveItem(long uid, String uniqueId) {
         long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
         SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
+        if (cid < 0) {
+            return "Unable to remove item: Unrecognized character id";
+        }
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
             return "Unable to remove item: Specified character not found";
