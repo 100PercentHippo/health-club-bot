@@ -1022,6 +1022,8 @@ class Gacha {
     //   enabled boolean NOT NULL DEFAULT true
     // );
 
+    // CREATE INDEX gacha_character_lowercase_name ON gacha_character (LOWER(name));
+
     // CREATE TABLE IF NOT EXISTS gacha_character_banner (
     //   cid bigint,
     //   banner_id bigint,
@@ -1200,7 +1202,7 @@ class Gacha {
                 + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid;
         if (withItems) { query += " AND iid IS NOT NULL"; }
-        query += " AND name LIKE ? ORDER BY rarity DESC, foil DESC, name ASC;";
+        query += " AND LOWER(name) LIKE LOWER(?) ORDER BY rarity DESC, foil DESC, name ASC;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {

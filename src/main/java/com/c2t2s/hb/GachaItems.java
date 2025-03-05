@@ -743,6 +743,8 @@ public class GachaItems {
     //  CONSTRAINT gacha_item_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
+    // CREATE INDEX gacha_item_lowercase_name ON gacha_item (LOWER(name));
+
     // CREATE TABLE IF NOT EXISTS gacha_item_gem (
     //  gid SERIAL PRIMARY KEY,
     //  uid bigint NOT NULL,
@@ -773,6 +775,8 @@ public class GachaItems {
     //  gid int PRIMARY KEY,
     //  name varchar(100) NOT NULL
     // );
+
+    // CREATE INDEX gacha_gem_lowercase_name ON gacha_gem (LOWER(name));
 
     static boolean logAppliedGem(long uid, long itemId, int gemId, StatArray stats, int additions,
             int subtractions, int addedGemSlots) {
@@ -924,7 +928,7 @@ public class GachaItems {
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
             + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid
-            + " AND POSITION(? IN name) > 0 ORDER BY iid DESC LIMIT 10;";
+            + " AND LOWER(name) LIKE LOWER(?) ORDER BY iid DESC LIMIT 10;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
                 items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),
@@ -946,7 +950,7 @@ public class GachaItems {
     static List<UnappliedGem> queryGems(long uid, String substring) {
         substring = '%' + substring + '%';
         String query = "SELECT gid, quantity, name FROM gacha_user_gem NATURAL JOIN gacha_gem "
-            + "WHERE quantity > 0 AND uid = " + uid + " AND name LIKE ?;";
+            + "WHERE quantity > 0 AND uid = " + uid + " AND LOWER(name) LIKE LOWER(?);";
         List<UnappliedGem> unappliedGems = new ArrayList<>();
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
