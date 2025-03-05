@@ -177,7 +177,21 @@ public class GachaItems {
         abstract int getTier();
         abstract String getName();
 
+        private static final String ITEM_ID_SEPARATOR = "|";
+
         long getItemId() { return itemId; }
+
+        String getItemIdString() { return itemId + ITEM_ID_SEPARATOR + getName(); }
+
+        static long parseItemIdString(String itemIdString) {
+            try {
+                int index = itemIdString.indexOf(ITEM_ID_SEPARATOR);
+                return Long.parseLong(itemIdString.substring(index + 1));
+            } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                System.out.println("Failed to parse item id string: " + itemIdString);
+                return -1;
+            }
+        }
 
         long getItemUid() { return itemUid; }
 
@@ -533,11 +547,16 @@ public class GachaItems {
         return "Failed to award gem " + gem.getId();
     }
 
-    static HBMain.MultistepResponse handleApplyGem(long uid, long gemId, String iidString) {
+    static HBMain.MultistepResponse handleApplyGem(long uid, String gemIdString, String iidString) {
         List<String> results = new ArrayList<>();
         GachaGems.Gem gem;
+        int gemId = UnappliedGem.parseGemIdString(gemIdString);
+        if (gemId < 0) {
+            results.add("Unable to parse gem id");
+            return new HBMain.MultistepResponse(results);
+        }
         try {
-             gem = GachaGems.Gem.fromId((int)gemId);
+             gem = GachaGems.Gem.fromId(gemId);
         } catch (IllegalArgumentException e) {
             results.add("Unable to apply gem: Unable to fetch gem " + gemId);
             return new HBMain.MultistepResponse(results);
@@ -547,10 +566,8 @@ public class GachaItems {
             results.add("Unable to apply gem: You don't have any " + gem.getName());
             return new HBMain.MultistepResponse(results);
         }
-        long iid = 0;
-        try {
-            iid = Long.parseLong(iidString);
-        } catch (NumberFormatException e) {
+        long iid = Item.parseItemIdString(iidString);
+        if (iid < 0) {
             results.add("Unable to parse item id");
             return new HBMain.MultistepResponse(results);
         }
@@ -610,20 +627,38 @@ public class GachaItems {
 
         List<HBMain.AutocompleteStringOption> output = new ArrayList<>(items.size());
         items.forEach(i -> output.add(new HBMain.AutocompleteStringOption(
-            String.valueOf(i.getItemId()), i.getAutoCompleteDescription())));
+            i.getItemIdString(), i.getAutoCompleteDescription())));
         return output;
     }
 
     private static class UnappliedGem {
         int gemId;
         int quantityOwned;
+        String name;
 
-        UnappliedGem(int gemId, int quantityOwned) {
+        UnappliedGem(int gemId, int quantityOwned, String name) {
             this.gemId = gemId;
             this.quantityOwned = quantityOwned;
+            this.name = name;
         }
 
         int getGemId() { return gemId; }
+
+        private static final String GEM_ID_SEPARATOR = "|";
+
+        String getGemIdString() {
+            return gemId + GEM_ID_SEPARATOR + name;
+        }
+
+        static int parseGemIdString(String idString) {
+            try {
+                int index = idString.indexOf(GEM_ID_SEPARATOR);
+                return Integer.parseInt(idString.substring(index + 1));
+            } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                System.out.println("Failed to parse gem id string: " + idString);
+                return -1;
+            }
+        }
 
         @Override
         public String toString() {
@@ -638,12 +673,12 @@ public class GachaItems {
         }
     }
 
-    static List<HBMain.AutocompleteIdOption> handleGemAutocomplete(long uid) {
-        List<UnappliedGem> gems = queryGems(uid);
+    static List<HBMain.AutocompleteStringOption> handleGemAutocomplete(long uid, String substring) {
+        List<UnappliedGem> gems = queryGems(uid, substring);
         if (gems == null) { return new ArrayList<>(); }
 
-        List<HBMain.AutocompleteIdOption> output = new ArrayList<>(gems.size());
-        gems.forEach(g -> output.add(new HBMain.AutocompleteIdOption(g.getGemId(), g.toString())));
+        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(gems.size());
+        gems.forEach(g -> output.add(new HBMain.AutocompleteStringOption(g.getGemIdString(), g.toString())));
         return output;
     }
 
@@ -730,7 +765,13 @@ public class GachaItems {
     //  uid bigint NOT NULL,
     //  quantity int NOT NULL DEFAULT 0,
     //  PRIMARY KEY(gid, uid),
-    //  CONSTRAINT gacha_user_gem_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
+    //  CONSTRAINT gacha_user_gem_uid FOREIGN KEY(uid) REFERENCES money_user(uid),
+    //  CONSTRAINT gacha_user_gem_gid FOREIGN KEY(gid) REFERENCES gacha_gem(gid)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS gacha_gem (
+    //  gid int PRIMARY KEY,
+    //  name varchar(100) NOT NULL
     // );
 
     static boolean logAppliedGem(long uid, long itemId, int gemId, StatArray stats, int additions,
@@ -899,11 +940,18 @@ public class GachaItems {
     }
 
     static List<UnappliedGem> queryGems(long uid) {
-        String query = "SELECT gid, quantity FROM gacha_user_gem WHERE quantity > 0 AND uid = " + uid + ";";
+        return queryGems(uid, "");
+    }
+
+    static List<UnappliedGem> queryGems(long uid, String substring) {
+        substring = '%' + substring + '%';
+        String query = "SELECT gid, quantity, name FROM gacha_user_gem NATURAL JOIN gacha_gem "
+            + "WHERE quantity > 0 AND uid = " + uid + " AND name LIKE ?;";
         List<UnappliedGem> unappliedGems = new ArrayList<>();
-        return CasinoDB.executeQueryWithReturn(query, results -> {
+        return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
-                unappliedGems.add(new UnappliedGem(results.getInt(1), results.getInt(2)));
+                unappliedGems.add(new UnappliedGem(results.getInt(1), results.getInt(2),
+                    results.getString(3)));
             }
             return unappliedGems;
         }, unappliedGems);

@@ -431,7 +431,7 @@ public class HBMain {
             entry(GACHA_ITEM_INFO_COMMAND, new SimpleCasinoCommand(
                 i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
-                i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
+                i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
                     i.getArgumentStringValueByIndex(1).get()))),
             entry(GACHA_ITEM_EQUIP_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleGiveItem(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
@@ -549,7 +549,8 @@ public class HBMain {
                         stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                             interaction.getFocusedOption().getStringValue().orElse(""));
                     } else { // Gem Option
-                        idOptions = GachaItems.handleGemAutocomplete(interaction.getUser().getId());
+                        stringOptions = GachaItems.handleGemAutocomplete(interaction.getUser().getId(),
+                            interaction.getFocusedOption().getStringValue().orElse(""));
                     }
                     break;
                 case GACHA_ITEM_INFO_COMMAND:
@@ -819,7 +820,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "gem", "View and apply your gems",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your gems"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "apply", "Apply a gem to an item",
-                        Arrays.asList(SlashCommandOption.createLongOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true),
+                        Arrays.asList(SlashCommandOption.createStringOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true),
                             SlashCommandOption.createStringOption(GACHA_COMMAND_ITEM_OPTION, "Item to apply gem to", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pull", "Try to win a gacha character!",
                 Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true),

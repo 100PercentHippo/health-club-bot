@@ -33,7 +33,6 @@ public class GachaGems {
     private static final int FRACTAL_GEM_ID = 18;
     private static final int GAMBLERS_GEM_ID = 19;
 
-
     static final int COMMON_GEM_RARITY = 0;
     static final int UNCOMMON_GEM_RARITY = 1;
     static final int RARE_GEM_RARITY = 2;

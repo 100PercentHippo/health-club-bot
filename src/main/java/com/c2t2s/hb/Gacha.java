@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.c2t2s.hb.GachaItems.Item;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -251,13 +254,16 @@ class Gacha {
         }
 
         private String getUniqueId() {
-            return id + UNIQUE_ID_SEPARATOR + shiny.getId();
+            return id + UNIQUE_ID_SEPARATOR + shiny.getId() + UNIQUE_ID_SEPARATOR
+                + getDisplayName();
         }
 
         private static SHINY_TYPE parseUniqueIdShiny(String uniqueId) {
             try {
                 int index = uniqueId.indexOf(UNIQUE_ID_SEPARATOR);
-                return SHINY_TYPE.fromId(Integer.parseInt(uniqueId.substring(index + 1)));
+                int secondIndex = uniqueId.indexOf(UNIQUE_ID_SEPARATOR, index + 1);
+                return SHINY_TYPE.fromId(Integer.parseInt(
+                    uniqueId.substring(index + 1, secondIndex)));
             } catch (NumberFormatException | IndexOutOfBoundsException e) {
                 System.out.println("Failed to parse Shiny type from character unique id string: "
                     + uniqueId);
@@ -873,10 +879,8 @@ class Gacha {
     }
 
     static String handleGiveItem(long uid, String iidString, String uniqueId) {
-        long iid = 0;
-        try {
-            iid = Long.parseLong(iidString);
-        } catch (NumberFormatException e) {
+        long iid = Item.parseItemIdString(iidString);
+        if (iid < 0) {
             return "Unable to give item: Unrecognized item id";
         }
         GachaItems.Item item = GachaItems.fetchItem(uid, iid);
