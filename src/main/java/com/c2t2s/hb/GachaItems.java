@@ -914,6 +914,7 @@ public class GachaItems {
     }
 
     static List<Item> fetchItems(long uid, String partialName) {
+        partialName = '%' + partialName + '%';
         List<Item> items = new ArrayList<>();
         String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid = " + uid
             + " AND LOWER(name) LIKE LOWER(?) ORDER BY iid DESC LIMIT 10), "
