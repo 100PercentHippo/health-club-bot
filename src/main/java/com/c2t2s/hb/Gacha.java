@@ -185,6 +185,9 @@ class Gacha {
                 display.append(" from item)");
             } else {
                 display.append(getCharacterStats().toString());
+                if (!compact) {
+                    display.append("\n  No item equipped");
+                }
             }
             if (!compact && !description.isEmpty()) {
                 display.append("\n\t\"");

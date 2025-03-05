@@ -186,7 +186,7 @@ public class GachaItems {
         static long parseItemIdString(String itemIdString) {
             try {
                 int index = itemIdString.indexOf(ITEM_ID_SEPARATOR);
-                return Long.parseLong(itemIdString.substring(index + 1));
+                return Long.parseLong(itemIdString.substring(0, index));
             } catch (NumberFormatException | IndexOutOfBoundsException e) {
                 System.out.println("Failed to parse item id string: " + itemIdString);
                 return -1;
@@ -653,7 +653,7 @@ public class GachaItems {
         static int parseGemIdString(String idString) {
             try {
                 int index = idString.indexOf(GEM_ID_SEPARATOR);
-                return Integer.parseInt(idString.substring(index + 1));
+                return Integer.parseInt(idString.substring(0, index));
             } catch (NumberFormatException | IndexOutOfBoundsException e) {
                 System.out.println("Failed to parse gem id string: " + idString);
                 return -1;
@@ -954,7 +954,7 @@ public class GachaItems {
                     results.getString(3)));
             }
             return unappliedGems;
-        }, unappliedGems);
+        }, unappliedGems, substring);
     }
 
 }
