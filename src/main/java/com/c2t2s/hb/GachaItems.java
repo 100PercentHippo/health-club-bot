@@ -527,10 +527,8 @@ public class GachaItems {
     }
 
     static String handleItemInfo(long uid, String iidString) {
-        long iid = 0;
-        try {
-            iid = Long.parseLong(iidString);
-        } catch (NumberFormatException e) {
+        long iid = Item.parseItemIdString(iidString);
+        if (iid < 0) {
             return "Unable to parse item id";
         }
         Item item = fetchItem(uid, iid);
@@ -918,7 +916,7 @@ public class GachaItems {
     static List<Item> fetchItems(long uid, String partialName) {
         List<Item> items = new ArrayList<>();
         String query = "WITH user_iids AS (SELECT iid FROM gacha_item WHERE uid = " + uid
-            + " AND POSITION(? IN name) > 0 ORDER BY iid DESC LIMIT 10), "
+            + " AND LOWER(name) LIKE LOWER(?) ORDER BY iid DESC LIMIT 10), "
             + "gem_stats AS (SELECT iid, SUM(work_modifier) AS gem_work, SUM(fish_modifier) AS gem_fish, SUM(pick_modifier) "
             + "AS gem_pick, SUM(rob_modifier) AS gem_rob, SUM(misc_modifier) AS gem_misc, SUM(additions) AS "
             + "gem_additions, SUM(subtractions) AS gem_subtractions, SUM(gem_slots_added) AS gem_granted_slots, "
