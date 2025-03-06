@@ -307,10 +307,6 @@ public class GachaItems {
             logAwardItem(uid, this, bonuses[INITIAL_BONUS_INDEX]);
         }
 
-        static Item generate() {
-            return G0Item.generate();
-        }
-
         static Item getItem(FetchedItem item, List<GachaGems.AppliedGem> gems) {
             StatArray gemBonuses = new StatArray();
             int appliedGemSlots = 0;
@@ -544,10 +540,14 @@ public class GachaItems {
         }
     }
 
+    static Item generateItem(long uid) {
+        return G0Item.generate(uid);
+    }
+
     static String handleTest(long uid) {
         StringBuilder builder = new StringBuilder();
 
-        Item item = Item.generate();
+        Item item = generateItem(uid);
         builder.append(item.getBriefDescription());
         builder.append("\n");
         item.awardTo(uid);
@@ -814,7 +814,7 @@ public class GachaItems {
             }
         }
 
-        Item newItem = Item.generate();
+        Item newItem = generateItem(uid);
         if (positiveTendency != null) { newItem.positiveTendency = positiveTendency; }
         if (negativeTendency != null) { newItem.negativeTendency = negativeTendency; }
         if (bonusStat != null) {
