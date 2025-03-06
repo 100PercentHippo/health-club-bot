@@ -369,7 +369,25 @@ public class GachaItems {
         private static final double UNENHANCED_BONUS_STAT_MODIFIER = 0.25;
         private static final double ENHANCED_BONUS_STAT_MODIFIER = 0.5;
 
-        static G0Item generate() {
+        private static int getActivityCount(Casino.User user, ITEM_STAT stat) {
+            switch (stat) {
+                case WORK:
+                    return user.getWork();
+                case FISH:
+                    return user.getFish();
+                case PICK:
+                    return user.getPick();
+                case ROB:
+                    return user.getRob();
+                case MISC:
+                    // Average of all
+                    return (user.getWork() + user.getFish() + user.getPick() + user.getRob()) / 4;
+                default:
+                    return 0;
+                }
+        }
+
+        static G0Item generate(long uid) {
             // Repeating 50% chance per additional gem slots
             Double extraGemSlots = Math.log(HBMain.RNG_SOURCE.nextDouble()) / LN_ONE_HALF;
             int gemSlots = BASE_GEM_SLOTS + extraGemSlots.intValue();
@@ -378,7 +396,17 @@ public class GachaItems {
             ITEM_STAT negativeTendency = ITEM_STAT.fromIndex(HBMain.RNG_SOURCE.nextInt(5));
             ITEM_STAT bonusStat        = ITEM_STAT.fromIndex(HBMain.RNG_SOURCE.nextInt(5));
 
-            G0Item item = new G0Item(positiveTendency, negativeTendency, bonusStat, gemSlots);
+            Casino.User user = Casino.getUser(uid);
+            int enhancementLevel = 0;
+            if (user != null) {
+                // Chance of an enhanced item is 10% * log(base 4)(# of participations in relevant activity)
+                double enhancementChance = 0.1 * Math.log(getActivityCount(user, bonusStat)) / Math.log(4.0);
+                if (HBMain.RNG_SOURCE.nextDouble() < enhancementChance) {
+                    enhancementLevel = 1;
+                }
+            }
+
+            G0Item item = new G0Item(positiveTendency, negativeTendency, bonusStat, gemSlots, enhancementLevel);
 
             // Roll for initial additions and subtractions
             int additions    = BASE_STAT_AMOUNT + HBMain.generateBoundedNormal(AVERAGE_ADDITIONS, ADDITIONS_STDDEV, 0);
@@ -399,7 +427,7 @@ public class GachaItems {
         }
 
         G0Item(ITEM_STAT positiveTendency, ITEM_STAT negativeTendency, ITEM_STAT bonusStat,
-                int gemSlots) {
+                int gemSlots, int enhancmentLevel) {
             generatorVersion = GENERATOR_VERSION;
             bonuses = new StatArray[] { new StatArray(), new StatArray() };
             this.gems             = new ArrayList<>();
@@ -407,6 +435,7 @@ public class GachaItems {
             this.negativeTendency = negativeTendency;
             this.bonusStat        = bonusStat;
             this.gemSlots         = gemSlots;
+            this.enhancementLevel = enhancmentLevel;
         }
 
         G0Item(int generatorVersion, long itemUid, long itemId, StatArray[] bonuses,
@@ -1016,7 +1045,7 @@ public class GachaItems {
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
             + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid
-            + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false AND iid IN (" + iidQuery + ") ORDER BY iid DESC LIMIT 10;";
+            + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false AND gacha_item.iid IN (" + iidQuery + ") ORDER BY iid DESC LIMIT 10;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
                 items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),

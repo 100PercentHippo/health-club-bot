@@ -10,7 +10,7 @@ class Casino {
     // Hide default constructor
     private Casino() {}
 
-    private static class User {
+    static class User {
         private int work;
         private int fish;
         private int pick;
@@ -50,6 +50,11 @@ class Casino {
         private Timestamp getTimer2() {
             return timer2;
         }
+
+        int getWork() { return work; }
+        int getFish() { return fish; }
+        int getPick() { return pick; }
+        int getRob()  { return rob;  }
     }
 
     private static class OverUnderGame {
@@ -948,7 +953,7 @@ class Casino {
             + (winCondition == 3 ? 1 : 0) + ") WHERE uid = " + uid + ";");
     }
 
-    private static User getUser(long uid) {
+    static User getUser(long uid) {
         String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim, timestamp2 FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
