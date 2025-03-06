@@ -995,7 +995,7 @@ public class GachaItems {
                     results.getInt(23), results.getInt(24)));
             }
             return items;
-        }, items, partialName, partialName);
+        }, items, partialName);
     }
 
     static void destroyItems(long uid, List<Long> iids) {
