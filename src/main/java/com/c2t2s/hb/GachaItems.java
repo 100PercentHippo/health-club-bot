@@ -726,28 +726,28 @@ public class GachaItems {
 
     static HBMain.MultistepResponse handleRerollItems(long uid, String item1String,
                                                       String item2String, String item3String) {
-        List<String> results = new ArrayList<>();
         long iid1 = Item.parseItemIdString(item1String);
         long iid2 = Item.parseItemIdString(item2String);
         long iid3 = Item.parseItemIdString(item3String);
         if (iid1 < 0 || iid2 < 0 || iid3 < 0) {
-            results.add("Unable to reroll items: Failed to parse item id(s)");
-            return new HBMain.MultistepResponse(results);
+            return new HBMain.MultistepResponse(Arrays.asList(
+                "Unable to reroll items: Failed to parse item id(s)"));
         } else if (iid1 == iid2 || iid1 == iid3 || iid2 == iid3) {
-            results.add("Unable to reroll items: The same item was provided multiple times");
-            return new HBMain.MultistepResponse(results);
+            return new HBMain.MultistepResponse(Arrays.asList(
+                "Unable to reroll items: The same item was provided multiple times"
+            ));
         }
         List<Item> items = fetchItems(uid, "", Arrays.asList(iid1, iid2, iid3));
-        if (items == null || items.size() < 3) {
-            results.add("Unable to reroll items: Unable to fetch items");
-            return new HBMain.MultistepResponse(results);
+        if (items == null || items.size() != 3) {
+            return new HBMain.MultistepResponse(Arrays.asList(
+                "Unable to reroll items: Unable to fetch items"));
         }
         Item item1 = items.get(0);
         Item item2 = items.get(1);
         Item item3 = items.get(2);
         if (item1 == null || item2 == null || item3 == null) {
-            results.add("Unable to reroll items: Item(s) not found");
-            return new HBMain.MultistepResponse(results);
+            return new HBMain.MultistepResponse(Arrays.asList(
+                "Unable to reroll items: Item(s) not found"));
         }
 
         ITEM_STAT positiveTendency = null;
@@ -770,9 +770,19 @@ public class GachaItems {
         }
         if (positiveTendency == null && negativeTendency == null
                 && bonusStat == null) {
-            results.add("Unable to reroll items: Items do not share a common trait "
-                + "(positive tendency, negative tendency, or item type)");
-            return new HBMain.MultistepResponse(results);
+            return new HBMain.MultistepResponse(Arrays.asList(
+                "Unable to reroll items: Items do not share a common trait "
+                + "(positive tendency, negative tendency, or item type)"));
+        }
+
+        // TODO: Adjust this to be 1 query
+        for (Item item: items) {
+            Gacha.GachaCharacter character = Gacha.getCharacterByItem(uid, item.itemId);
+            if (character != null) {
+                return new HBMain.MultistepResponse(Arrays.asList(
+                    "Unable to reroll items: " + item.getName() + " is equipped by "
+                    + character.getDisplayName()));
+            }
         }
 
         Item newItem = Item.generate();
@@ -785,6 +795,7 @@ public class GachaItems {
         newItem.awardTo(uid);
         destroyItems(uid, Arrays.asList(iid1, iid2, iid3));
 
+        List<String> results = new ArrayList<>();
         StringBuilder result = new StringBuilder();
         result.append("Destroyed ");
         result.append(item1.getName());
@@ -1005,7 +1016,7 @@ public class GachaItems {
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
             + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid
-            + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false ORDER BY iid DESC LIMIT 10;";
+            + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false AND iid IN (" + iidQuery + ") ORDER BY iid DESC LIMIT 10;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
                 items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),

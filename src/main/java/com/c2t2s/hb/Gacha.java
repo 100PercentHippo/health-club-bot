@@ -56,7 +56,7 @@ class Gacha {
         }
     }
 
-    private static class GachaCharacter {
+    static class GachaCharacter {
 
         private long id;
         private String name;
@@ -113,7 +113,7 @@ class Gacha {
             }
         }
 
-        private String getDisplayName() {
+        String getDisplayName() {
             switch (shiny.getId()) {
                 case SHINY_TYPE_SHINY:
                     return "Shiny " + name;
@@ -1167,7 +1167,7 @@ class Gacha {
         }, null);
     }
 
-    private static GachaCharacter getCharacterByItem(long uid, long iid) {
+    static GachaCharacter getCharacterByItem(long uid, long iid) {
         String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
                 + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
                 + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND iid = " + iid + ";";
