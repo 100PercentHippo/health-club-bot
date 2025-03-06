@@ -395,8 +395,8 @@ public class GachaItems {
             Casino.User user = Casino.getUser(uid);
             int enhancementLevel = 0;
             if (user != null) {
-                // Chance of an enhanced item is 10% * log(base 4)(# of participations in relevant activity)
-                double enhancementChance = 0.1 * Math.log(getActivityCount(user, bonusStat)) / Math.log(4.0);
+                // Chance of an enhanced item is 10% * log(base 4)(1 + # of participations in relevant activity)
+                double enhancementChance = 0.1 * Math.log1p(getActivityCount(user, bonusStat)) / Math.log(4.0);
                 if (HBMain.RNG_SOURCE.nextDouble() < enhancementChance) {
                     enhancementLevel = 1;
                 }
@@ -932,10 +932,11 @@ public class GachaItems {
     static boolean logAwardItem(long uid, Item item, StatArray initialStats) {
         String query = "INSERT INTO gacha_item (iid, uid, generator, enhancement_level, gem_slots, positive_tendency, "
             + "negative_tendency, bonus_stat, initial_additions, initial_subtractions, name, initial_work, initial_fish, "
-            + "initial_pick, initial_rob, initial_misc) VALUES (DEFAULT, " + uid + ", " + item.generatorVersion + ", 0,"
-            + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", " + item.negativeTendency.getIndex() + ", "
-            + item.bonusStat.getIndex() + ", " + item.additions + ", " + item.subtractions + ", '"
-            + item.getName().toLowerCase() + "', " + initialStats.formatForDB() + ") ON CONFLICT DO NOTHING;";
+            + "initial_pick, initial_rob, initial_misc) VALUES (DEFAULT, " + uid + ", " + item.generatorVersion + ", "
+            + item.enhancementLevel + "," + item.gemSlots + ", " + item.positiveTendency.getIndex() + ", "
+            + item.negativeTendency.getIndex() + ", " + item.bonusStat.getIndex() + ", " + item.additions + ", "
+            + item.subtractions + ", '" + item.getName().toLowerCase() + "', " + initialStats.formatForDB()
+            + ") ON CONFLICT DO NOTHING;";
         return CasinoDB.executeUpdate(query);
     }
 
