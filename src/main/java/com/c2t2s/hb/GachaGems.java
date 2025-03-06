@@ -89,6 +89,7 @@ public class GachaGems {
             GachaItems.StatArray initialStats = getInitialStats(item);
             List<GachaItems.ITEM_STAT> lowestStat = new ArrayList<>();
             int lowestValue = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(0));
+            lowestStat.add(GachaItems.ITEM_STAT.fromIndex(0));
             for (int i = 1; i < GachaItems.ITEM_STAT.values().length; ++i) {
                 int value = initialStats.getStat(GachaItems.ITEM_STAT.fromIndex(i));
                 if (value < lowestValue) {
@@ -471,6 +472,11 @@ public class GachaGems {
 
             int averageStat = totalStats / 5;
             int remainder = totalStats % 5;
+            if (remainder < 0) {
+                // totalStats was negative, adjust so remainder are added instead of subtracted
+                averageStat += 1;
+                remainder += 5;
+            }
             targetStats
                 = new GachaItems.StatArray(averageStat, averageStat, averageStat, averageStat,
                     averageStat);

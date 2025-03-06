@@ -337,6 +337,7 @@ public class HBMain {
     private static final String GACHA_ITEM_INFO_COMMAND = "gacha item info";
     private static final String GACHA_ITEM_EQUIP_COMMAND = "gacha item equip";
     private static final String GACHA_ITEM_UNEQUIP_COMMAND = "gacha item unequip";
+    private static final String GACHA_ITEM_REROLL_COMMAND = "gacha item reroll";
     private static final String APPLY_GEM_COMMAND = "gacha gem apply";
     private static final String GACHA_COMMAND_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
@@ -438,6 +439,9 @@ public class HBMain {
                     i.getArgumentStringValueByIndex(1).get()))),
             entry(GACHA_ITEM_UNEQUIP_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleRemoveItem(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
+            entry(GACHA_ITEM_REROLL_COMMAND, new MultistepCasinoCommand(
+                i -> GachaItems.handleRerollItems(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
+                    i.getArgumentStringValueByIndex(1).get(), i.getArgumentStringValueByIndex(2).get()))),
             entry(LIST_GEMS_COMMAND, new SimpleCasinoCommand(
                 i -> GachaItems.handleListGems(i.getUser().getId()))),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
@@ -569,6 +573,10 @@ public class HBMain {
                 case GACHA_ITEM_UNEQUIP_COMMAND:
                     stringOptions = Gacha.getCharacters(interaction.getUser().getId(),
                         interaction.getFocusedOption().getStringValue().orElse(""), true);
+                    break;
+                case GACHA_ITEM_REROLL_COMMAND:
+                    stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                        interaction.getFocusedOption().getStringValue().orElse(""));
                     break;
                 default:
                     return;
@@ -816,7 +824,12 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createStringOption("item", "Which item to equip", true, true),
                             SlashCommandOption.createStringOption("character", "Which character to give the item to", true, true))),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "unequip", "Unequip the item in use by a character",
-                        Arrays.asList(SlashCommandOption.createStringOption("character", "Which character to give the item to", true, true))))))
+                        Arrays.asList(SlashCommandOption.createStringOption("character", "Which character to give the item to", true, true))),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "reroll",
+                        "Reroll 3 items with a shared trait into a new item with that trait",
+                        Arrays.asList(SlashCommandOption.createStringOption("item1", "The first item", true, true),
+                            SlashCommandOption.createStringOption("item2", "The second item", true, true),
+                            SlashCommandOption.createStringOption("item3", "The third item", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "gem", "View and apply your gems",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your gems"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "apply", "Apply a gem to an item",
