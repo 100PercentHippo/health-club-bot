@@ -951,7 +951,7 @@ public class GachaItems {
     static String createIidQuery(List<Long> iids) {
         StringBuilder iidsBuilder = new StringBuilder();
         for (long iid : iids) {
-            if (!iidsBuilder.isEmpty()) { iidsBuilder.append(", "); }
+            if (iidsBuilder.length() != 0) { iidsBuilder.append(", "); }
             iidsBuilder.append(iid);
         }
         return iidsBuilder.toString();
