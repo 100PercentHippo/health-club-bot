@@ -214,12 +214,12 @@ class Gacha {
                     + " -> " + getDisplayName() + " +" + duplicates;
             }
             if (useBriefResponse) {
-                return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")"
-                    + duplicateString; //+ getPictureLink()
+                return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")["
+                    + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")" + duplicateString;
             } else {
                 return stars + " " + getDisplayName() + " " + stars
                     + "\n" + rarity + " Star " + type
-                    + duplicateString; // + getPictureLink()
+                    + duplicateString + "[" + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")";
             }
         }
 
@@ -556,21 +556,21 @@ class Gacha {
             if (rarity > highestCharacterAwarded) {
                 highestCharacterAwarded = rarity;
             }
-            try {
-                messages.images.put(messages.messages.size(), new URL(pictureUrl));
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
+            //try {
+            //    messages.images.put(messages.messages.size(), new URL(pictureUrl));
+            //} catch (MalformedURLException e) {
+            //    e.printStackTrace();
+            //}
             addMessagePart(message);
         }
 
         private void addAnimation(List<String> frames) {
-            int size = frames.size();
-            Map<Integer, URL> adjustedImages = new HashMap<>();
-            for (int key: messages.images.keySet()) {
-                adjustedImages.put(key + size, messages.images.get(key));
-            }
-            messages.images = adjustedImages;
+            //int size = frames.size();
+            //Map<Integer, URL> adjustedImages = new HashMap<>();
+            //for (int key: messages.images.keySet()) {
+            //    adjustedImages.put(key + size, messages.images.get(key));
+            //}
+            //messages.images = adjustedImages;
             messages.addAllToStart(frames);
         }
     }
@@ -665,6 +665,9 @@ class Gacha {
         if (response.coinsAwarded > 0) {
             balances += "\nYour new balance is " + response.coinBalance;
         }
+        if (response.chocolateCoinsAwarded > 0) {
+            balances += "\nYour new chocolate coin balance is " + response.chocolateCoinBalance;
+        }
         balances += "\nYou have " + response.pullBalance + " pull"
             + Casino.getPluralSuffix(response.pullBalance) + " remaining";
         response.addMessagePart(balances);
@@ -699,42 +702,42 @@ class Gacha {
         if (roll < ITEM_ROLL_LIMIT) {
             GachaItems.Item item = GachaItems.generateItem(uid);
             item.awardTo(uid);
-            response.addMessagePart(":tools: An item: " + item.getBriefDescription());
+            response.addMessagePart(":tools: You pull an item: " + item.getBriefDescription());
             return logItemFiller(uid, bannerId);
         } else if (roll < COMMON_GEM_ROLL_LIMIT) {
             GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.COMMON_GEM_RARITY);
             GachaItems.logAwardGem(uid, gem.getId());
-            response.addMessagePart(":small_blue_diamond: A common gem: " + gem.getName()
+            response.addMessagePart(":small_blue_diamond: You pull a common gem: " + gem.getName()
                 + "\n\t" + gem.getDescription());
             return logCommonGemFiller(uid, bannerId);
         } else if (roll < UNCOMMON_GEM_ROLL_LIMIT) {
             GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.UNCOMMON_GEM_RARITY);
             GachaItems.logAwardGem(uid, gem.getId());
-            response.addMessagePart(":large_blue_diamond: An uncommon gem: " + gem.getName()
+            response.addMessagePart(":large_blue_diamond: You pull an uncommon gem: " + gem.getName()
                 + "\n\t" + gem.getDescription());
             return logUncommonGemFiller(uid, bannerId);
         } else if (roll < RARE_GEM_ROLL_LIMIT) {
             GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.RARE_GEM_RARITY);
             GachaItems.logAwardGem(uid, gem.getId());
-            response.addMessagePart(":diamond_shape_with_a_dot_inside: A rare gem! " + gem.getName()
+            response.addMessagePart(":diamond_shape_with_a_dot_inside: You pull a rare gem! " + gem.getName()
                 + "\n\t" + gem.getDescription());
             return logRareGemFiller(uid, bannerId);
         } else if (roll < CHOCOLATE_COIN_ROLL_LIMIT) {
             int coins = HBMain.generateBoundedNormal(100, 50, 2);
             response.chocolateCoinBalance = Casino.addChocolateCoins(uid, coins);
             response.chocolateCoinsAwarded += coins;
-            response.addMessagePart(":chocolate_bar: " + coins + " chocolate coins");
+            response.addMessagePart(":chocolate_bar: You pull " + coins + " chocolate coins.");
             return logChocolateCoinFiller(uid, bannerId, coins);
         } else if (roll < EXTRA_PULLS_ROLL_LIMIT) {
             final long PULLS_AWARDED = 5;
             response.pullBalance = addPulls(uid, PULLS_AWARDED);
-            response.addMessagePart(":stars: " + PULLS_AWARDED + " pulls! Sweet!");
+            response.addMessagePart(":stars: You pull " + PULLS_AWARDED + " pulls! Sweet!");
             return logPullFiller(uid, bannerId, PULLS_AWARDED);
         } else { // coins
             int coins = HBMain.generateBoundedNormal(50, 20, 2);
             response.coinBalance = Casino.addMoney(uid, coins);
             response.coinsAwarded += coins;
-            response.addMessagePart(":coin: " + coins + " coins");
+            response.addMessagePart(":coin: You pull " + coins + " coins.");
             return logCoinFiller(uid, bannerId, coins);
         }
     }
@@ -1382,10 +1385,30 @@ class Gacha {
         String threeStarPityResult = (rarity == 3 ? "0" : (rarity > 3 ? "three_star_pity" : "three_star_pity + 1"));
         String twoStarPityResult = (rarity == 2 ? "0" : (rarity > 2 ? "two_star_pity" : "two_star_pity + 1"));
         String oneStarPityResult = (rarity == 1 ? "0" : (rarity > 1 ? "one_star_pity" : "one_star_pity + 1"));
+        String rarityPulled = "";
+        switch (rarity) {
+            case 5:
+                rarityPulled = "five_stars_pulled";
+                break;
+            case 4:
+                rarityPulled = "four_stars_pulled";
+                break;
+            case 3:
+                rarityPulled = "three_stars_pulled";
+                break;
+            case 2:
+                rarityPulled = "two_stars_pulled";
+                break;
+            case 1:
+            default:
+                rarityPulled = "one_stars_pulled";
+                break;
+        }
         return getGachaUser("UPDATE gacha_user_banner SET (times_pulled, one_star_pity, two_star_pity, three_star_pity, "
-            + " four_star_pity, five_star_pity) = (times_pulled + 1, " + oneStarPityResult + ", " + twoStarPityResult
-            + ", " + threeStarPityResult + ", " + fourStarPityResult + ", " + fiveStarPityResult + ") WHERE uid = "
-            + uid + " AND banner_id = " + bannerId + " RETURNING " + GACHA_USER_BANNER_COLUMNS + ";");
+            + " four_star_pity, five_star_pity, " + rarityPulled + ") = (times_pulled + 1, " + oneStarPityResult + ", "
+            + twoStarPityResult + ", " + threeStarPityResult + ", " + fourStarPityResult + ", " + fiveStarPityResult + ", "
+            + rarityPulled + " + 1) WHERE uid = " + uid + " AND banner_id = " + bannerId + " RETURNING "
+            + GACHA_USER_BANNER_COLUMNS + ";");
     }
 
     private static List<HBMain.AutocompleteIdOption> queryBanners() {
