@@ -624,7 +624,7 @@ public class GachaGems {
         FractalGem() {
             id = FRACTAL_GEM_ID;
             name = "Fractal Gem";
-            description = "After socketed, grants +3 Gem Slots";
+            description = "Grants +3 Gem Slots once socketed";
         }
 
         @Override

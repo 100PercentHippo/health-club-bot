@@ -668,7 +668,7 @@ class Gacha {
         return response.messages;
     }
 
-    // Item Chance: 1/6
+    // Item Chance: 1/8
     // Common Gem Chance: 1/6
     // Uncommon Gem Chance: 1/25
     // Rare Gem Chance: 1/100
@@ -676,7 +676,7 @@ class Gacha {
     // Extra Pulls Chance : 1/1000
     // Then adjust for the fact filler makes up ~83.5% of pulls
     private static final double FILLER_ADJUSTMENT = 1.198;
-    private static final double ITEM_CHANCE = 0.167 * FILLER_ADJUSTMENT;
+    private static final double ITEM_CHANCE = 0.125 * FILLER_ADJUSTMENT;
     private static final double COMMON_GEM_CHANCE = 0.167 * FILLER_ADJUSTMENT;
     private static final double UNCOMMON_GEM_CHANCE = 0.04 * FILLER_ADJUSTMENT;
     private static final double RARE_GEM_CHANCE = 0.01 * FILLER_ADJUSTMENT;
