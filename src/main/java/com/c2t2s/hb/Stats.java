@@ -299,7 +299,7 @@ class Stats {
     }
 
     static String handleGachaStats(long uid) {
-        return "`/gacha` odds:"
+        return "`/gacha pull` odds:"
             + "\n\tBase 1 Star Chance: 1/8   (Max pity 12)"
             + "\n\tBase 2 Star Chance: 1/32  (Max pity 48)"
             + "\n\tBase 3 Star Chance: 1/128 (Max pity 192)"

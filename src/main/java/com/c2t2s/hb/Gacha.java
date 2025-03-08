@@ -672,18 +672,71 @@ class Gacha {
         return response.messages;
     }
 
+    // Item Chance: 1/6
+    // Common Gem Chance: 1/6
+    // Uncommon Gem Chance: 1/25
+    // Rare Gem Chance: 1/100
+    // Chocolate Coin Chance: 1/10
+    // Extra Pulls Chance : 1/1000
+    // Then adjust for the fact filler makes up ~83.5% of pulls
+    private static final double FILLER_ADJUSTMENT = 1.198;
+    private static final double ITEM_CHANCE = 0.167 * FILLER_ADJUSTMENT;
+    private static final double COMMON_GEM_CHANCE = 0.167 * FILLER_ADJUSTMENT;
+    private static final double UNCOMMON_GEM_CHANCE = 0.04 * FILLER_ADJUSTMENT;
+    private static final double RARE_GEM_CHANCE = 0.01 * FILLER_ADJUSTMENT;
+    private static final double CHOCOLATE_COIN_CHANCE = 0.1 * FILLER_ADJUSTMENT;
+    private static final double EXTRA_PULLS_CHANCE = 0.001 * FILLER_ADJUSTMENT;
+
+    private static final double ITEM_ROLL_LIMIT = ITEM_CHANCE;
+    private static final double COMMON_GEM_ROLL_LIMIT = ITEM_ROLL_LIMIT + COMMON_GEM_CHANCE;
+    private static final double UNCOMMON_GEM_ROLL_LIMIT = COMMON_GEM_ROLL_LIMIT + UNCOMMON_GEM_CHANCE;
+    private static final double RARE_GEM_ROLL_LIMIT = UNCOMMON_GEM_ROLL_LIMIT + RARE_GEM_CHANCE;
+    private static final double CHOCOLATE_COIN_ROLL_LIMIT = RARE_GEM_ROLL_LIMIT + CHOCOLATE_COIN_CHANCE;
+    private static final double EXTRA_PULLS_ROLL_LIMIT = CHOCOLATE_COIN_ROLL_LIMIT + EXTRA_PULLS_CHANCE;
+
     private static GachaUser awardFiller(long uid, long bannerId, GachaResponse response) {
-        int roll = HBMain.RNG_SOURCE.nextInt(100);
-        if (roll < 99) {
+        double roll = HBMain.RNG_SOURCE.nextDouble();
+        if (roll < ITEM_ROLL_LIMIT) {
+            GachaItems.Item item = GachaItems.generateItem(uid);
+            item.awardTo(uid);
+            response.addMessagePart(":tools: An item: " + item.getBriefDescription());
+            return logItemFiller(uid, bannerId);
+        } else if (roll < COMMON_GEM_ROLL_LIMIT) {
+            GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.COMMON_GEM_RARITY);
+            GachaItems.logAwardGem(uid, gem.getId());
+            response.addMessagePart(":small_blue_diamond: A common gem: " + gem.getName()
+                + "\n\t" + gem.getDescription());
+            return logCommonGemFiller(uid, bannerId);
+        } else if (roll < UNCOMMON_GEM_ROLL_LIMIT) {
+            GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.UNCOMMON_GEM_RARITY);
+            GachaItems.logAwardGem(uid, gem.getId());
+            response.addMessagePart(":large_blue_diamond: An uncommon gem: " + gem.getName()
+                + "\n\t" + gem.getDescription());
+            return logUncommonGemFiller(uid, bannerId);
+        } else if (roll < RARE_GEM_ROLL_LIMIT) {
+            GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.RARE_GEM_RARITY);
+            GachaItems.logAwardGem(uid, gem.getId());
+            response.addMessagePart(":diamond_shape_with_a_dot_inside: A rare gem! " + gem.getName()
+                + "\n\t" + gem.getDescription());
+            return logRareGemFiller(uid, bannerId);
+        } else if (roll < CHOCOLATE_COIN_ROLL_LIMIT) {
+            int coins = HBMain.generateBoundedNormal(100, 50, 2);
+            response.chocolateCoinBalance = Casino.addChocolateCoins(uid, coins);
+            response.chocolateCoinsAwarded += coins;
+            response.addMessagePart(":chocolate_bar: " + coins + " chocolate coins");
+            return logChocolateCoinFiller(uid, bannerId, coins);
+        } else if (roll < EXTRA_PULLS_ROLL_LIMIT) {
+            final long PULLS_AWARDED = 5;
+            response.pullBalance = addPulls(uid, PULLS_AWARDED);
+            response.addMessagePart(":stars: " + PULLS_AWARDED + " pulls! Sweet!");
+            return logPullFiller(uid, bannerId, PULLS_AWARDED);
+        } else { // coins
             int coins = HBMain.generateBoundedNormal(50, 20, 2);
-            response.coinBalance = awardCoinFiller(uid, bannerId, coins);
+            response.coinBalance = Casino.addMoney(uid, coins);
             response.coinsAwarded += coins;
-            response.addMessagePart(":coin: You pull " + coins + " coins.");
-        } else {
-            response.pullBalance = awardPullFiller(uid, bannerId);
-            response.addMessagePart(":stars: You pull ... a pull. Neat.");
+            response.addMessagePart(":coin: " + coins + " coins");
+            return logCoinFiller(uid, bannerId, coins);
         }
-        return logFillerPull(uid, bannerId);
     }
 
     private static GachaUser awardCharacter(long uid, GachaBanner banner, int rarity,
@@ -998,7 +1051,17 @@ class Gacha {
     //   three_star_pity integer NOT NULL DEFAULT 0,
     //   four_star_pity integer NOT NULL DEFAULT 0,
     //   five_star_pity integer NOT NULL DEFAULT 0,
+    //   one_stars_pulled integer NOT NULL DEFAULT 0,
+    //   two_stars_pulled integer NOT NULL DEFAULT 0,
+    //   three_stars_pulled integer NOT NULL DEFAULT 0,
+    //   four_stars_pulled integer NOT NULL DEFAULT 0,
+    //   five_stars_pulled integer NOT NULL DEFAULT 0,
+    //   items_pulled integer NOT NULL DEFAULT 0,
+    //   common_gems_pulled integer NOT NULL DEFAULT 0,
+    //   uncommon_gems_pulled integer NOT NULL DEFAULT 0,
+    //   rare_gems_pulled integer NOT NULL DEFAULT 0,
     //   coins_pulled bigint NOT NULL DEFAULT 0,
+    //   chocolate_coins_pulled bigint NOT NULL DEFAULT 0,
     //   pulls_pulled integer NOT NULL DEFAULT 0,
     //   PRIMARY KEY(uid, banner_id),
     //   CONSTRAINT gacha_user_banner_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
@@ -1261,18 +1324,6 @@ class Gacha {
         return Casino.addMoney(uid, coinEquivalent);
     }
 
-    private static long awardCoinFiller(long uid, long bannerId, long coinAmount) {
-        CasinoDB.executeUpdate("UPDATE gacha_user_banner SET coins_pulled = coins_pulled + " + coinAmount
-            + " WHERE uid = " + uid + "AND banner_id = " + bannerId + ";");
-        return Casino.addMoney(uid, coinAmount);
-    }
-
-    private static long awardPullFiller(long uid, long bannerId) {
-        CasinoDB.executeUpdate("UPDATE gacha_user_banner SET pulls_pulled = pulls_pulled + 1 WHERE uid = "
-            + uid + "AND banner_id = " + bannerId + ";");
-        return addPulls(uid, 1);
-    }
-
     static long getPullCount(long uid) {
         return CasinoDB.executeLongQuery("SELECT pulls FROM gacha_user WHERE uid = " + uid + ";");
     }
@@ -1290,11 +1341,39 @@ class Gacha {
         return addPulls(uid, -1 * amount);
     }
 
-    private static GachaUser logFillerPull(long uid, long bannerId) {
+    private static GachaUser logItemFiller(long uid, long bannerId) {
+        return logFillerPull(uid, bannerId, "items_pulled", 1);
+    }
+
+    private static GachaUser logCommonGemFiller(long uid, long bannerId) {
+        return logFillerPull(uid, bannerId, "common_gems_pulled", 1);
+    }
+
+    private static GachaUser logUncommonGemFiller(long uid, long bannerId) {
+        return logFillerPull(uid, bannerId, "uncommon_gems_pulled", 1);
+    }
+
+    private static GachaUser logRareGemFiller(long uid, long bannerId) {
+        return logFillerPull(uid, bannerId, "rare_gems_pulled", 1);
+    }
+
+    private static GachaUser logChocolateCoinFiller(long uid, long bannerId, long coins) {
+        return logFillerPull(uid, bannerId, "chocolate_coins_pulled", coins);
+    }
+
+    private static GachaUser logPullFiller(long uid, long bannerId, long pulls) {
+        return logFillerPull(uid, bannerId, "pulls_pulled", pulls);
+    }
+
+    private static GachaUser logCoinFiller(long uid, long bannerId, long coins) {
+        return logFillerPull(uid, bannerId, "coins_pulled", coins);
+    }
+
+    private static GachaUser logFillerPull(long uid, long bannerId, String column, long amount) {
         return getGachaUser("UPDATE gacha_user_banner SET (times_pulled, one_star_pity, two_star_pity, three_star_pity, "
-            + "four_star_pity, five_star_pity) = (times_pulled + 1, one_star_pity + 1, two_star_pity + 1, three_star_pity + 1, "
-            + "four_star_pity + 1, five_star_pity + 1) WHERE uid = " + uid + " AND banner_id = " + bannerId
-            + " RETURNING " + GACHA_USER_BANNER_COLUMNS + ";");
+            + "four_star_pity, five_star_pity, " + column + ") = (times_pulled + 1, one_star_pity + 1, two_star_pity + 1, "
+            + "three_star_pity + 1, four_star_pity + 1, five_star_pity + 1, " + column + " + " + amount + ") WHERE uid = "
+            + uid + " AND banner_id = " + bannerId + " RETURNING " + GACHA_USER_BANNER_COLUMNS + ";");
     }
 
     private static GachaUser logCharacterAward(long uid, long bannerId, int rarity) {

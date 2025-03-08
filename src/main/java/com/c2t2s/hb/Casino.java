@@ -784,6 +784,7 @@ class Casino {
     //  name varchar(40) NOT NULL DEFAULT '',
     //  nickname varchar(40) NOT NULL DEFAULT '',
     //  balance bigint NOT NULL DEFAULT 0,
+    //  chocolate_coins bigint NOT NULL DEFAULT 0,
     //  in_jail boolean NOT NULL DEFAULT false,
     //  last_claim timestamp NOT NULL DEFAULT '2021-01-01 00:00:00',
     //  timestamp2 timestamp NOT NULL DEFAULT '2021-01-01 00:00:00'
@@ -886,6 +887,16 @@ class Casino {
     static long addMoney(long uid, long amount) {
         return CasinoDB.executeLongQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
+    }
+
+    static long takeChocolateCoins(long uid, long amount) {
+        return CasinoDB.executeLongQuery("UPDATE money_user SET chocolate_coins = chocolate_coins - "
+            + amount + " WHERE uid = " + uid + " RETURNING chocolate_coins;");
+    }
+
+    static long addChocolateCoins(long uid, long amount) {
+        return CasinoDB.executeLongQuery("UPDATE money_user SET chocolate_coins = chocolate_coins + "
+            + amount + " WHERE uid = " + uid + " RETURNING chocolate_coins;");
     }
 
     private static long addWorkMoney(long uid, int amount, String delay) {
