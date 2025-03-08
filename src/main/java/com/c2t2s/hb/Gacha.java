@@ -1291,7 +1291,7 @@ class Gacha {
     private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean withItems, int foil) {
         if (substring == null) { substring = ""; }
         substring = '%' + substring + '%';
-        String query = getPartialCharacterQuery(uid) + "WHERE uid = " + uid;
+        String query = getPartialCharacterQuery(uid) + " WHERE uid = " + uid;
         if (withItems) { query += " AND iid IS NOT NULL"; }
         if (foil >= 0) { query += " AND foil = " + foil; }
         query += " AND LOWER(name) LIKE LOWER(?) ORDER BY rarity DESC, foil DESC, name ASC;";
