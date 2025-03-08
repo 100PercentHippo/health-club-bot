@@ -197,7 +197,7 @@ class Gacha {
             return display.toString();
         }
 
-        private String generateAwardText(boolean useBriefResponse, boolean alreadyMaxed) {
+        private String generateAwardText(boolean alreadyMaxed) {
             String star = (shiny.getId() > 0 ? ":star2:" : ":star:");
             String stars = "";
             if (rarity > 0) {
@@ -206,21 +206,15 @@ class Gacha {
             String duplicateString = "";
             if (alreadyMaxed) {
                 long coinEquivalent = getMaxedCharacterCoinEquivalent();
-                duplicateString = "\n" + (useBriefResponse ? "\t" : "") + getDisplayName() + " +" + duplicates
-                    + " already maxed, converted to " + coinEquivalent + " coin" + Casino.getPluralSuffix(coinEquivalent);
+                duplicateString = "\n\t" + getDisplayName() + " +" + duplicates + " already maxed, converted to "
+                    + coinEquivalent + " coin" + Casino.getPluralSuffix(coinEquivalent);
             } else if (duplicates > 0) {
-                duplicateString = "\n" + (useBriefResponse ? "\t" : "") + "Upgraded " + getDisplayName()
+                duplicateString = "\n\tUpgraded " + getDisplayName()
                     + (duplicates > 1 ? " +" + (duplicates - 1) : "")
                     + " -> " + getDisplayName() + " +" + duplicates;
             }
-            if (useBriefResponse) {
-                return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")["
-                    + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")" + duplicateString;
-            } else {
-                return stars + " " + getDisplayName() + " " + stars
-                    + "\n" + rarity + " Star " + type
-                    + duplicateString + "[" + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")";
-            }
+            return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")["
+                + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")" + duplicateString;
         }
 
         private int getXpToLevel() {
@@ -608,7 +602,6 @@ class Gacha {
         }
         availablePulls = removePulls(uid, (int)pulls);
 
-        boolean useBriefResponse = (pulls != 1);
         GachaUser updatedUser;
         GachaResponse response = new GachaResponse(availablePulls);
         boolean veryFirstPull = false;
@@ -633,7 +626,7 @@ class Gacha {
                 veryFirstPull = false;
             }
             if (rarity > 0) {
-                updatedUser = awardCharacter(uid, banner, rarity, useBriefResponse, response);
+                updatedUser = awardCharacter(uid, banner, rarity, response);
             } else {
                 updatedUser = awardFiller(uid, banner.bannerId, response);
             }
@@ -743,7 +736,7 @@ class Gacha {
     }
 
     private static GachaUser awardCharacter(long uid, GachaBanner banner, int rarity,
-            boolean useBriefResponse, GachaResponse response) {
+            GachaResponse response) {
         SHINY_TYPE shiny = banner.generateShinyType();
 
         List<Long> cids = getEligibleCharacters(uid, banner.bannerId, rarity, shiny);
@@ -781,7 +774,7 @@ class Gacha {
             response.coinBalance = awardMaxedCharacter(uid, character.getMaxedCharacterCoinEquivalent());
             response.coinsAwarded += character.getMaxedCharacterCoinEquivalent();
         }
-        response.addCharacterMessagePart(character.generateAwardText(useBriefResponse, alreadyMaxed), character.rarity,
+        response.addCharacterMessagePart(character.generateAwardText(alreadyMaxed), character.rarity,
             character.getPictureLink());
         return logCharacterAward(uid, banner.bannerId, character.rarity);
     }
@@ -931,7 +924,15 @@ class Gacha {
     }
 
     static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring, boolean withItems) {
-        List<GachaCharacter> characters = queryCharacters(uid, substring, withItems);
+        int shiny = -1;
+        if (substring.toLowerCase().startsWith(SHINY_TYPE.SHINY.getAdjective().toLowerCase())) {
+            shiny = 1;
+            substring = substring.substring(SHINY_TYPE.SHINY.getAdjective().length());
+        } else if (substring.toLowerCase().startsWith(SHINY_TYPE.PRISMATIC.getAdjective().toLowerCase())) {
+            shiny = 2;
+            substring = substring.substring(SHINY_TYPE.PRISMATIC.getAdjective().length());
+        }
+        List<GachaCharacter> characters = queryCharacters(uid, substring, withItems, shiny);
         List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
         characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));
         return output;
@@ -1090,6 +1091,25 @@ class Gacha {
 
     // CREATE INDEX gacha_character_lowercase_name ON gacha_character (LOWER(name));
 
+    // CREATE TABLE IF NOT EXISTS gacha_alternate_art (
+    //   cid bigint PRIMARY KEY,
+    //   alternate_picture_url varchar(100) DEFAULT NULL,
+    //   alternate_shiny_picture_url varchar(100) DEFAULT NULL,
+    //   alternate_prismatic_picture_url varchar(100) DEFAULT NULL,
+    //   CONSTRAINT gacha_alternate_art_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS gacha_user_alternate_art (
+    //   uid bigint,
+    //   cid bigint,
+    //   alternate_picture boolean NOT NULL DEFAULT false,
+    //   alternate_shiny_picture boolean NOT NULL DEFAULT false,
+    //   alternate_prismatic_picture boolean NOT NULL DEFAULT false,
+    //   PRIMARY KEY(uid, cid),
+    //   CONSTRAINT gacha_user_alternate_art_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid),
+    //   CONSTRAINT gacha_user_alternate_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid)
+    // );
+
     // CREATE TABLE IF NOT EXISTS gacha_character_banner (
     //   cid bigint,
     //   banner_id bigint,
@@ -1146,6 +1166,17 @@ class Gacha {
     // );
 
     static final String GACHA_USER_BANNER_COLUMNS = "times_pulled, one_star_pity, two_star_pity, three_star_pity, four_star_pity, five_star_pity";
+
+    private static String getPartialCharacterQuery(long uid) {
+        return "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, "
+        + "COALESCE(alternate_art, picture_url) AS picture_url, COALESCE(alternate_shiny_art, shiny_picture_url) AS shiny_picture_url, "
+        + "COALESCE(alternate_prismatic_art, prismatic_picture_url) AS prismatic_picture_url, work_bonus, fish_bonus, pick_bonus, "
+        + "rob_bonus, misc_bonus, iid FROM gacha_user_character NATURAL JOIN gacha_character NATURAL LEFT JOIN (SELECT cid, CASE "
+        + "WHEN alternate_picture THEN alternate_picture_url ELSE NULL END AS alternate_art, CASE WHEN alternate_shiny_picture THEN "
+        + "alternate_shiny_picture_url ELSE NULL END AS alternate_shiny_art, CASE WHEN alternate_prismatic_picture THEN "
+        + "alternate_prismatic_picture_url ELSE NULL END AS alternate_prismatic_art FROM gacha_alternate_art NATURAL LEFT JOIN "
+        + "gacha_user_alternate_art WHERE uid = " + uid + ") AS art";
+    }
 
     private static GachaUser getGachaUser(long uid, long bannerId) {
         String query = "SELECT " + GACHA_USER_BANNER_COLUMNS + " FROM gacha_user NATURAL JOIN gacha_user_banner WHERE uid = "
@@ -1213,9 +1244,7 @@ class Gacha {
     }
 
     private static GachaCharacter getCharacter(long uid, long cid, SHINY_TYPE shiny) {
-        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url, "
-                + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
-                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND cid = " + cid
+        String query = getPartialCharacterQuery(uid) + " WHERE uid = " + uid + " AND cid = " + cid
                 + " AND foil = " + shiny.getId() + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
@@ -1234,9 +1263,7 @@ class Gacha {
     }
 
     static GachaCharacter getCharacterByItem(long uid, long iid) {
-        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
-                + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
-                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid + " AND iid = " + iid + ";";
+        String query = getPartialCharacterQuery(uid) + " WHERE uid = " + uid + " AND iid = " + iid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 GachaItems.Item item = null;
@@ -1258,16 +1285,15 @@ class Gacha {
     }
 
     private static List<GachaCharacter> queryCharacters(long uid, String substring) {
-        return queryCharacters(uid, substring, false);
+        return queryCharacters(uid, substring, false, -1);
     }
 
-    private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean withItems) {
+    private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean withItems, int foil) {
         if (substring == null) { substring = ""; }
         substring = '%' + substring + '%';
-        String query = "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, picture_url, shiny_picture_url, prismatic_picture_url,"
-                + "work_bonus, fish_bonus, pick_bonus, rob_bonus, misc_bonus, iid FROM "
-                + "gacha_user_character NATURAL JOIN gacha_character WHERE uid = " + uid;
+        String query = getPartialCharacterQuery(uid) + "WHERE uid = " + uid;
         if (withItems) { query += " AND iid IS NOT NULL"; }
+        if (foil >= 0) { query += " AND foil = " + foil; }
         query += " AND LOWER(name) LIKE LOWER(?) ORDER BY rarity DESC, foil DESC, name ASC;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();

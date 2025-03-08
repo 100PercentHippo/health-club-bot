@@ -139,11 +139,11 @@ public class GachaGems {
                     return new BasicGem(FRACTURED_GEM_ID, "Fractured Gem",
                         "+2 to a stat and -1 to a stat, duplicate rolls permitted", new int[]{2, -1});
                 case PURE_GEM_ID:
-                    return new BasicGem(PURE_GEM_ID, "Pure Gem", "+1 to one stat",
+                    return new BasicGem(PURE_GEM_ID, "Pure Gem", "+1 to one random stat",
                             new int[]{1});
                 case UNSTABLE_GEM_ID:
                     return new BasicGem(UNSTABLE_GEM_ID, "Unstable Gem",
-                        "+3 to a stat and -1 to two stats, duplicate rolls permitted", new int[]{3, -1, -1});
+                        "+3 to a random stat and -1 to two random stats, duplicate rolls permitted", new int[]{3, -1, -1});
                 case BOLSTERING_GEM_ID:
                     return new BolsteringGem();
                 case BALANCED_GEM_ID:
