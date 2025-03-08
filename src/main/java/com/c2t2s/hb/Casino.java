@@ -452,9 +452,13 @@ class Casino {
             StringBuilder errorMessage = new StringBuilder("Your balance of ");
             if (user.getChocolateCoinBalance() > 0) {
                 errorMessage.append(user.getChocolateCoinBalance());
-                errorMessage.append(" chocolate coins and ");
+                errorMessage.append(" chocolate coin");
+                errorMessage.append(getPluralSuffix(user.getChocolateCoinBalance()));
+                errorMessage.append(" and ");
             }
             errorMessage.append(user.getBalance());
+            errorMessage.append(" coin");
+            errorMessage.append(getPluralSuffix(user.getBalance()));
             errorMessage.append(" is not enough to cover that!");
             return errorMessage.toString();
         }
@@ -498,14 +502,14 @@ class Casino {
             balance = moneyMachineWin(uid, chocolateCoinsSpent, coinsSpent, winnings, pot);
             output.append("The money machine is satisfied! :dollar: You win ");
             output.append(winnings);
-            output.append("! ");
+            output.append("!");
         } else { // Lose
             balance = moneyMachineLoss(uid, chocolateCoinsSpent, coinsSpent);
             output.append("Even with a current pot of ");
             output.append(pot);
-            output.append(" the money machine is still hungry. ");
+            output.append(" the money machine is still hungry.");
         }
-        output.append("Your new balance is ");
+        output.append("\nYour new balance is ");
         output.append(balance);
         output.append(" coin");
         output.append(getPluralSuffix(balance));
@@ -943,7 +947,7 @@ class Casino {
 
     static long takeMoney(long uid, long coins, long chocolateCoins) {
         return CasinoDB.executeLongQuery("UPDATE money_user SET (balance, chocolate_coins) = (balance - "
-        + coins + ", " + chocolateCoins + ") WHERE uid = " + uid + " RETURNING balance;");
+        + coins + ", chocolate_coins - " + chocolateCoins + ") WHERE uid = " + uid + " RETURNING balance;");
     }
 
     static long addMoney(long uid, long amount) {
