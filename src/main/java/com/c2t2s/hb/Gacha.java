@@ -31,7 +31,7 @@ class Gacha {
 
     private enum SHINY_TYPE {
         NORMAL(SHINY_TYPE_NORMAL, ""),
-        SHINY(SHINY_TYPE_SHINY, "Shiny"),
+        SHINY(SHINY_TYPE_SHINY, "Foil"),
         PRISMATIC(SHINY_TYPE_PRISMATIC, "Prismatic");
 
         private int typeId;
@@ -114,15 +114,10 @@ class Gacha {
         }
 
         String getDisplayName() {
-            switch (shiny.getId()) {
-                case SHINY_TYPE_SHINY:
-                    return "Shiny " + name;
-                case SHINY_TYPE_PRISMATIC:
-                    return "Prismatic " + name;
-                case SHINY_TYPE_NORMAL:
-                default:
-                    return name;
+            if (shiny == SHINY_TYPE.NORMAL) {
+                return name;
             }
+            return shiny.getAdjective() + " " + name;
         }
 
         private String getPictureLink() {
@@ -932,6 +927,8 @@ class Gacha {
             shiny = 2;
             substring = substring.substring(SHINY_TYPE.PRISMATIC.getAdjective().length());
         }
+        // Remove leading space so you can use "Foil Test"
+        if (substring.startsWith(" ")) { substring = substring.substring(1); }
         List<GachaCharacter> characters = queryCharacters(uid, substring, withItems, shiny);
         List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
         characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));

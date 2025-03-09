@@ -213,6 +213,7 @@ public class CommandAccessControl {
                 long channelId = results.getLong(3);
                 String channelName = results.getString(4);
                 servers.put(serverId, new CasinoServer(serverName, channelId, channelName));
+                System.out.println("Initialized server " + serverName + " with id " + serverId);
             }
             return servers;
         }, servers);
