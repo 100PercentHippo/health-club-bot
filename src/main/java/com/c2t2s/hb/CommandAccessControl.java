@@ -207,7 +207,7 @@ public class CommandAccessControl {
         String query = "SELECT server_id, name, event_channel, event_channel_name FROM casino_server;";
         Map<Long, CasinoServer> servers = new HashMap<>();
         return CasinoDB.executeQueryWithReturn(query, results -> {
-            if (results.next()) {
+            while (results.next()) {
                 long serverId = results.getLong(1);
                 String serverName = results.getString(2);
                 long channelId = results.getLong(3);
@@ -232,6 +232,8 @@ public class CommandAccessControl {
             String query = "SELECT uid FROM casino_server_user WHERE server_id = "
                 + entry.getKey() + ";";
             entry.getValue().users = CasinoDB.executeSetQuery(query);
+            System.out.println("Populated " + entry.getValue().users.size()
+                + " users for " + entry.getValue().serverName);
         }
     }
 
