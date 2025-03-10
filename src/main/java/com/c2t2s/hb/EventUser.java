@@ -172,7 +172,7 @@ class EventUser {
                 int picks = results.getInt(2);
                 int events = results.getInt(3);
                 int dailyGames = results.getInt(4);
-                Timestamp reset = results.getTimestamp(4);
+                Timestamp reset = results.getTimestamp(5);
 
                 return new EventUser(uid, robs, picks, dailyGames, events, reset);
             }
