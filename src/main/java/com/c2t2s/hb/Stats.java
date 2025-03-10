@@ -70,7 +70,7 @@ class Stats {
     // Hide default constructor
     private Stats() {}
 
-    static String handleStats(String argument, long uid) {
+    static String handleStats(String argument, long server, long uid) {
         switch (argument) {
             case WORK_STRING:
                 return handleWorkStats(uid);
@@ -97,11 +97,11 @@ class Stats {
             case GACHA_STRING:
                 return handleGachaStats(uid);
             case ALLORNOTHING70_STRING:
-                return handleAllOrNothingStats(uid, 2);
+                return handleAllOrNothingStats(server, uid, 2);
             case ALLORNOTHING80_STRING:
-                return handleAllOrNothingStats(uid, 3);
+                return handleAllOrNothingStats(server, uid, 3);
             case ALLORNOTHING90_STRING:
-                return handleAllOrNothingStats(uid, 7);
+                return handleAllOrNothingStats(server, uid, 7);
             default:
                 return "Unrecognized Game argument. Supported values are the following:\n\t" + StatsOption.values().toString();
         }
@@ -307,7 +307,7 @@ class Stats {
             + "\n\tShiny Chance: 1/20 for any awarded character";
     }
 
-    static String handleAllOrNothingStats(long uid, int rollsToDouble) {
+    static String handleAllOrNothingStats(long server, long uid, int rollsToDouble) {
         StringBuilder output = new StringBuilder("`/allornothing` odds:");
         String description = "";
         switch (rollsToDouble) {
@@ -325,9 +325,9 @@ class Stats {
                 break;
         }
         output.append("\n\nWorld Record holders for the " + description + " bracket:");
-        output.append(getAllOrNothingWorldRecordRolls(rollsToDouble));
-        output.append(getAllOrNothingWorldRecordPot(rollsToDouble));
-        output.append(getAllOrNothingWorldRecordCashout(rollsToDouble));
+        output.append(getAllOrNothingWorldRecordRolls(rollsToDouble, server));
+        output.append(getAllOrNothingWorldRecordPot(rollsToDouble, server));
+        output.append(getAllOrNothingWorldRecordCashout(rollsToDouble, server));
         output.append("\n\nPersonal Bests for the " + description + " bracket:");
         output.append(getAllOrNothingPersonalBests(rollsToDouble, uid));
         return output.toString();
@@ -537,10 +537,11 @@ class Stats {
         }, "\nUnable to fetch personalized blackjack stats");
     }
 
-    private static String getAllOrNothingWorldRecordRolls(int rollsToDouble) {
-        String query = "SELECT record_rolls, nickname FROM allornothing_user NATURAL JOIN money_user WHERE record_rolls = "
-            + "(SELECT MAX(record_rolls) FROM allornothing_user WHERE rolls_to_double = " + rollsToDouble + ") AND rolls_to_double = "
-            + rollsToDouble + ";";
+    private static String getAllOrNothingWorldRecordRolls(int rollsToDouble, long server) {
+        String query = "WITH server_users AS (SELECT record_rolls, nickname FROM allornothing_user "
+            + "NATURAL JOIN money_user WHERE uid IN (SELECT uid FROM casino_server_user WHERE server_id = "
+            + server + ") AND rolls_to_double = " + rollsToDouble + ") SELECT record_rolls, nickname FROM "
+            + "server_users WHERE record_rolls = (SELECT MAX(record_rolls) FROM server_users);";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             int rollRecord = 0;
             List<String> recordHolders = new ArrayList<>();
@@ -552,10 +553,11 @@ class Stats {
         }, "Unable to fetch roll record holder(s)");
     }
 
-    private static String getAllOrNothingWorldRecordPot(int rollsToDouble) {
-        String query = "SELECT record_pot, nickname FROM allornothing_user NATURAL JOIN money_user WHERE record_pot = "
-            + "(SELECT MAX(record_pot) FROM allornothing_user WHERE rolls_to_double = " + rollsToDouble + ") AND rolls_to_double = "
-            + rollsToDouble + ";";
+    private static String getAllOrNothingWorldRecordPot(int rollsToDouble, long server) {
+        String query = "WITH server_users AS (SELECT record_pot, nickname FROM allornothing_user "
+            + "NATURAL JOIN money_user WHERE uid IN (SELECT uid FROM casino_server_user WHERE server_id = "
+            + server + ") AND rolls_to_double = " + rollsToDouble + ") SELECT record_pot, nickname FROM "
+            + "server_users WHERE record_pot = (SELECT MAX(record_pot) FROM server_users);";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             long potRecord = 0;
             List<String> recordHolders = new ArrayList<>();
@@ -567,10 +569,11 @@ class Stats {
         }, "Unable to fetch pot record holder(s)");
     }
 
-    private static String getAllOrNothingWorldRecordCashout(int rollsToDouble) {
-        String query = "SELECT record_cashout, nickname FROM allornothing_user NATURAL JOIN money_user WHERE record_cashout = "
-            + "(SELECT MAX(record_cashout) FROM allornothing_user WHERE rolls_to_double = " + rollsToDouble + ") AND rolls_to_double = "
-            + rollsToDouble + ";";
+    private static String getAllOrNothingWorldRecordCashout(int rollsToDouble, long server) {
+        String query = "WITH server_users AS (SELECT record_cashout, nickname FROM allornothing_user "
+            + "NATURAL JOIN money_user WHERE uid IN (SELECT uid FROM casino_server_user WHERE server_id = "
+            + server + ") AND rolls_to_double = " + rollsToDouble + ") SELECT record_cashout, nickname FROM "
+            + "server_users WHERE record_cashout = (SELECT MAX(record_cashout) FROM server_users);";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             long cashoutRecord = 0;
             List<String> recordHolders = new ArrayList<>();

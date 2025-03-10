@@ -18,9 +18,11 @@ public class CommandAccessControl {
     private static final long CHANNEL_NOT_FOUND = 0;
 
     private static class CasinoServer {
-        String serverName;
-        long eventChannel;
-        String eventChannelName;
+        private String serverName;
+        private long eventChannel;
+        private String eventChannelName;
+        private long moneyMachinePot;
+
         Set<Long> casinioChannels = new HashSet<>();
         Set<Long> users = new HashSet<>();
 
@@ -35,6 +37,9 @@ public class CommandAccessControl {
             this.eventChannel = eventChannel;
             this.eventChannelName = eventChannelName;
         }
+
+        long getMoneyMachinePot() { return moneyMachinePot; }
+        void setMoneyMachinePot(long amount) { moneyMachinePot = amount; }
     }
 
     static void initialize() {
@@ -166,6 +171,23 @@ public class CommandAccessControl {
         return "Channel deregistered";
     }
 
+    static long getMoneyMachinePot(long server) {
+        if (!servers.containsKey(server)) {
+            return -1;
+        }
+        return servers.get(server).getMoneyMachinePot();
+    }
+
+    static void setMoneyMachinePot(long server, long amount) {
+        if (!servers.containsKey(server)) { return; }
+        servers.get(server).setMoneyMachinePot(logSetMoneyMachinePot(server, amount));
+    }
+
+    static void increaseMoneyMachinePot(long server, long amount) {
+        if (!servers.containsKey(server)) { return; }
+        servers.get(server).setMoneyMachinePot(logIncreaseMoneyMachinePot(server, amount));
+    }
+
     //////////////////////////////////////////////////////////
 
     // CREATE TABLE IF NOT EXISTS admin_user (
@@ -275,4 +297,13 @@ public class CommandAccessControl {
         return CasinoDB.executeUpdate(query);
     }
 
+    private static long logSetMoneyMachinePot(long server, long amount) {
+        return CasinoDB.executeLongQuery("UPDATE casino_server SET money_machine_pot = " + amount
+            + " WHERE server_id = " + server + " RETURNING money_machine_pot;");
+    }
+
+    private static long logIncreaseMoneyMachinePot(long server, long amount) {
+        return CasinoDB.executeLongQuery("UPDATE casino_server SET money_machine_pot = money_machine_pot + "
+            + amount + " WHERE server_id = " + server + " RETURNING money_machine_pot;");
+    }
 }

@@ -373,14 +373,16 @@ public class HBMain {
             entry(BALANCE_COMMAND, new SimpleCasinoCommand(
                 i -> Casino.handleBalance(i.getUser().getId()))),
             entry(LEADERBOARD_COMMAND, new SimpleCasinoCommand(
-                i -> Casino.handleLeaderboard(i.getArgumentLongValueByIndex(0).orElse(DEFAULT_LEADERBOARD_LENGTH)))),
+                i -> Casino.handleLeaderboard(i.getServer().get().getId(),
+                    i.getArgumentLongValueByIndex(0).orElse(DEFAULT_LEADERBOARD_LENGTH)))),
             entry(GIVE_COMMAND, new SimpleCasinoCommand(
                 i -> Casino.handleGive(i.getUser().getId(), i.getArgumentUserValueByIndex(0).get().getId(),
                                        i.getArgumentLongValueByIndex(1).get()))),
             entry(POT_COMMAND, new SimpleCasinoCommand(
-                Casino::handlePot)),
+                i -> Casino.handlePot(i.getServer().get().getId()))),
             entry(FEED_COMMAND, new SimpleCasinoCommand(
-                i -> Casino.handleFeed(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
+                i -> Casino.handleFeed(i.getServer().get().getId(), i.getUser().getId(),
+                    i.getArgumentLongValueByIndex(0).get()))),
             entry(WORK_COMMAND, new SimpleCasinoCommand(
                 i -> Casino.handleWork(i.getUser().getId()))),
             entry(FISH_COMMAND, new SimpleCasinoCommand(
@@ -404,10 +406,13 @@ public class HBMain {
             entry(BLACKJACK_COMMAND, new ImmediateCasinoCommand(
                 i -> Blackjack.handleBlackjack(i.getUser().getId(), i.getArgumentLongValueByIndex(0).orElse(DEFAULT_CASINO_WAGER)))),
             entry(ALLORNOTHING_COMMAND, new MultistepCasinoCommand(
-                i -> AllOrNothing.handleNew(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
+                i -> AllOrNothing.handleNew(i.getServer().get().getId(), i.getUser().getId(),
+                                            i.getArgumentLongValueByIndex(0).get(),
                                             i.getArgumentLongValueByIndex(1).orElse(DEFAULT_ALLORNOTHING_WAGER)))),
             entry(STATS_COMMAND, new SimpleCasinoCommand(
-                i -> Stats.handleStats(i.getArgumentStringValueByIndex(0).orElse(""), i.getUser().getId()))),
+                i -> Stats.handleStats(i.getArgumentStringValueByIndex(0).orElse(""),
+                                       i.getServer().get().getId(),
+                                       i.getUser().getId()))),
             entry(WORKOUT_COMMAND, new ImmediateCasinoCommand(
                 i -> HealthClub.handleWorkout(i.getUser().getId()),
                 true)),
@@ -657,12 +662,14 @@ public class HBMain {
         }
         switch (command) {
             case "allornothing.claim":
-                respondImmediately(new SingleResponse(AllOrNothing.handleCashOut(interaction.getUser().getId(), rollsToDouble)),
+                respondImmediately(new SingleResponse(AllOrNothing.handleCashOut(interaction.getServer().get().getId(),
+                                                                                 interaction.getUser().getId(), rollsToDouble)),
                     interaction);
                 break;
             case "allornothing.roll":
                 interaction.respondLater().thenAccept(updater ->
-                    makeMultiStepResponse(AllOrNothing.handleRoll(interaction.getUser().getId(), rollsToDouble),
+                    makeMultiStepResponse(AllOrNothing.handleRoll(interaction.getServer().get().getId(),
+                                                                  interaction.getUser().getId(), rollsToDouble),
                     updater)
                 );
                 break;
