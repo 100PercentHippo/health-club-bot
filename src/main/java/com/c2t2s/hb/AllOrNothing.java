@@ -69,37 +69,29 @@ class AllOrNothing {
             }
 
             StringBuilder response = new StringBuilder();
-            response.append(checkRollRecord(server, uid, entry, activeGame));
-            response.append(checkPotRecord(server, uid, entry, activeGame));
+            response.append(checkRollRecord(server, entry, activeGame));
+            response.append(checkPotRecord(server, entry, activeGame));
             if (response.length() > 0) {
                 response.insert(0, '\n');
             }
             return response.toString();
         }
 
-        String checkRollRecord(long server, long uid, RecordEntry entry, ActiveGame activeGame) {
+        String checkRollRecord(long server, RecordEntry entry, ActiveGame activeGame) {
             int rolls = activeGame.rolls;
             if (rolls < entry.rolls) {
                 return "";
             }
-            int validatedRecord = verifyRollRecord(uid, activeGame.difficulty);
-            if (validatedRecord != rolls) {
-                entry.rolls = validatedRecord;
-                return "";
-            }
             StringBuilder response = new StringBuilder();
-            // Skip checking for world record if it isn't a personal record
-            if (rolls >= entry.rolls) {
-                long globalRollRecord = fetchGlobalRollRecord(activeGame.difficulty, server);
-                if (rolls > globalRollRecord) {
-                    response.append("\n:tada: New World Record Multiplier in the "
-                        + activeGame.difficulty.description + " bracket: "
-                        + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!");
-                } else if (rolls == globalRollRecord) {
-                    response.append("\nTied for World Record Multiplier in the "
-                        + activeGame.difficulty.description + " bracket: "
-                        + payoutPercentFormat.format(activeGame.getPayoutMultiplier()));
-                }
+            long globalRollRecord = fetchGlobalRollRecord(activeGame.difficulty, server);
+            if (rolls > globalRollRecord) {
+                response.append("\n:tada: New World Record Multiplier in the "
+                    + activeGame.difficulty.description + " bracket: "
+                    + payoutPercentFormat.format(activeGame.getPayoutMultiplier()) + "!");
+            } else if (rolls == globalRollRecord) {
+                response.append("\nTied for World Record Multiplier in the "
+                    + activeGame.difficulty.description + " bracket: "
+                    + payoutPercentFormat.format(activeGame.getPayoutMultiplier()));
             }
             if (rolls > entry.rolls) {
                 entry.rolls = rolls;
@@ -114,27 +106,19 @@ class AllOrNothing {
             return response.toString();
         }
 
-        String checkPotRecord(long server, long uid, RecordEntry entry, ActiveGame activeGame) {
+        String checkPotRecord(long server, RecordEntry entry, ActiveGame activeGame) {
             long pot = activeGame.getPotentialPayout();
             if (pot < entry.pot) {
                 return "";
             }
-            long validatedRecord = verifyPotRecord(uid, activeGame.difficulty);
-            if (validatedRecord != pot) {
-                entry.pot = validatedRecord;
-                return "";
-            }
             StringBuilder response = new StringBuilder();
-            // Skip checking for world record if it isn't a personal record
-            if (pot >= entry.pot) {
-                long globalPotRecord = fetchGlobalPotRecord(activeGame.difficulty, server);
-                if (pot > globalPotRecord) {
-                    response.append("\n:tada: New World Record Potential Payout in the "
-                        + activeGame.difficulty.description + " bracket: " + pot + "!");
-                } else if (pot == globalPotRecord) {
-                    response.append("\nTied for World Record Potential Payout in the "
-                        + activeGame.difficulty.description + " bracket: " + pot);
-                }
+            long globalPotRecord = fetchGlobalPotRecord(activeGame.difficulty, server);
+            if (pot > globalPotRecord) {
+                response.append("\n:tada: New World Record Potential Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + pot + "!");
+            } else if (pot == globalPotRecord) {
+                response.append("\nTied for World Record Potential Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + pot);
             }
             if (pot > entry.pot) {
                 entry.pot = pot;
@@ -157,22 +141,14 @@ class AllOrNothing {
             if (payout < entry.cashout) {
                 return "";
             }
-            long validatedRecord = verifyCashoutRecord(uid, activeGame.difficulty);
-            if (validatedRecord != payout) {
-                entry.cashout = validatedRecord;
-                return "";
-            }
             StringBuilder response = new StringBuilder();
-            // Skip checking for world record if it isn't a personal record
-            if (payout >= entry.cashout) {
-                long globalCashoutRecord = fetchGlobalCashoutRecord(activeGame.difficulty, server);
-                if (payout > globalCashoutRecord) {
-                    response.append("\n:tada: New World Record Payout in the "
-                        + activeGame.difficulty.description + " bracket: " + payout);
-                } else if (payout == globalCashoutRecord) {
-                    response.append("\nTied for World Record Payout in the "
-                        + activeGame.difficulty.description + " bracket: " + payout);
-                }
+            long globalCashoutRecord = fetchGlobalCashoutRecord(activeGame.difficulty, server);
+            if (payout > globalCashoutRecord) {
+                response.append("\n:tada: New World Record Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + payout);
+            } else if (payout == globalCashoutRecord) {
+                response.append("\nTied for World Record Payout in the "
+                    + activeGame.difficulty.description + " bracket: " + payout);
             }
             if (payout > entry.cashout) {
                 entry.cashout = payout;
@@ -314,16 +290,16 @@ class AllOrNothing {
                 + "\nBust! Your new balance is " + balance);
             return new HBMain.MultistepResponse(response);
         } else {
-            // Ensure cache is populated before we register this entry, but check for records after updating the DB
+            // Ensure cache is populated before we register this entry
             RecordCache cache = getRecordCache(activeGame.difficulty);
             ++activeGame.rolls;
-            activeGame = logRoll(uid, activeGame.difficulty, activeGame.getPotentialPayout());
             String recordString;
             if (cache != null) {
                 recordString = cache.checkActiveGameRecords(server, uid, activeGame);
             } else {
                 recordString = "Unable to populate records: Cache unavailable";
             }
+            activeGame = logRoll(uid, activeGame.difficulty, activeGame.getPotentialPayout());
             response.add("Roll: `" + rollString + "` (Target: " + targetRollString + " or higher)"
                 + "\nCurrent payout: " + activeGame.getPotentialPayout()
                 + recordString);
@@ -349,15 +325,15 @@ class AllOrNothing {
                 + rollsUntilClaimable + " more roll" + Casino.getPluralSuffix(rollsUntilClaimable) + " needed.";
         }
 
-        // Ensure cache is populated before we register this entry, but check for records after updating the DB
+        // Ensure cache is populated before we register this entry
         RecordCache cache = getRecordCache(activeGame.difficulty);
-        long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
         String recordString;
         if (cache != null) {
             recordString = cache.checkCashoutRecord(server, uid, activeGame);
         } else {
             recordString = "Unable to populate records: Cache unavailable";
         }
+        long balance = logCashout(uid, activeGame.difficulty, activeGame.getPotentialPayout());
         return "Cashed out for " + activeGame.getPotentialPayout() + ". Your new balance is " + balance
             + recordString;
     }

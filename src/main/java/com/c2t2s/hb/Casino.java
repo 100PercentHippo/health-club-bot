@@ -979,7 +979,7 @@ class Casino {
             + "casino_server_user WHERE server_id = " + serverId + ") ORDER BY balance DESC LIMIT "
             + entries + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
-            StringBuilder leaderboard = new StringBuilder();
+            StringBuilder leaderboard = new StringBuilder("Coin leaderboard:\n");
             int place = 1;
             while (results.next()) {
                 leaderboard.append('#');
