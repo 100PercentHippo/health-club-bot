@@ -43,6 +43,8 @@ import java.util.Set;
 public class HBMain {
 
     static final Random RNG_SOURCE = new Random();
+    static final int MESSAGE_CHARACTER_LIMIT = 1950;
+    static final String MESSAGE_TRUNCATED_STRING = "\n[Message Truncated]";
 
     static int generateBoundedNormal(int average, int stdDev, int min) {
         int roll = (int)(HBMain.RNG_SOURCE.nextGaussian() * stdDev) + average;
@@ -70,50 +72,66 @@ public class HBMain {
             this.message = message;
             this.buttons = buttons;
         }
+
+        void setMessage(String message) {
+            if (message.length() > MESSAGE_CHARACTER_LIMIT) {
+                this.message = message.substring(0, MESSAGE_CHARACTER_LIMIT)
+                    + MESSAGE_TRUNCATED_STRING;
+            } else {
+                this.message = message;
+            }
+        }
     }
 
     static class MultistepResponse {
-        List<String> messages;
+        List<String> messages = new ArrayList<>();;
         ActionRow buttons = null;
         long delay = 1000; // milliseconds
         int index = -1; // Initially before first message
         Map<Integer, URL> images = new HashMap<>();
 
-        MultistepResponse() {
-            messages = new ArrayList<>();
-        }
+        MultistepResponse() {}
 
         MultistepResponse(String message) {
-            messages = new ArrayList<>();
             messages.add(message);
         }
 
         MultistepResponse(String message, ActionRow buttons) {
-            messages = new ArrayList<>();
-            messages.add(message);
             this.buttons = buttons;
+            addMessage(message);
         }
 
         MultistepResponse(List<String> messages) {
-            this.messages = messages;
             this.buttons = null;
+            addAllToStart(messages);
         }
 
         MultistepResponse(List<String> messages, ActionRow buttons) {
-            this.messages = messages;
             this.buttons = buttons;
+            addAllToStart(messages);
+        }
+
+        String validateMessage(String message) {
+            if (message.length() > MESSAGE_CHARACTER_LIMIT) {
+                return message.substring(0, 1950) + MESSAGE_TRUNCATED_STRING;
+            }
+            return message;
         }
 
         void addMessage(String message) {
+            message = validateMessage(message);
             messages.add(message);
         }
 
         void addMessageToStart(String message) {
+            message = validateMessage(message);
             messages.add(0, message);
         }
 
         void addAllToStart(List<String> messages) {
-            this.messages.addAll(0, messages);
+            for (int i = messages.size() - 1; i >= 0; i--) {
+                addMessageToStart(messages.get(i));
+            }
         }
 
         boolean isAtEnd() {

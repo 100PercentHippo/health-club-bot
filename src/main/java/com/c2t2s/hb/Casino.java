@@ -415,6 +415,7 @@ class Casino {
             guessLoss(uid, amount);
             output.append("The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount));
         }
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.GUESS));
         return output.toString();
     }
 
@@ -439,6 +440,7 @@ class Casino {
             hugeGuessLoss(uid, amount);
             output.append("The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount));
         }
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.HUGEGUESS));
         return output.toString();
     }
 
@@ -633,6 +635,7 @@ class Casino {
         }
         output.append("New balance: " + balance);
         logSlots(uid, amount, winnings, diamonds, winCondition);
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.SLOTS));
         responseSteps.add(output.toString());
         return new HBMain.MultistepResponse(responseSteps);
     }
@@ -725,6 +728,7 @@ class Casino {
         }
         output.append("New balance: " + balance);
         logMinislots(uid, amount, winnings, diamonds, winCondition);
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.MINISLOTS));
         responseSteps.add(output.toString());
         return new HBMain.MultistepResponse(responseSteps);
     }
@@ -749,8 +753,9 @@ class Casino {
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
+        String bonus = EventUser.checkGameBonus(uid, EventUser.DailyGame.OVERUNDER);
         return new HBMain.SingleResponse("Bid " + amount + " on overunder\nYour initial value is " + target
-            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`", ButtonRows.OVERUNDER_BUTTONS);
+            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`" + bonus, ButtonRows.OVERUNDER_BUTTONS);
     }
 
     static HBMain.SingleResponse handleOverUnderFollowup(long uid, int prediction) {

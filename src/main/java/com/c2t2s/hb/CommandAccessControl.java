@@ -32,10 +32,12 @@ public class CommandAccessControl {
             eventChannelName = "";
         }
 
-        CasinoServer(String serverName, long eventChannel, String eventChannelName) {
+        CasinoServer(String serverName, long eventChannel, String eventChannelName,
+                     long moneyMachinePot) {
             this.serverName = serverName;
             this.eventChannel = eventChannel;
             this.eventChannelName = eventChannelName;
+            this.moneyMachinePot = moneyMachinePot;
         }
 
         long getMoneyMachinePot() { return moneyMachinePot; }
@@ -226,7 +228,7 @@ public class CommandAccessControl {
     }
 
     private static Map<Long, CasinoServer> fetchCasinoServers() {
-        String query = "SELECT server_id, name, event_channel, event_channel_name FROM casino_server;";
+        String query = "SELECT server_id, name, event_channel, event_channel_name, money_machine_pot FROM casino_server;";
         Map<Long, CasinoServer> servers = new HashMap<>();
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {
@@ -234,7 +236,8 @@ public class CommandAccessControl {
                 String serverName = results.getString(2);
                 long channelId = results.getLong(3);
                 String channelName = results.getString(4);
-                servers.put(serverId, new CasinoServer(serverName, channelId, channelName));
+                long moneyMachinePot = results.getLong(5);
+                servers.put(serverId, new CasinoServer(serverName, channelId, channelName, moneyMachinePot));
                 System.out.println("Initialized server " + serverName + " with id " + serverId);
             }
             return servers;

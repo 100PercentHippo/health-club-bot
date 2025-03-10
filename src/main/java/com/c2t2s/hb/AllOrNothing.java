@@ -249,7 +249,10 @@ class AllOrNothing {
         }
 
         activeGame = logNewGame(uid, difficulty, wager);
-        return handleRoll(server, uid, activeGame);
+        HBMain.MultistepResponse response = handleRoll(server, uid, activeGame);
+        response.addMessage(response.messages.get(response.messages.size() - 1)
+            + EventUser.checkGameBonus(uid, EventUser.DailyGame.ALLORNOTHING));
+        return response;
     }
 
     static HBMain.MultistepResponse handleRoll(long server, long uid, long rollsToDouble) {
