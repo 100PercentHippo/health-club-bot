@@ -225,6 +225,10 @@ public class GachaItems {
             return applicationResult.output;
         }
 
+        int getRemainingGemSlots() {
+            return gemSlots - gems.size();
+        }
+
         int removeAllGems() {
             int removedGems = gems.size();
             for (GachaGems.AppliedGem gem : gems) {
@@ -642,6 +646,10 @@ public class GachaItems {
             builder.append(" -> ");
             builder.append(item.getTier());
         }
+        builder.append('\n');
+        builder.append(item.getRemainingGemSlots());
+        builder.append(" gem slots remaining");
+
         results.add(builder.toString());
 
         return new HBMain.MultistepResponse(results);
@@ -981,12 +989,38 @@ public class GachaItems {
         }
     }
 
+    static List<GachaGems.AppliedGem> fetchGems(long uid, long iid) {
+        String query = "SELECT gem_type, work_modifier, fish_modifier, pick_modifier, rob_modifier, misc_modifier, "
+            + "gem_slots_added, additions, subtractions, gid FROM gacha_item_gem WHERE negated = false AND iid = "
+            + iid + "AND uid = " + uid + ";";
+        List<GachaGems.AppliedGem> gems = new ArrayList<>();
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            while (results.next()) {
+                StatArray stats = new StatArray(results.getInt(2), results.getInt(3),
+                    results.getInt(4), results.getInt(5), results.getInt(6));
+                gems.add(new GachaGems.AppliedGem(results.getInt(1), stats, results.getInt(7),
+                    results.getInt(8), results.getInt(9), results.getInt(10)));
+            }
+            return gems;
+        }, gems);
+    }
+
     static Item fetchItem(long uid, long iid) {
-        List<Item> results = fetchItems(uid, "", Arrays.asList(iid));
-        if (results == null || results.isEmpty()) {
+        List<GachaGems.AppliedGem> gems = fetchGems(uid, iid);
+        String query = "SELECT generator, uid, iid, initial_work, initial_fish, initial_pick, initial_rob, "
+            + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, "
+            + "initial_subtractions, enhancement_level, gem_slots FROM gacha_item WHERE iid = " + iid
+            + " AND uid = " + uid + ";";
+        FetchedItem item = CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),
+                    results.getInt(4), results.getInt(5), results.getInt(6), results.getInt(7),
+                    results.getInt(8), results.getInt(9), results.getInt(10), results.getInt(11),
+                    results.getInt(12), results.getInt(13), results.getInt(14), results.getInt(15));
+            }
             return null;
-        }
-        return results.get(0);
+        }, null);
+        return item == null ? null : Item.getItem(item, gems);
     }
 
     static String createIidQuery(List<Long> iids) {
