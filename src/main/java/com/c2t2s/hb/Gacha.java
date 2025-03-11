@@ -398,7 +398,7 @@ class Gacha {
             return SHINY_TYPE.NORMAL;
         }
 
-        private String getInfoString(long uid) {
+        private String getInfoString(long server, long uid) {
             StringBuilder output = new StringBuilder();
             output.append(name);
             output.append(":");
@@ -408,7 +408,7 @@ class Gacha {
                 output.append('\n');
             }
 
-            List<GachaBannerCharacter> characters = getBannerCharacters(bannerId, uid);
+            List<GachaBannerCharacter> characters = getBannerCharacters(bannerId, server, uid);
             int currentRarity = 6;
             for (int i = 0; i < characters.size(); i++) {
                 GachaBannerCharacter c = characters.get(i);
@@ -871,12 +871,12 @@ class Gacha {
         return output.toString();
     }
 
-    static String handleBannerInfo(long uid, long bannerId) {
+    static String handleBannerInfo(long server, long uid, long bannerId) {
         GachaBanner banner = getGachaBanner(bannerId);
         if (banner == null) {
             return "Specified banner was not found";
         }
-        return banner.getInfoString(uid);
+        return banner.getInfoString(server, uid);
     }
 
     static String handlePity(long uid, long bannerId) {
@@ -1438,10 +1438,14 @@ class Gacha {
         return CasinoDB.executeAutocompleteIdQuery("SELECT banner_id, banner_name FROM gacha_banner WHERE enabled = true;");
     }
 
-    private static List<GachaBannerCharacter> getBannerCharacters(long bannerId, long uid) {
-        return CasinoDB.executeQueryWithReturn("SELECT name, rarity, type, foil, duplicates FROM (SELECT cid, foil, duplicates FROM gacha_user_character "
-            + "WHERE uid = " + uid + ") AS u NATURAL RIGHT JOIN gacha_character_banner NATURAL JOIN gacha_character WHERE banner_id = " + bannerId
-            + " ORDER BY rarity DESC, name ASC, foil ASC;", results -> {
+    private static List<GachaBannerCharacter> getBannerCharacters(long bannerId, long server, long uid) {
+        String query = "WITH server_characters AS (SELECT cid FROM gacha_user_character WHERE uid IN "
+            + "(SELECT uid FROM casino_server_user WHERE server_id = " + server + ")) "
+            + "SELECT CASE WHEN cid IN (SELECT cid FROM server_characters) THEN name ELSE '?????' END, "
+            + "rarity, type, foil, duplicates FROM (SELECT cid, foil, duplicates FROM gacha_user_character "
+            + "WHERE uid = " + uid + ") AS u NATURAL RIGHT JOIN gacha_character_banner NATURAL JOIN "
+            + "gacha_character WHERE banner_id = " + bannerId + " ORDER BY rarity DESC, name ASC, foil ASC;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
                 List<GachaBannerCharacter> output = new ArrayList<>();
                 while (results.next()) {
                     // Have to call this for wasNull() to work
