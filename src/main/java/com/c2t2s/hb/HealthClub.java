@@ -121,23 +121,23 @@ class HealthClub {
             ButtonRows.WORKOUT_UNDO_RESTORE);
     }
 
-    static String handleSelectReward(long uid, long selection) {
-        int parsedSelect = (int)selection;
-        if (parsedSelect != COIN_REWARD_ID && parsedSelect != PULL_REWARD_AMOUNT) {
-            return "Unable to update workout reward: Unknown value " + parsedSelect;
-        }
-        WorkoutUser user = getUser(uid);
-        if (user == null) {
-            return Casino.USER_NOT_FOUND_MESSAGE;
-        }
-        if (parsedSelect == user.selectedReward) {
-            return "Your workout reward is now " + getRewardDescription(parsedSelect)
-                + ". (It is also what you already had selected)";
-        }
+    // static String handleSelectReward(long uid, long selection) {
+    //     int parsedSelect = (int)selection;
+    //     if (parsedSelect != COIN_REWARD_ID && parsedSelect != PULL_REWARD_ID) {
+    //         return "Unable to update workout reward: Unknown value " + parsedSelect;
+    //     }
+    //     WorkoutUser user = getUser(uid);
+    //     if (user == null) {
+    //         return Casino.USER_NOT_FOUND_MESSAGE;
+    //     }
+    //     if (parsedSelect == user.selectedReward) {
+    //         return "Your workout reward is now " + getRewardDescription(parsedSelect)
+    //             + ". (It is also what you already had selected)";
+    //     }
 
-        int updatedSelection = updateReward(uid, parsedSelect);
-        return "Your workout reward is now " + getRewardDescription(updatedSelection);
-    }
+    //     int updatedSelection = updateReward(uid, parsedSelect);
+    //     return "Your workout reward is now " + getRewardDescription(updatedSelection);
+    // }
 
     private static String awardReward(long uid, int selection) {
         StringBuilder response = new StringBuilder("Received ");

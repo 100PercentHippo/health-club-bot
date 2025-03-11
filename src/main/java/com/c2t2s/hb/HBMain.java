@@ -356,6 +356,7 @@ public class HBMain {
     private static final String GACHA_ITEM_EQUIP_COMMAND = "gacha item equip";
     private static final String GACHA_ITEM_UNEQUIP_COMMAND = "gacha item unequip";
     private static final String GACHA_ITEM_REROLL_COMMAND = "gacha item reroll";
+    private static final String GACHA_ITEM_LIST_COMMAND = "gacha item list";
     private static final String APPLY_GEM_COMMAND = "gacha gem apply";
     private static final String GACHA_COMMAND_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
@@ -434,9 +435,9 @@ public class HBMain {
             entry(WORKOUT_COMMAND, new ImmediateCasinoCommand(
                 i -> HealthClub.handleWorkout(i.getUser().getId()),
                 true)),
-            entry(SELECT_WORKOUT_REWARD_COMMAND, new SimpleCasinoCommand(
-                i -> HealthClub.handleSelectReward(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()),
-                true)),
+            // entry(SELECT_WORKOUT_REWARD_COMMAND, new SimpleCasinoCommand(
+            //     i -> HealthClub.handleSelectReward(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()),
+            //     true)),
             entry(PULL_COMMAND, new MultistepCasinoCommand(
                 i -> Gacha.handleGachaPull(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get(),
                                            i.getArgumentLongValueByIndex(1).orElse(DEFAULT_PULL_AMOUNT)))),
@@ -455,6 +456,8 @@ public class HBMain {
                 i -> Gacha.handleBannerList(i.getUser().getId()))),
             entry(GACHA_ITEM_INFO_COMMAND, new SimpleCasinoCommand(
                 i -> GachaItems.handleItemInfo(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
+            entry(GACHA_ITEM_LIST_COMMAND, new SimpleCasinoCommand(
+                i -> GachaItems.handleItemList(i.getUser().getId()))),
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
                 i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
                     i.getArgumentStringValueByIndex(1).get()))),
@@ -855,7 +858,8 @@ public class HBMain {
                         "Reroll 3 items with a shared trait into a new item with that trait",
                         Arrays.asList(SlashCommandOption.createStringOption("item1", "The first item", true, true),
                             SlashCommandOption.createStringOption("item2", "The second item", true, true),
-                            SlashCommandOption.createStringOption("item3", "The third item", true, true))))))
+                            SlashCommandOption.createStringOption("item3", "The third item", true, true))),
+                    SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your items"))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "gem", "View and apply your gems",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your gems"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "apply", "Apply a gem to an item",
@@ -879,10 +883,10 @@ public class HBMain {
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(WORKOUT_COMMAND).setDescription("Record a workout (or other self-improvement activity), and receive a reward")
             .setEnabledInDms(true));
-        builders.add(new SlashCommandBuilder().setName(SELECT_WORKOUT_REWARD_COMMAND).setDescription("Select what reward to receive when reporting workouts")
-            .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "reward", "Desired reward", true,
-                Arrays.asList(SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.COIN_REWARD_ID), HealthClub.COIN_REWARD_ID),
-                    SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
+        // builders.add(new SlashCommandBuilder().setName(SELECT_WORKOUT_REWARD_COMMAND).setDescription("Select what reward to receive when reporting workouts")
+        //     .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "reward", "Desired reward", true,
+        //         Arrays.asList(SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.COIN_REWARD_ID), HealthClub.COIN_REWARD_ID),
+        //             SlashCommandOptionChoice.create(HealthClub.getRewardDescription(HealthClub.PULL_REWARD_ID), HealthClub.PULL_REWARD_ID)))));
         builders.add(new SlashCommandBuilder().setName(REGISTER_CHANNEL_COMMAND).setDescription("Register a channel for use by the casino bot")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "subcommand", "Action to perform", true,
                 Arrays.asList(SlashCommandOptionChoice.create("Register this as a casino channel", REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL),

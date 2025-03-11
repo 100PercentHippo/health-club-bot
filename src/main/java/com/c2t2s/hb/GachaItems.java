@@ -2,7 +2,10 @@ package com.c2t2s.hb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class GachaItems {
 
@@ -251,6 +254,10 @@ public class GachaItems {
 
         public String getBriefDescription() {
             return getName() + "\n\t" + getModifiers().toString() + "\n\t" + gemSlots + " gem slots";
+        }
+
+        public String getItemListDescription() {
+            return getName() + "\n\t" + getModifiers().toString() + " " + gems.size() + "/" + gemSlots + " gems";
         }
 
         public String getFullDescription() {
@@ -575,6 +582,24 @@ public class GachaItems {
         return item.getFullDescription();
     }
 
+    static String handleItemList(long uid) {
+        Map<Item, String> items = fetchItemList(uid);
+        if (items.isEmpty()) {
+            return "No items found";
+        }
+
+        StringBuilder output = new StringBuilder("Your items:");
+        for (Entry<Item, String> entry : items.entrySet()) {
+            output.append("\n");
+            output.append(entry.getKey().getItemListDescription());
+            if (!entry.getValue().isEmpty()) {
+                output.append("\n\tEquipped by ");
+                output.append(entry.getValue());
+            }
+        }
+        return output.toString();
+    }
+
     static String handleAwardGem(long uid, GachaGems.Gem gem) {
         if (logAwardGem(uid, gem.getId())) {
             return gem.getAwardMessage();
@@ -836,12 +861,18 @@ public class GachaItems {
         StringBuilder result = new StringBuilder();
         result.append("Destroyed ");
         result.append(item1.getName());
+        result.append(' ');
+        result.append(item1.getModifiers().toString());
         results.add(result.toString());
         result.append("\nDestroyed ");
         result.append(item2.getName());
+        result.append(' ');
+        result.append(item2.getModifiers().toString());
         results.add(result.toString());
         result.append("\nDestroyed ");
         result.append(item3.getName());
+        result.append(' ');
+        result.append(item3.getModifiers().toString());
         results.add(result.toString());
         results.add(":package::black_large_square::package::black_large_square::package:");
         results.add(":black_large_square::package::black_large_square::package::black_large_square:");
@@ -1093,6 +1124,18 @@ public class GachaItems {
             }
             return items;
         }, items, partialName);
+    }
+
+    static Map<Item, String> fetchItemList(long uid) {
+        Map<Item, String> items = new HashMap<>();
+        for (Item item : fetchItems(uid)) {
+            items.put(item, "");
+        }
+        List<Gacha.GachaCharacter> characters = Gacha.queryCharacters(uid);
+        for (Gacha.GachaCharacter character : characters) {
+            items.put(character.getItem(), character.getDisplayName());
+        }
+        return items;
     }
 
     static void destroyItems(long uid, List<Long> iids) {

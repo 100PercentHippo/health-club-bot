@@ -159,7 +159,7 @@ class Stats {
     static String handlePickpocketStats(long uid) {
         return "`/pickpocket` odds:"
             + "\n\tPayout chance: 50%"
-            + "\n\tAverage Payout: 65 coins (72.5 if high morality)"
+            + "\n\tAverage Payout: 65 coins (72.5 if low morality)"
             + "\n\n" + getPickStats(uid);
     }
 
@@ -293,7 +293,7 @@ class Stats {
             + "\n\tGames busted: " + busts
             + "\n\tGames tied: " + ties
             + "\n\tGames won: " + wins
-            + "\n\tTotal wagered: " + wins
+            + "\n\tTotal wagered: " + spent
             + "\n\tTotal won: " + winnings
             + (hands > 0 ? "\n\tAverage payout amount: " + twoDecimals.format((ties + 2 * (double)wins) / hands) + "x" : "");
     }

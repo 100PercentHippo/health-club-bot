@@ -132,6 +132,8 @@ class Gacha {
             }
         }
 
+        GachaItems.Item getItem() { return item; }
+
         @Override
         public String toString() {
             return toString(false);
@@ -690,7 +692,11 @@ class Gacha {
         if (roll < ITEM_ROLL_LIMIT) {
             GachaItems.Item item = GachaItems.generateItem(uid);
             item.awardTo(uid);
-            response.addMessagePart(":tools: You pull an item: " + item.getBriefDescription());
+            if (item.enhancementLevel > 0) {
+                response.addMessagePart(":tools: You pull a rare item! " + item.getBriefDescription());
+            } else {
+                response.addMessagePart(":hammer: You pull an item: " + item.getBriefDescription());
+            }
             return logItemFiller(uid, bannerId);
         } else if (roll < COMMON_GEM_ROLL_LIMIT) {
             GachaGems.Gem gem = GachaGems.Gem.getRandomGem(GachaGems.COMMON_GEM_RARITY);
@@ -1277,7 +1283,7 @@ class Gacha {
         }, null);
     }
 
-    private static List<GachaCharacter> queryCharacters(long uid) {
+    static List<GachaCharacter> queryCharacters(long uid) {
         return queryCharacters(uid, "");
     }
 
