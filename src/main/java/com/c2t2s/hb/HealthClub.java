@@ -179,7 +179,7 @@ class HealthClub {
     //   longest_streak integer NOT NULL DEFAULT 0,
     //   total_workouts integer NOT NULL DEFAULT 0,
     //   last_workout timestamp NOT NULL DEFAULT '2021-01-01 00:00:00',
-    //   reward integer NOT NULL DEFAULT 1,
+    //   reward integer NOT NULL DEFAULT 2,
     //   CONSTRAINT workout_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 

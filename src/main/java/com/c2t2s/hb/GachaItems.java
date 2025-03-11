@@ -586,6 +586,8 @@ public class GachaItems {
         Map<Item, String> items = fetchItemList(uid);
         if (items.isEmpty()) {
             return "No items found";
+        } else if (items.containsKey(null)) {
+            return "Unable to parse items";
         }
 
         StringBuilder output = new StringBuilder("Your items:");
@@ -861,18 +863,21 @@ public class GachaItems {
         StringBuilder result = new StringBuilder();
         result.append("Destroyed ");
         result.append(item1.getName());
-        result.append(' ');
+        result.append(" (");
         result.append(item1.getModifiers().toString());
+        result.append(")");
         results.add(result.toString());
         result.append("\nDestroyed ");
         result.append(item2.getName());
-        result.append(' ');
+        result.append(" (");
         result.append(item2.getModifiers().toString());
+        result.append(")");
         results.add(result.toString());
         result.append("\nDestroyed ");
         result.append(item3.getName());
-        result.append(' ');
+        result.append(" (");
         result.append(item3.getModifiers().toString());
+        result.append(")");
         results.add(result.toString());
         results.add(":package::black_large_square::package::black_large_square::package:");
         results.add(":black_large_square::package::black_large_square::package::black_large_square:");
@@ -1133,7 +1138,9 @@ public class GachaItems {
         }
         List<Gacha.GachaCharacter> characters = Gacha.queryCharacters(uid);
         for (Gacha.GachaCharacter character : characters) {
-            items.put(character.getItem(), character.getDisplayName());
+            if (character.getItem() != null) {
+                items.put(character.getItem(), character.getDisplayName());
+            }
         }
         return items;
     }
