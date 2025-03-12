@@ -84,7 +84,7 @@ public class HBMain {
     }
 
     static class MultistepResponse {
-        List<String> messages = new ArrayList<>();;
+        List<String> messages = new ArrayList<>();
         ActionRow buttons = null;
         long delay = 1000; // milliseconds
         int index = -1; // Initially before first message
@@ -340,7 +340,6 @@ public class HBMain {
     private static final String ALLORNOTHING_COMMAND = "allornothing";
     private static final String STATS_COMMAND = "stats";
     private static final String WORKOUT_COMMAND = "workout";
-    private static final String SELECT_WORKOUT_REWARD_COMMAND = "selectworkoutreward";
     private static final String REGISTER_CHANNEL_COMMAND = "registerchannel";
     private static final String TEST_COMMAND = "test";
 
@@ -477,7 +476,7 @@ public class HBMain {
                 false,
                 false)),
             entry(TEST_COMMAND, new SimpleCasinoCommand(
-                i -> GachaItems.handleTest(i.getUser().getId()),
+                i -> GachaItems.handleTest(i.getServer().get().getId(), i.getUser().getId()),
                 false,
                 false,
                 false))
@@ -489,13 +488,12 @@ public class HBMain {
             return;
         }
 
-        CommandAccessControl.initialize();
-
         api = new DiscordApiBuilder().setToken(args[0]).login().join();
         api.setMessageCacheSize(0, 0);
         if (args.length > 1 && args[1].equalsIgnoreCase("init")) {
             initCommands(api);
         }
+        CasinoServerManager.initialize(api);
 
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction interaction = event.getSlashCommandInteraction();
@@ -517,7 +515,7 @@ public class HBMain {
                     new SingleResponse("Unable to run `" + interaction.getFullCommandName()
                         + "` in this channel. Channel was not provided through API"),
                     interaction, true);
-            } else if (!CommandAccessControl.isValid(interaction.getUser().getId(), command,
+            } else if (!CasinoServerManager.isValid(interaction.getUser().getId(), command,
                     interaction.getServer().get().getId(), interaction.getChannel().get().getId())) {
                 respondImmediately(
                     new SingleResponse("Unable to run `" + interaction.getFullCommandName()
@@ -752,16 +750,16 @@ public class HBMain {
         ServerTextChannel channel = (ServerTextChannel)channelOptional.get();
         switch ((int)subcommand) {
             case REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL:
-                return CommandAccessControl.handleRegisterCasinoChannel(uid, server.getId(),
-                    server.getName(), channel.getId(), channel.getName());
+                return CasinoServerManager.handleRegisterCasinoChannel(uid, server.getId(),
+                    server.getName(), channel, api);
             case REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL:
-                return CommandAccessControl.handleRegisterEventChannel(uid, server.getId(),
-                    server.getName(), channel.getId(), channel.getName());
+                return CasinoServerManager.handleRegisterEventChannel(uid, server.getId(),
+                    server.getName(), channel, api);
             case REGISTER_SUBCOMMAND_REMOVE_CASINO_CHANNEL:
-                return CommandAccessControl.handleDeregisterCasinoChannel(uid, server.getId(),
+                return CasinoServerManager.handleDeregisterCasinoChannel(uid, server.getId(),
                     channel.getId());
             case REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL:
-                return CommandAccessControl.handleDeregisterEventChannel(uid, server.getId(),
+                return CasinoServerManager.handleDeregisterEventChannel(uid, server.getId(),
                     channel.getId());
             default:
                 throw new IllegalArgumentException("Unexpected registercommand subcommand received: "

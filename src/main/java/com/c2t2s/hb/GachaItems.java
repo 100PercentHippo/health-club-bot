@@ -555,7 +555,7 @@ public class GachaItems {
         return G0Item.generate(uid);
     }
 
-    static String handleTest(long uid) {
+    static String handleTest(long server, long uid) {
         StringBuilder builder = new StringBuilder();
 
         Item item = generateItem(uid);
@@ -567,6 +567,8 @@ public class GachaItems {
             builder.append('\n');
             builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(i % 3)));
         }
+
+        CasinoServerManager.sendMessage(server, "test");
         return builder.toString();
     }
 

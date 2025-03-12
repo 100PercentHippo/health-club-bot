@@ -467,7 +467,7 @@ class Casino {
         if (remainingTime > 0) {
             return "You have recently fed the money machine. Try again in " + formatTime(remainingTime) + ".";
         }
-        long pot = CommandAccessControl.getMoneyMachinePot(server);
+        long pot = CasinoServerManager.getMoneyMachinePot(server);
         if (pot < 0) {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
@@ -530,7 +530,7 @@ class Casino {
     }
 
     static String handlePot(long server) {
-        long pot = CommandAccessControl.getMoneyMachinePot(server);
+        long pot = CasinoServerManager.getMoneyMachinePot(server);
         if (pot < 0) {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
@@ -1097,7 +1097,7 @@ class Casino {
         // coinsSpent - winnings is going to be negative, which gives money
         // this should be changed in the future
         long balance = takeMoney(uid, coinsSpent - winnings, chocolateCoinsSpent);
-        CommandAccessControl.setMoneyMachinePot(server, newPot);
+        CasinoServerManager.setMoneyMachinePot(server, newPot);
         setTimer2Time(uid, "1 minute");
         CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings, spent, chocolate_spent) = (feeds + 1, wins + 1, winnings + "
             + winnings + ", spent + " + coinsSpent + ", chocolate_spent + " + chocolateCoinsSpent + ") WHERE uid = " + uid + ";");
@@ -1106,7 +1106,7 @@ class Casino {
 
     private static long moneyMachineLoss(long server, long uid, long chocolateCoinsSpent, long coinsSpent) {
         long balance = takeMoney(uid, coinsSpent, chocolateCoinsSpent);
-        CommandAccessControl.increaseMoneyMachinePot(server, chocolateCoinsSpent + coinsSpent);
+        CasinoServerManager.increaseMoneyMachinePot(server, chocolateCoinsSpent + coinsSpent);
         setTimer2Time(uid, "1 minute");
         CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, spent, chocolate_spent) = (feeds + 1, spent + "
             + coinsSpent + ", chocolate_spent + " + chocolateCoinsSpent + ") WHERE uid = " + uid + ";");

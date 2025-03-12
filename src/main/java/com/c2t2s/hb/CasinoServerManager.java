@@ -1,54 +1,110 @@
 package com.c2t2s.hb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.channel.Channel;
+import org.javacord.api.entity.channel.ServerTextChannel;
+
 import com.c2t2s.hb.HBMain.CasinoCommand;
 
-public class CommandAccessControl {
+public class CasinoServerManager {
 
     // Hide default constructor
-    private CommandAccessControl() {}
+    private CasinoServerManager() {}
 
     private static Set<Long> adminUsers = new HashSet<>();
     private static Map<Long, CasinoServer> servers = new HashMap<>();
 
-    private static final long CHANNEL_NOT_FOUND = 0;
+    private static final long INITIAL_MONEY_MACHINE_POT = 1000;
 
     private static class CasinoServer {
+        private long serverId;
         private String serverName;
-        private long eventChannel;
-        private String eventChannelName;
         private long moneyMachinePot;
 
-        Set<Long> casinioChannels = new HashSet<>();
-        Set<Long> users = new HashSet<>();
+        private ServerTextChannel eventChannel;
+        private Set<Long> casinoChannelIds;
+        private List<ServerTextChannel> casinioChannels;
+        private Set<Long> users = new HashSet<>();
 
-        CasinoServer(String serverName) {
-            this.serverName = serverName;
-            eventChannel = CHANNEL_NOT_FOUND;
-            eventChannelName = "";
-        }
-
-        CasinoServer(String serverName, long eventChannel, String eventChannelName,
-                     long moneyMachinePot) {
+        CasinoServer(long serverId, String serverName, ServerTextChannel eventChannel,
+                Set<Long> casinoChannelIds, List<ServerTextChannel> casinoChannels, Set<Long> users,
+                long moneyMachinePot) {
+            this.serverId = serverId;
             this.serverName = serverName;
             this.eventChannel = eventChannel;
-            this.eventChannelName = eventChannelName;
+            this.casinoChannelIds = casinoChannelIds;
+            this.casinioChannels = casinoChannels;
+            this.users = users;
             this.moneyMachinePot = moneyMachinePot;
         }
 
         long getMoneyMachinePot() { return moneyMachinePot; }
         void setMoneyMachinePot(long amount) { moneyMachinePot = amount; }
+
+        boolean isEventChannel(long channelId) {
+            return eventChannel != null && eventChannel.getId() == channelId;
+        }
+
+        void sendCasinoMessage(String message) {
+            for (ServerTextChannel channel : casinioChannels) {
+                channel.sendMessage(message).join();
+            }
+        }
     }
 
-    static void initialize() {
+    static class FetchedServer {
+        private long serverId;
+        private String name;
+        private long eventChannel;
+        private long moneyMachinePot;
+
+        FetchedServer(long serverId, String name, long eventChannel, long moneyMachinePot) {
+            this.serverId = serverId;
+            this.name = name;
+            this.eventChannel = eventChannel;
+            this.moneyMachinePot = moneyMachinePot;
+        }
+    }
+
+    static void initialize(DiscordApi api) {
         adminUsers = fetchAdminUsers();
-        servers = fetchCasinoServers();
-        populateCasinoChannels(servers);
-        populateCasinoUsers(servers);
+        for (FetchedServer fetchedServer : fetchCasinoServers()) {
+            initializeServer(fetchedServer, api);
+        }
+    }
+
+    static void initializeServer(FetchedServer fetchedServer, DiscordApi api) {
+        ServerTextChannel eventChannel = null;
+        if (fetchedServer.eventChannel > 0) {
+            eventChannel = getTextChannel(api, fetchedServer.eventChannel);
+        }
+        Set<Long> casinoChannelIds = fetchCasinoChannels(fetchedServer.serverId);
+        Set<Long> users = fetchCasinoUsers(fetchedServer.serverId);
+
+        List<ServerTextChannel> casinoChannels = new ArrayList<>();
+        for (long channelId : casinoChannelIds) {
+            ServerTextChannel casinoChannel = getTextChannel(api, channelId);
+            if (casinoChannel != null) {
+                casinoChannels.add(casinoChannel);
+            }
+        }
+
+        servers.put(fetchedServer.serverId, new CasinoServer(fetchedServer.serverId,
+            fetchedServer.name, eventChannel, casinoChannelIds, casinoChannels, users,
+            fetchedServer.moneyMachinePot));
+    }
+
+    static ServerTextChannel getTextChannel(DiscordApi api, long channelId) {
+        Channel casinoChannel = api.getChannelById(channelId).orElse(null);
+        if (casinoChannel == null) { return null; }
+        return casinoChannel.asServerTextChannel().orElse(null);
     }
 
     static boolean isValid(long uid, CasinoCommand command, long server, long channel) {
@@ -62,8 +118,8 @@ public class CommandAccessControl {
         if (!casinoServer.users.contains(uid)) {
             addServerUser(uid, server);
         }
-        return (command.isValidInCasinoChannels() && casinoServer.casinioChannels.contains(channel))
-            || (command.isValidInGachaChannels() && casinoServer.eventChannel == channel);
+        return (command.isValidInCasinoChannels() && casinoServer.casinoChannelIds.contains(channel))
+            || (command.isValidInGachaChannels() && casinoServer.isEventChannel(channel));
     }
 
     static void addServerUser(long uid, long server) {
@@ -73,57 +129,73 @@ public class CommandAccessControl {
         }
     }
 
-    static boolean addServer(long server, String serverName, long uid) {
-        if (!logAddServer(server, serverName, uid)) {
+    static boolean addServer(long server, String serverName, long uid, DiscordApi api) {
+        FetchedServer newServer = logAddServer(server, serverName, uid);
+        if (newServer == null) {
             return false;
         }
-        servers.put(server, new CasinoServer(serverName));
+        initializeServer(newServer, api);
         return true;
     }
 
-    static String handleRegisterCasinoChannel(long uid, long server, String serverName,
-            long channel, String channelName) {
-        if (servers.containsKey(server) && servers.get(server).casinioChannels.contains(channel)) {
-            return "Unable to add casino channel: Specified channel is already registered";
-        }
-
-        if (!servers.containsKey(server)) {
-            if (!addServer(server, serverName, uid)) {
+    static String handleRegisterCasinoChannel(long uid, long serverId, String serverName,
+            Channel channel, DiscordApi api) {
+        if (!servers.containsKey(serverId)) {
+            boolean added = addServer(serverId, serverName, uid, api);
+            if (!added) {
                 return "Unable to add casino channel: DB Error adding this server";
             }
         }
+        CasinoServer server = servers.get(serverId);
 
-        if (!logAddCasinoChannel(server, channel, channelName, uid)) {
+        if (server.casinoChannelIds.contains(channel.getId())) {
+            return "Unable to add casino channel: Specified channel is already registered";
+        }
+
+        ServerTextChannel textChannel = channel.asServerTextChannel().orElse(null);
+        if (textChannel == null) {
+            return "Unable to add casino channel: Specified channel is not a server text channel";
+        }
+
+        if (!logAddCasinoChannel(serverId, textChannel.getId(), textChannel.getName(), uid)) {
             return "Unable to add casino channel: DB Error adding this channel";
         }
-        servers.get(server).casinioChannels.add(channel);
-        System.out.println("#" + channelName + " registered as a casino channel for server "
-            + serverName + " by " + uid);
+
+        server.casinioChannels.add(textChannel);
+        server.casinoChannelIds.add(textChannel.getId());
+        System.out.println("#" + textChannel.getName()
+            + " registered as a casino channel for server " + serverName + " by " + uid);
         return "Channel registered";
     }
 
-    static String handleRegisterEventChannel(long uid, long server, String serverName, long channel, String channelName) {
-        if (servers.containsKey(server)) {
-            if (servers.get(server).eventChannel == channel) {
-                return "Unable to add event channel: Specified channel is already registered";
-            } else if (servers.get(server).eventChannel != CHANNEL_NOT_FOUND) {
-                return "Unable to add event channel: An event channel is already registered for this server (#"
-                    + servers.get(server).eventChannelName + ")";
-            }
-        }
-
-        if (!servers.containsKey(server)) {
-            if (!addServer(server, serverName, uid)) {
+    static String handleRegisterEventChannel(long uid, long serverId, String serverName,
+            Channel channel, DiscordApi api) {
+        if (!servers.containsKey(serverId)) {
+            boolean added = addServer(serverId, serverName, uid, api);
+            if (!added) {
                 return "Unable to add event channel: DB Error adding this server";
             }
         }
 
-        if (!logSetEventChannel(server, channel, channelName)) {
+        ServerTextChannel textChannel = channel.asServerTextChannel().orElse(null);
+        if (textChannel == null) {
+            return "Unable to add event channel: Specified channel is not a server text channel";
+        }
+
+        CasinoServer server = servers.get(serverId);
+
+        if (server.eventChannel.getId() == textChannel.getId()) {
+            return "Unable to add event channel: Specified channel is already registered";
+        } else if (server.eventChannel != null) {
+            return "Unable to add event channel: An event channel is already registered for this server (#"
+                + server.eventChannel.getName() + ")";
+        }
+
+        if (!logSetEventChannel(server.serverId, textChannel.getId(), textChannel.getName())) {
             return "Unable to add event channel: DB Error adding this channel";
         }
-        servers.get(server).eventChannel = channel;
-        servers.get(server).eventChannelName = channelName;
-        System.out.println("#" + channelName + " registered as the event channel for server "
+        server.eventChannel = textChannel;
+        System.out.println("#" + textChannel.getName() + " registered as the event channel for server "
             + serverName + " by " + uid);
         return "Channel registered";
     }
@@ -156,19 +228,19 @@ public class CommandAccessControl {
 
         CasinoServer casinoServer = servers.get(server);
 
-        if (casinoServer.eventChannel == CHANNEL_NOT_FOUND) {
+        if (casinoServer.eventChannel == null) {
             return "Unable to deregister event channel: No event channel is registered for this server";
-        } else if (casinoServer.eventChannel != channel) {
+        } else if (casinoServer.eventChannel.getId() != channel) {
             return "Unable to deregister event channel: Specified channel is not the event channel (event channel is #"
-                + casinoServer.eventChannelName + ")";
+                + casinoServer.eventChannel.getName() + ")";
         }
 
         if (!logRemoveEventChannel(server)) {
             return "Unable to deregister event channel: DB Error removing event channel";
         }
-        casinoServer.eventChannel = CHANNEL_NOT_FOUND;
-        casinoServer.eventChannelName = "";
-        System.out.println("#" + casinoServer.eventChannelName + " deregistered as event channel for server "
+        String channelName = casinoServer.eventChannel.getName();
+        casinoServer.eventChannel = null;
+        System.out.println("#" + channelName + " deregistered as event channel for server "
             + casinoServer.serverName + " by " + uid);
         return "Channel deregistered";
     }
@@ -188,6 +260,11 @@ public class CommandAccessControl {
     static void increaseMoneyMachinePot(long server, long amount) {
         if (!servers.containsKey(server)) { return; }
         servers.get(server).setMoneyMachinePot(logIncreaseMoneyMachinePot(server, amount));
+    }
+
+    static void sendMessage(long server, String message) {
+        if (!servers.containsKey(server)) { return; }
+        servers.get(server).sendCasinoMessage(message);
     }
 
     //////////////////////////////////////////////////////////
@@ -227,39 +304,28 @@ public class CommandAccessControl {
         return CasinoDB.executeSetQuery("SELECT uid FROM admin_user;");
     }
 
-    private static Map<Long, CasinoServer> fetchCasinoServers() {
-        String query = "SELECT server_id, name, event_channel, event_channel_name, money_machine_pot FROM casino_server;";
-        Map<Long, CasinoServer> servers = new HashMap<>();
+    private static List<FetchedServer> fetchCasinoServers() {
+        String query = "SELECT server_id, name, event_channel, money_machine_pot FROM casino_server;";
+        List<FetchedServer> servers = new ArrayList<>();
         return CasinoDB.executeQueryWithReturn(query, results -> {
             while (results.next()) {
-                long serverId = results.getLong(1);
-                String serverName = results.getString(2);
-                long channelId = results.getLong(3);
-                String channelName = results.getString(4);
-                long moneyMachinePot = results.getLong(5);
-                servers.put(serverId, new CasinoServer(serverName, channelId, channelName, moneyMachinePot));
-                System.out.println("Initialized server " + serverName + " with id " + serverId);
+                servers.add(new FetchedServer(results.getLong(1), results.getString(2),
+                    results.getLong(3), results.getLong(4)));
             }
             return servers;
         }, servers);
     }
 
-    private static void populateCasinoChannels(Map<Long, CasinoServer> servers) {
-        for (Map.Entry<Long, CasinoServer> entry : servers.entrySet()) {
-            String query = "SELECT channel_id FROM casino_channel WHERE server_id = "
-                + entry.getKey() + ";";
-            entry.getValue().casinioChannels = CasinoDB.executeSetQuery(query);
-        }
+    private static Set<Long> fetchCasinoChannels(long server) {
+        String query = "SELECT channel_id FROM casino_channel WHERE server_id = "
+            + server + ";";
+        return CasinoDB.executeSetQuery(query);
     }
 
-    private static void populateCasinoUsers(Map<Long, CasinoServer> servers) {
-        for (Map.Entry<Long, CasinoServer> entry : servers.entrySet()) {
-            String query = "SELECT uid FROM casino_server_user WHERE server_id = "
-                + entry.getKey() + ";";
-            entry.getValue().users = CasinoDB.executeSetQuery(query);
-            System.out.println("Populated " + entry.getValue().users.size()
-                + " users for " + entry.getValue().serverName);
-        }
+    private static Set<Long> fetchCasinoUsers(long server) {
+        String query = "SELECT uid FROM casino_server_user WHERE server_id = "
+            + server + ";";
+        return CasinoDB.executeSetQuery(query);
     }
 
     private static boolean logAddServerUser(long uid, long server) {
@@ -269,10 +335,17 @@ public class CommandAccessControl {
         return CasinoDB.executeUpdate(query);
     }
 
-    private static boolean logAddServer(long server, String name, long uid) {
+    private static FetchedServer logAddServer(long server, String name, long uid) {
         String query = "INSERT INTO casino_server (server_id, name, added_by) VALUES ("
-            + server + ", ?, " + uid + ") ON CONFLICT (server_id) DO NOTHING;";
-        return CasinoDB.executeValidatedUpdate(query, name);
+            + server + ", ?, " + uid + ") ON CONFLICT (server_id) DO NOTHING RETURNING "
+            + "server_id, name, event_channel, money_machine_pot;";
+        return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new FetchedServer(results.getLong(1), results.getString(2),
+                    results.getLong(3), results.getLong(4));
+            }
+            return null;
+        }, null, name);
     }
 
     private static boolean logAddCasinoChannel(long server, long channel, String channelName, long uid) {
