@@ -757,10 +757,10 @@ public class HBMain {
                     server.getName(), channel, api);
             case REGISTER_SUBCOMMAND_REMOVE_CASINO_CHANNEL:
                 return CasinoServerManager.handleDeregisterCasinoChannel(uid, server.getId(),
-                    channel.getId());
+                    channel);
             case REGISTER_SUBCOMMAND_REMOVE_EVENT_CHANNEL:
                 return CasinoServerManager.handleDeregisterEventChannel(uid, server.getId(),
-                    channel.getId());
+                    channel);
             default:
                 throw new IllegalArgumentException("Unexpected registercommand subcommand received: "
                     + subcommand);

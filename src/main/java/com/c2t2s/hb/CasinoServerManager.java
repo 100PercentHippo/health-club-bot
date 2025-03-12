@@ -200,48 +200,58 @@ public class CasinoServerManager {
         return "Channel registered";
     }
 
-    static String handleDeregisterCasinoChannel(long uid, long server, long channel) {
-        if (!servers.containsKey(server)) {
+    static String handleDeregisterCasinoChannel(long uid, long serverId, Channel channel) {
+        if (!servers.containsKey(serverId)) {
             return "Unable to deregister casino channel: Server is not registered";
         }
 
-        CasinoServer casinoServer = servers.get(server);
+        ServerTextChannel textChannel = channel.asServerTextChannel().orElse(null);
+        if (textChannel == null) {
+            return "Unable to deregister casino channel: Specified channel is not a server text channel";
+        }
 
-        if (!casinoServer.casinioChannels.contains(channel)) {
+        CasinoServer server = servers.get(serverId);
+
+        if (!server.casinoChannelIds.contains(channel.getId())) {
             return "Unable to deregister casino channel: Specified channel is not registered";
         }
 
-        String channelName = logRemoveCasinoChannel(server, channel);
-        if (channelName == null) {
+        if (!logRemoveCasinoChannel(serverId, channel.getId())) {
             return "Unable to deregister casino channel: DB Error removing channel";
         }
-        casinoServer.casinioChannels.remove(channel);
-        System.out.println("#" + channelName + " deregistered as a casino channel for server "
-            + casinoServer.serverName + " by " + uid);
+        server.casinioChannels.remove(textChannel);
+        server.casinoChannelIds.remove(channel.getId());
+        System.out.println("#" + textChannel.getName()
+            + " deregistered as a casino channel for server " + server.serverName + " by " + uid);
         return "Channel deregistered";
     }
 
-    static String handleDeregisterEventChannel(long uid, long server, long channel) {
-        if (!servers.containsKey(server)) {
+    static String handleDeregisterEventChannel(long uid, long serverId, Channel channel) {
+        if (!servers.containsKey(serverId)) {
             return "Unable to deregister casino channel: Server is not registered";
         }
 
-        CasinoServer casinoServer = servers.get(server);
-
-        if (casinoServer.eventChannel == null) {
-            return "Unable to deregister event channel: No event channel is registered for this server";
-        } else if (casinoServer.eventChannel.getId() != channel) {
-            return "Unable to deregister event channel: Specified channel is not the event channel (event channel is #"
-                + casinoServer.eventChannel.getName() + ")";
+        ServerTextChannel textChannel = channel.asServerTextChannel().orElse(null);
+        if (textChannel == null) {
+            return "Unable to deregister casino channel: Specified channel is not a server text channel";
         }
 
-        if (!logRemoveEventChannel(server)) {
+        CasinoServer server = servers.get(serverId);
+
+        if (server.eventChannel == null) {
+            return "Unable to deregister event channel: No event channel is registered for this server";
+        } else if (server.eventChannel.getId() != textChannel.getId()) {
+            return "Unable to deregister event channel: Specified channel is not the event channel (event channel is #"
+                + server.eventChannel.getName() + ")";
+        }
+
+        if (!logRemoveEventChannel(serverId)) {
             return "Unable to deregister event channel: DB Error removing event channel";
         }
-        String channelName = casinoServer.eventChannel.getName();
-        casinoServer.eventChannel = null;
+        String channelName = server.eventChannel.getName();
+        server.eventChannel = null;
         System.out.println("#" + channelName + " deregistered as event channel for server "
-            + casinoServer.serverName + " by " + uid);
+            + server.serverName + " by " + uid);
         return "Channel deregistered";
     }
 
@@ -360,11 +370,10 @@ public class CasinoServerManager {
         return CasinoDB.executeValidatedUpdate(query, channelName);
     }
 
-    // Returns name of removed channel, null if the operation was unsuccessful
-    private static String logRemoveCasinoChannel(long server, long channel) {
+    private static boolean logRemoveCasinoChannel(long server, long channel) {
         String query = "DELETE FROM casino_channel WHERE channel_id = "
-            + channel + " AND server_id  = " + server + " RETURNING name;";
-        return CasinoDB.executeStringQuery(query);
+            + channel + " AND server_id  = " + server + ";";
+        return CasinoDB.executeUpdate(query);
     }
 
     private static boolean logRemoveEventChannel(long server) {
