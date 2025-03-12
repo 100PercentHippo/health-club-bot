@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.Channel;
@@ -20,8 +23,7 @@ public class CasinoServerManager {
 
     private static Set<Long> adminUsers = new HashSet<>();
     private static Map<Long, CasinoServer> servers = new HashMap<>();
-
-    private static final long INITIAL_MONEY_MACHINE_POT = 1000;
+    private static ScheduledThreadPoolExecutor timer = new ScheduledThreadPoolExecutor(1);
 
     private static class CasinoServer {
         private long serverId;
@@ -184,11 +186,13 @@ public class CasinoServerManager {
 
         CasinoServer server = servers.get(serverId);
 
-        if (server.eventChannel.getId() == textChannel.getId()) {
-            return "Unable to add event channel: Specified channel is already registered";
-        } else if (server.eventChannel != null) {
-            return "Unable to add event channel: An event channel is already registered for this server (#"
-                + server.eventChannel.getName() + ")";
+        if (server.eventChannel != null) {
+            if (server.eventChannel.getId() == textChannel.getId()) {
+                return "Unable to add event channel: Specified channel is already registered";
+            } else {
+                return "Unable to add event channel: An event channel is already registered for this server (#"
+                    + server.eventChannel.getName() + ")";
+            }
         }
 
         if (!logSetEventChannel(server.serverId, textChannel.getId(), textChannel.getName())) {
@@ -277,6 +281,17 @@ public class CasinoServerManager {
         servers.get(server).sendCasinoMessage(message);
     }
 
+    static void scheduleMessage(long server, Callable<String> method, long delay, TimeUnit unit) {
+        timer.schedule(() -> {
+            try {
+                sendMessage(server, method.call());
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
+        }, delay, unit);
+    }
+
     //////////////////////////////////////////////////////////
 
     // CREATE TABLE IF NOT EXISTS admin_user (
@@ -289,7 +304,7 @@ public class CasinoServerManager {
     //   event_channel bigint DEFAULT NULL,
     //   event_channel_name varchar(100) DEFAULT NULL,
     //   added_by bigint NOT NULL,
-    //   money_machine_pot bigint NOT NULL DEFAULT 0,
+    //   money_machine_pot bigint NOT NULL DEFAULT 1000,
     //   CONSTRAINT casino_server_added_by FOREIGN KEY(added_by) REFERENCES money_user(uid)
     // );
 

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 public class GachaItems {
 
@@ -568,7 +569,8 @@ public class GachaItems {
             builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(i % 3)));
         }
 
-        CasinoServerManager.sendMessage(server, "test");
+        CasinoServerManager.sendMessage(server, "What do you call a fish with no eyes?");
+        CasinoServerManager.scheduleMessage(server, () -> "Fssh :joy:", 1, TimeUnit.MINUTES);
         return builder.toString();
     }
 
