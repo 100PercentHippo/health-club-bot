@@ -19,6 +19,7 @@ import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 
+import com.c2t2s.hb.Event.EventType;
 import com.c2t2s.hb.HBMain.CasinoCommand;
 
 public class CasinoServerManager {
@@ -40,6 +41,8 @@ public class CasinoServerManager {
         private List<ServerTextChannel> casinioChannels;
         private Set<Long> users = new HashSet<>();
 
+        private Event activeEvent;
+
         CasinoServer(long serverId, String serverName, ServerTextChannel eventChannel,
                 Set<Long> casinoChannelIds, List<ServerTextChannel> casinoChannels, Set<Long> users,
                 long moneyMachinePot) {
@@ -50,6 +53,8 @@ public class CasinoServerManager {
             this.casinioChannels = casinoChannels;
             this.users = users;
             this.moneyMachinePot = moneyMachinePot;
+
+            initializeEvent();
         }
 
         long getMoneyMachinePot() { return moneyMachinePot; }
@@ -92,6 +97,18 @@ public class CasinoServerManager {
                 return null;
             }
             return eventChannel.sendMessage(message).join();
+        }
+
+        void initializeEvent() {
+            if (eventChannel == null) { return; }
+            activeEvent = Event.EventFactory.createEvent(serverId, EventType.FISH);
+            activeEvent.initialize();
+        }
+
+        void createNewEvent() {
+            activeEvent = Event.EventFactory.createEvent(serverId,
+                EventType.getNextEventType(activeEvent.getType()));
+            activeEvent.initialize();
         }
     }
 
@@ -340,7 +357,7 @@ public class CasinoServerManager {
 
     static void beginNewEvent(long server) {
         if (!servers.containsKey(server)) { return; }
-        // TODO
+        servers.get(server).createNewEvent();
     }
 
     //////////////////////////////////////////////////////////

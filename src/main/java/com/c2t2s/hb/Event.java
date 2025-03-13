@@ -12,8 +12,8 @@ abstract class Event {
         // Hide default constructor
         private EventFactory() {}
 
-        static Event createEvent(long server) {
-            return new TestEvent(server, Duration.ofSeconds(10));
+        static Event createEvent(long server, EventType type) {
+            return new TestEvent(type, server, Duration.ofMinutes(2));
         }
     }
 
@@ -84,8 +84,8 @@ abstract class Event {
     protected long server;
     protected Duration timeUntilResolution;
 
-    static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofSeconds(5);
-    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(5);
+    static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(1);
+    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(1);
 
     protected Event(EventType type, long server, Duration timeUntilResolution) {
         this.type = type;
@@ -138,12 +138,12 @@ abstract class Event {
     }
 
     private static class TestEvent extends Event {
-        TestEvent(long server, Duration timeUntilResolution) {
-            super(EventType.FISH, server, timeUntilResolution);
+        TestEvent(EventType type, long server, Duration timeUntilResolution) {
+            super(type, server, timeUntilResolution);
         }
 
         String createInitialMessage() {
-            return "Event starting";
+            return type.name() + " event starting";
         }
 
         String createReminderMessage() {
