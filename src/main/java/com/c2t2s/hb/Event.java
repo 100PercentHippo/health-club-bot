@@ -1,34 +1,21 @@
 package com.c2t2s.hb;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-
-class EventFactory {
-
-    // Hide default constructor
-    private EventFactory() {}
-
-    static Event createEvent(Event.EventType type, Instant endTime) {
-        return createEvent(type, endTime, Event.Holiday.NONE);
-    }
-
-    static Event createEvent(Event.EventType type, Instant endTime, Event.Holiday holiday) {
-        return createEvent(type, endTime, holiday, false);
-    }
-
-    static Event createEvent(Event.EventType type, Instant endTime, Event.Holiday holiday,
-            boolean complete) {
-        return createEvent(type, endTime, holiday, complete, false);
-    }
-
-    static Event createEvent(Event.EventType type, Instant endTime, Event.Holiday holiday,
-            boolean complete, boolean locked) {
-        // TODO
-        return null;
-    }
-}
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
 
 abstract class Event {
+
+    static class EventFactory {
+
+        // Hide default constructor
+        private EventFactory() {}
+
+        static Event createEvent(long server) {
+            return new TestEvent(server, Duration.ofSeconds(10));
+        }
+    }
 
     // It is probably obvious looking at these enums that I'm a C++ dev
     static final int BASE_EVENT_COUNT = 4; // FISH, ROB, WORK, PICKPOCKET
@@ -93,89 +80,94 @@ abstract class Event {
         }
     }
 
-    static final int HOLIDAY_ID_NONE = 0;
-    static final int HOLIDAY_ID_HALLOWEEN = 1;
-    static final int HOLIDAY_ID_THANKSGIVING = 2;
-    static final int HOLIDAY_ID_CHRISTMAS = 3;
-    enum Holiday {
-        NONE(HOLIDAY_ID_NONE), HALLOWEEN(HOLIDAY_ID_HALLOWEEN),
-        THANKSGIVING(HOLIDAY_ID_THANKSGIVING), CHRISTMAS(HOLIDAY_ID_CHRISTMAS);
-
-        int id;
-        private Holiday(int id) { this.id = id; }
-
-        static Holiday fromId(int id) {
-            switch (id) {
-                case HOLIDAY_ID_HALLOWEEN:
-                    return HALLOWEEN;
-                case HOLIDAY_ID_THANKSGIVING:
-                    return THANKSGIVING;
-                case HOLIDAY_ID_CHRISTMAS:
-                    return CHRISTMAS;
-                case HOLIDAY_ID_NONE:
-                default:
-                    return NONE;
-            }
-        }
-    }
-
     protected EventType type;
-    protected Holiday holiday;
-    protected boolean isComplete;
-    protected boolean locked;
-    private Instant endTime;
+    protected long server;
+    protected Duration timeUntilResolution;
 
-    boolean isComplete() {
-        return isComplete;
-    }
+    static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofSeconds(5);
+    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(5);
 
-    Instant getEndTime() {
-        return endTime;
+    protected Event(EventType type, long server, Duration timeUntilResolution) {
+        this.type = type;
+        this.server = server;
+        this.timeUntilResolution = timeUntilResolution;
     }
 
     EventType getType() {
         return type;
     }
 
-    abstract HBMain.MultistepResponse completeEvent();
+    abstract String createInitialMessage();
 
-    abstract void awardCharacterXp();
+    abstract void handleJoinMessage(long uid, Gacha.GachaCharacter character, int selection);
 
-    abstract HBMain.SingleResponse createInitialMessage();
+    abstract String createReminderMessage();
 
-    abstract HBMain.SingleResponse createReminderMessage();
+    abstract Queue<String> createResolutionMessages();
 
-    abstract HBMain.SingleResponse createJoinMessage(long uid);
+    void awardCharacterXp() {
+        // TODO
+    }
 
-    abstract HBMain.SingleResponse handleUserJoin(long uid, long cid, int selection);
+    Void initialize() {
+        if (timeUntilResolution.compareTo(EVENT_ENDING_REMINDER_WINDOW) < 0) {
+            CasinoServerManager.schedule(this::resolve, timeUntilResolution);
+        } else {
+            CasinoServerManager.schedule(this::postReminder,
+                timeUntilResolution.minus(EVENT_ENDING_REMINDER_WINDOW));
+        }
 
-    abstract HBMain.SingleResponse switchUserSelection(long uid, long cid, int selection);
+        CasinoServerManager.sendEventMessage(server, createInitialMessage());
+        return null;
+    }
+
+    Void postReminder() {
+        CasinoServerManager.schedule(this::resolve, EVENT_ENDING_REMINDER_WINDOW);
+        CasinoServerManager.sendEventMessage(server, createReminderMessage());
+        return null;
+    }
+
+    Void resolve() {
+        CasinoServerManager.schedule(() -> {
+            CasinoServerManager.beginNewEvent(server);
+            return null;
+        }, NEW_EVENT_DELAY);
+
+        CasinoServerManager.sendMultipartEventMessage(server, createResolutionMessages());
+        return null;
+    }
+
+    private static class TestEvent extends Event {
+        TestEvent(long server, Duration timeUntilResolution) {
+            super(EventType.FISH, server, timeUntilResolution);
+        }
+
+        String createInitialMessage() {
+            return "Event starting";
+        }
+
+        String createReminderMessage() {
+            return "Ending soon!";
+        }
+
+        Queue<String> createResolutionMessages() {
+            return new LinkedList<>(Arrays.asList("D", "D O", "D O N", "D O N E"));
+        }
+
+        void handleJoinMessage(long uid, Gacha.GachaCharacter character, int selection) {}
+    }
 
     //////////////////////////////////////////////////////////
 
     // CREATE TABLE IF NOT EXISTS event (
-    //  endTime timestamp NOT NULL,
     //  server bigint NOT NULL,
-    //  type integer NOT NULL DEFAULT 0,
-    //  holiday integer NOT NULL DEFAULT 0,
-    //  locked boolean NOT NULL DEFAULT FALSE,
+    //  eventId integer NOT NULL,
+    //  type integer NOT NULL,
+    //  theme integer NOT NULL,
     //  completed boolean NOT NULL DEFAULT FALSE,
-    //  PRIMARY KEY(endTime, server),
-    //  CONSTRAINT event_server_id FOREIGN KEY(server) REFERENCES event_server(server)
+    //  PRIMARY KEY(server, eventId),
+    //  CONSTRAINT event_server_id FOREIGN KEY(server) REFERENCES casino_server(server_id)
     // );
 
-    static Event executeEventQuery(String query) {
-        return CasinoDB.executeQueryWithReturn(query, results -> {
-            if (results.next()) {
-                Timestamp endTime = results.getTimestamp(1);
-                int type = results.getInt(2);
-                int holiday = results.getInt(3);
-                boolean completed = results.getBoolean(4);
-                boolean locked = results.getBoolean(5);
-                return EventFactory.createEvent(EventType.fromId(type), endTime.toInstant(),
-                    Holiday.fromId(holiday), completed, locked);
-            }
-            return null;
-        }, null);
-    }
+
 }

@@ -557,21 +557,9 @@ public class GachaItems {
     }
 
     static String handleTest(long server, long uid) {
-        StringBuilder builder = new StringBuilder();
-
-        Item item = generateItem(uid);
-        builder.append(item.getBriefDescription());
-        builder.append("\n");
-        item.awardTo(uid);
-
-        for (int i = 0; i < 9; ++i) {
-            builder.append('\n');
-            builder.append(handleAwardGem(uid, GachaGems.Gem.getRandomGem(i % 3)));
-        }
-
-        CasinoServerManager.sendMessage(server, "What do you call a fish with no eyes?");
-        CasinoServerManager.scheduleMessage(server, () -> "Fssh :joy:", 1, TimeUnit.MINUTES);
-        return builder.toString();
+        Event event = Event.EventFactory.createEvent(server);
+        event.initialize();
+        return "Scheduled";
     }
 
     static String handleItemInfo(long uid, String iidString) {

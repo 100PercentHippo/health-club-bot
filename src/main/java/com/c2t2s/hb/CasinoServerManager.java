@@ -1,16 +1,21 @@
 package com.c2t2s.hb;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 
@@ -54,10 +59,39 @@ public class CasinoServerManager {
             return eventChannel != null && eventChannel.getId() == channelId;
         }
 
-        void sendCasinoMessage(String message) {
-            for (ServerTextChannel channel : casinioChannels) {
-                channel.sendMessage(message).join();
+        List<Message> sendCasinoMessage(String message) {
+            return sendCasinoMessage(message, false);
+        }
+
+        List<Message> sendCasinoMessage(String message, boolean skipReturn) {
+            if (skipReturn) {
+                for (ServerTextChannel channel : casinioChannels) {
+                    channel.sendMessage(message);
+                }
+                return null;
             }
+
+            List<Message> sentMessages = new ArrayList<>();
+            for (ServerTextChannel channel : casinioChannels) {
+                try {
+                    sentMessages.add(channel.sendMessage(message).join());
+                } catch (CancellationException | CompletionException e) {
+                    e.printStackTrace();
+                }
+            }
+            return sentMessages;
+        }
+
+        Message sendEventMessage(String message) {
+            return sendEventMessage(message, false);
+        }
+
+        Message sendEventMessage(String message, boolean skipReturn) {
+            if (skipReturn) {
+                eventChannel.sendMessage(message);
+                return null;
+            }
+            return eventChannel.sendMessage(message).join();
         }
     }
 
@@ -281,15 +315,32 @@ public class CasinoServerManager {
         servers.get(server).sendCasinoMessage(message);
     }
 
-    static void scheduleMessage(long server, Callable<String> method, long delay, TimeUnit unit) {
-        timer.schedule(() -> {
-            try {
-                sendMessage(server, method.call());
-            } catch (Exception e) {
-                e.printStackTrace();
-                return;
-            }
-        }, delay, unit);
+    static void sendEventMessage(long server, String message) {
+        if (!servers.containsKey(server)) { return; }
+        servers.get(server).sendEventMessage(message);
+    }
+
+    static void sendMultipartEventMessage(long server, Queue<String> messageParts) {
+        if (!servers.containsKey(server)) { return; }
+        Message message = servers.get(server).sendEventMessage(messageParts.poll(), false);
+        timer.schedule(() -> updateMessage(message, messageParts), 1, TimeUnit.SECONDS);
+    }
+
+    static Void updateMessage(Message message, Queue<String> updatedContents) {
+        message.edit(updatedContents.poll());
+        if (!updatedContents.isEmpty()) {
+            timer.schedule(() -> updateMessage(message, updatedContents), 1, TimeUnit.SECONDS);
+        }
+        return null;
+    }
+
+    static void schedule(Callable<Void> method, Duration timeUntil) {
+        timer.schedule(method, timeUntil.toSeconds(), TimeUnit.SECONDS);
+    }
+
+    static void beginNewEvent(long server) {
+        if (!servers.containsKey(server)) { return; }
+        // TODO
     }
 
     //////////////////////////////////////////////////////////
