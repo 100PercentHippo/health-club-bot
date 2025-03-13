@@ -26,12 +26,10 @@ abstract class Event {
     static final int EVENTTYPE_ID_AVERAGE = 4;
     static final int EVENTTYPE_ID_SUPER_GUESS = 5;
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
-    static final int EVENTTYPE_ID_SUPER_OVERUNDER = 7;
     enum EventType {
         FISH(EVENTTYPE_ID_FISH), ROB(EVENTTYPE_ID_ROB), WORK(EVENTTYPE_ID_WORK),
         PICKPOCKET(EVENTTYPE_ID_PICKPOCKET), AVERAGE(EVENTTYPE_ID_AVERAGE),
-        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS), SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS),
-        SUPER_OVERUNDER(EVENTTYPE_ID_SUPER_OVERUNDER);
+        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS), SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS);
 
         int id;
         private EventType(int id) { this.id = id; }
@@ -50,8 +48,6 @@ abstract class Event {
                     return SUPER_GUESS;
                 case EVENTTYPE_ID_SUPER_SLOTS:
                     return SUPER_SLOTS;
-                case EVENTTYPE_ID_SUPER_OVERUNDER:
-                    return SUPER_OVERUNDER;
                 case EVENTTYPE_ID_FISH:
                 default:
                     return FISH;

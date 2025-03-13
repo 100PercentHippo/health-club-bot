@@ -101,8 +101,8 @@ public class CasinoServerManager {
 
         void initializeEvent() {
             if (eventChannel == null) { return; }
-            activeEvent = Event.EventFactory.createEvent(serverId, EventType.FISH);
-            activeEvent.initialize();
+            //activeEvent = Event.EventFactory.createEvent(serverId, EventType.FISH);
+            //activeEvent.initialize();
         }
 
         void createNewEvent() {
