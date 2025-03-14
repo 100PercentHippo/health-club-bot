@@ -276,6 +276,24 @@ class Gacha {
             }
         }
 
+        static GachaCharacter fromUniqueId(long uid, String uniqueId)
+                throws IllegalArgumentException {
+            long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
+            SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
+            if (cid < 0) {
+                throw new IllegalArgumentException("Unrecognized character id");
+            }
+            GachaCharacter character = getCharacter(uid, cid, shiny);
+            if (character == null) {
+                long pullBalance = getPullCount(uid);
+                if (pullBalance < 0) {
+                    throw new IllegalArgumentException(Casino.USER_NOT_FOUND_MESSAGE);
+                }
+                throw new IllegalArgumentException("Specified character not found");
+            }
+            return character;
+        }
+
         @Override
         public boolean equals(Object other) {
             if (!(other instanceof GachaCharacter)) {
@@ -849,21 +867,12 @@ class Gacha {
     }
 
     static String handleCharacterInfo(long uid, String uniqueId) {
-        long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
-        SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
-        if (cid < 0) {
-            return "Unrecognized character id";
+        try {
+            GachaCharacter character = GachaCharacter.fromUniqueId(uid, uniqueId);
+            return character.toString();
+        } catch (IllegalArgumentException e) {
+            return e.getMessage();
         }
-        GachaCharacter character = getCharacter(uid, cid, shiny);
-        if (character == null) {
-            long pullBalance = getPullCount(uid);
-            if (pullBalance < 0) {
-                return Casino.USER_NOT_FOUND_MESSAGE;
-            } else {
-                return "Unable to fetch details for provided character";
-            }
-        }
-        return character.toString();
     }
 
     static String handleBannerList(long uid) {
@@ -924,6 +933,12 @@ class Gacha {
         return getCharacters(uid, substring, false);
     }
 
+    static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring,
+            Event.EventType eventType) {
+        // TODO: Sort by event stat
+        return getCharacters(uid, substring, false);
+    }
+
     static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring, boolean withItems) {
         int shiny = -1;
         if (substring.toLowerCase().startsWith(SHINY_TYPE.SHINY.getAdjective().toLowerCase())) {
@@ -951,14 +966,11 @@ class Gacha {
             return "Unable to give item: Specified item not found";
         }
 
-        long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
-        SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
-        if (cid < 0) {
-            return "Unable to give item: Unrecognized character id";
-        }
-        GachaCharacter character = getCharacter(uid, cid, shiny);
-        if (character == null) {
-            return "Unable to give item: Specified character not found";
+        GachaCharacter character;
+        try {
+            character = GachaCharacter.fromUniqueId(uid, uniqueId);
+        } catch (IllegalArgumentException e) {
+            return "Unable to give item: " + e.getMessage();
         }
 
         StringBuilder response = new StringBuilder();
@@ -969,9 +981,10 @@ class Gacha {
         GachaCharacter oldCharacter = getCharacterByItem(uid, iid);
 
         if (oldCharacter != null && !oldCharacter.equals(character)) {
-            moveItem(uid, oldCharacter.id, oldCharacter.shiny.getId(), cid, shiny.getId(), iid);
+            moveItem(uid, oldCharacter.id, oldCharacter.shiny.getId(), character.id,
+                character.shiny.getId(), iid);
         } else {
-            giveItem(uid, cid, shiny.getId(), iid);
+            giveItem(uid, character.id, character.shiny.getId(), iid);
         }
         character.item = item;
 
@@ -999,21 +1012,19 @@ class Gacha {
     }
 
     static String handleRemoveItem(long uid, String uniqueId) {
-        long cid = GachaCharacter.parseUniqueIdCid(uniqueId);
-        SHINY_TYPE shiny = GachaCharacter.parseUniqueIdShiny(uniqueId);
-        if (cid < 0) {
-            return "Unable to remove item: Unrecognized character id";
+        GachaCharacter character;
+        try {
+            character = GachaCharacter.fromUniqueId(uid, uniqueId);
+        } catch (IllegalArgumentException e) {
+            return "Unable to remove item: " + e.getMessage();
         }
-        GachaCharacter character = getCharacter(uid, cid, shiny);
-        if (character == null) {
-            return "Unable to remove item: Specified character not found";
-        }
+
         if (character.item == null) {
             return "Unable to remove item: Character has no item equipped";
         }
 
         String itemName = character.item.getName();
-        removeItem(uid, cid, shiny.getId());
+        removeItem(uid, character.id, character.shiny.getId());
         return "Unequipped " + itemName + " from " + character.getDisplayName();
     }
 

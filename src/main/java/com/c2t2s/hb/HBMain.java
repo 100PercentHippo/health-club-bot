@@ -360,6 +360,9 @@ public class HBMain {
     private static final String GACHA_COMMAND_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
     private static final String LIST_GEMS_COMMAND = "gacha gem list";
+    private static final String GACHA_EVENT_JOIN = "gacha event join";
+    private static final String GACHA_COMMAND_CHARACTER_OPTION = "character";
+
 
     private static final int REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL = 0;
     private static final int REGISTER_SUBCOMMAND_ADD_EVENT_CHANNEL = 1;
@@ -470,6 +473,10 @@ public class HBMain {
                     i.getArgumentStringValueByIndex(1).get(), i.getArgumentStringValueByIndex(2).get()))),
             entry(LIST_GEMS_COMMAND, new SimpleCasinoCommand(
                 i -> GachaItems.handleListGems(i.getUser().getId()))),
+            entry(GACHA_EVENT_JOIN, new SimpleCasinoCommand(
+                i -> CasinoServerManager.handleEventJoin(i.getServer().get().getId(),
+                    i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
+                    i.getArgumentLongValueByIndex(1).get()))),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
                 i -> handleRegisterChannel(i.getUser().getId(), i.getServer(), i.getChannel(), i.getArgumentLongValueByIndex(0).get()),
                 false,
@@ -602,6 +609,16 @@ public class HBMain {
                 case GACHA_ITEM_REROLL_COMMAND:
                     stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
                         interaction.getFocusedOption().getStringValue().orElse(""));
+                    break;
+                case GACHA_EVENT_JOIN:
+                    if (interaction.getFocusedOption().getName().equals(GACHA_COMMAND_CHARACTER_OPTION)) {
+                        stringOptions = CasinoServerManager.handleEventCharacterAutocomplete(
+                            interaction.getServer().get().getId(), interaction.getUser().getId(),
+                            interaction.getFocusedOption().getStringValue().orElse(""));
+                    } else { // Selection
+                        idOptions = CasinoServerManager.handleEventSelectionAutocomplete(
+                            interaction.getServer().get().getId());
+                    }
                     break;
                 default:
                     return;
@@ -839,7 +856,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "character", "Interact with your characters",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your characters"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single character",
-                        Arrays.asList(SlashCommandOption.createStringOption("character", "Which character to view", true, true))))))
+                        Arrays.asList(SlashCommandOption.createStringOption(GACHA_COMMAND_CHARACTER_OPTION, "Which character to view", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "banner", "View the available banners",
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List available banners"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "info", "View details of a single banner",
@@ -849,9 +866,9 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createStringOption("item", "Which item to view", true, true))),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "equip", "Given an item to a character",
                         Arrays.asList(SlashCommandOption.createStringOption("item", "Which item to equip", true, true),
-                            SlashCommandOption.createStringOption("character", "Which character to give the item to", true, true))),
+                            SlashCommandOption.createStringOption(GACHA_COMMAND_CHARACTER_OPTION, "Which character to give the item to", true, true))),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "unequip", "Unequip the item in use by a character",
-                        Arrays.asList(SlashCommandOption.createStringOption("character", "Which character to give the item to", true, true))),
+                        Arrays.asList(SlashCommandOption.createStringOption(GACHA_COMMAND_CHARACTER_OPTION, "Which character to give the item to", true, true))),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "reroll",
                         "Reroll 3 items with a shared trait into a new item with that trait",
                         Arrays.asList(SlashCommandOption.createStringOption("item1", "The first item", true, true),
@@ -869,6 +886,10 @@ public class HBMain {
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "pulls", "Check how many gacha pulls you have"))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pity", "Check your gacha pity",
                 Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))
+            .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "event", "Commands relating to gacha events",
+                Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "join", "Join an event",
+                    Arrays.asList(SlashCommandOption.createStringOption(GACHA_COMMAND_CHARACTER_OPTION, "Which character to join with", true, true),
+                        SlashCommandOption.createLongOption("Selection", "How to participate in the event", true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(ALLORNOTHING_COMMAND).setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,

@@ -20,6 +20,8 @@ import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 
 import com.c2t2s.hb.Event.EventType;
+import com.c2t2s.hb.Gacha.GachaCharacter;
+import com.c2t2s.hb.HBMain.AutocompleteStringOption;
 import com.c2t2s.hb.HBMain.CasinoCommand;
 
 public class CasinoServerManager {
@@ -308,6 +310,44 @@ public class CasinoServerManager {
         System.out.println("#" + channelName + " deregistered as event channel for server "
             + server.serverName + " by " + uid);
         return "Channel deregistered";
+    }
+
+    static String handleEventJoin(long server, long uid, String characterUniqueId,
+            long selection) {
+        if (!servers.containsKey(server)) {
+            return "Unable to join event: Server is not registered";
+        }
+
+        if (servers.get(server).activeEvent == null) {
+            return "Unable to join event: No active event in this server";
+        }
+
+        GachaCharacter character;
+        try {
+            character = GachaCharacter.fromUniqueId(uid, characterUniqueId);
+        } catch (IllegalArgumentException e) {
+            return "Unable to join event: " + e.getMessage();
+        }
+
+        return servers.get(server).activeEvent.handleUserJoin(uid, character, selection);
+    }
+
+    static List<HBMain.AutocompleteStringOption> handleEventCharacterAutocomplete(long server,
+            long uid, String partialName) {
+        if (!servers.containsKey(server)) {
+            return new ArrayList<>();
+        }
+        if (servers.get(server).activeEvent == null) {
+            return Gacha.getCharacters(uid, partialName);
+        }
+        return Gacha.getCharacters(uid, partialName, servers.get(server).activeEvent.getType());
+    }
+
+    static List<HBMain.AutocompleteIdOption> handleEventSelectionAutocomplete(long server) {
+        if (!servers.containsKey(server) || servers.get(server).activeEvent == null) {
+            return new ArrayList<>();
+        }
+        return servers.get(server).activeEvent.handleSelectionAutocomplete();
     }
 
     static long getMoneyMachinePot(long server) {

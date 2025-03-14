@@ -11,6 +11,7 @@ class Casino {
     private Casino() {}
 
     static class User {
+        private String nickname;
         private int work;
         private int fish;
         private int pick;
@@ -21,8 +22,9 @@ class Casino {
         private Timestamp timer;
         private Timestamp timer2;
 
-        private User(int work, int fish, int pick, int rob, long balance, long chocolateCoins,
-                boolean inJail, Timestamp timer, Timestamp timer2) {
+        private User(String nickname, int work, int fish, int pick, int rob, long balance,
+                long chocolateCoins, boolean inJail, Timestamp timer, Timestamp timer2) {
+            this.nickname = nickname;
             this.work = work;
             this.fish = fish;
             this.pick = pick;
@@ -58,6 +60,7 @@ class Casino {
             return timer2;
         }
 
+        String getNickname() { return nickname; }
         int getWork() { return work; }
         int getFish() { return fish; }
         int getPick() { return pick; }
@@ -1038,16 +1041,18 @@ class Casino {
             + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                int work = results.getInt(1);
-                int fish = results.getInt(2);
-                int pick = results.getInt(3);
-                int rob = results.getInt(4);
-                long balance = results.getLong(5);
-                boolean isJail = results.getBoolean(6);
-                Timestamp time = results.getTimestamp(7);
-                Timestamp time2 = results.getTimestamp(8);
-                long chocolateCoins = results.getLong(9);
-                return new Casino.User(work, fish, pick, rob, balance, chocolateCoins, isJail, time, time2);
+                String nickname = results.getString(1);
+                int work = results.getInt(2);
+                int fish = results.getInt(3);
+                int pick = results.getInt(4);
+                int rob = results.getInt(5);
+                long balance = results.getLong(6);
+                boolean isJail = results.getBoolean(7);
+                Timestamp time = results.getTimestamp(8);
+                Timestamp time2 = results.getTimestamp(9);
+                long chocolateCoins = results.getLong(10);
+                return new Casino.User(nickname, work, fish, pick, rob, balance, chocolateCoins,
+                    isJail, time, time2);
             }
             return null;
         }, null);

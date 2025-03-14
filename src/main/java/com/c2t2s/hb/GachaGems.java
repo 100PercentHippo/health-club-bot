@@ -279,7 +279,7 @@ public class GachaGems {
         BalancedGem() {
             this.id = BALANCED_GEM_ID;
             this.name = "Balanced Gem";
-            this.description = "+2, +1, -1, and -2 to unique stats";
+            this.description = "+2, +1, -1, and -2 to random unique stats";
         }
 
         @Override

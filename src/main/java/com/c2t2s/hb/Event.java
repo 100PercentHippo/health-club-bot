@@ -1,9 +1,16 @@
 package com.c2t2s.hb;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+
+import static java.util.Map.entry;
 
 abstract class Event {
 
@@ -79,14 +86,26 @@ abstract class Event {
     protected EventType type;
     protected long server;
     protected Duration timeUntilResolution;
+    private Map<Long, String> joinSelections;
+    private List<HBMain.AutocompleteIdOption> options;
+
+    private Set<Long> participatingUsers = new HashSet<>();
+    private boolean complete = false;
 
     static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(1);
     static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(1);
 
-    protected Event(EventType type, long server, Duration timeUntilResolution) {
+    protected Event(EventType type, long server, Duration timeUntilResolution,
+            Map<Long, String> joinSelections) {
         this.type = type;
         this.server = server;
         this.timeUntilResolution = timeUntilResolution;
+        this.joinSelections = joinSelections;
+
+        options = new ArrayList<>();
+        for (Map.Entry<Long, String> entry : joinSelections.entrySet()) {
+            options.add(new HBMain.AutocompleteIdOption(entry.getKey(), entry.getValue()));
+        }
     }
 
     EventType getType() {
@@ -95,11 +114,11 @@ abstract class Event {
 
     abstract String createInitialMessage();
 
-    abstract void handleJoinMessage(long uid, Gacha.GachaCharacter character, int selection);
-
     abstract String createReminderMessage();
 
     abstract Queue<String> createResolutionMessages();
+
+    abstract String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character, long selection);
 
     void awardCharacterXp() {
         // TODO
@@ -124,6 +143,7 @@ abstract class Event {
     }
 
     Void resolve() {
+        complete = true;
         CasinoServerManager.schedule(() -> {
             CasinoServerManager.beginNewEvent(server);
             return null;
@@ -133,9 +153,41 @@ abstract class Event {
         return null;
     }
 
+    List<HBMain.AutocompleteIdOption> handleSelectionAutocomplete() {
+        return options;
+    }
+
+    String handleUserJoin(long uid, Gacha.GachaCharacter character, long selection) {
+        if (complete) {
+            return "Unable to join event: Event has ended";
+        }
+        if (!joinSelections.containsKey(selection)) {
+            return "Unable to join event: Unrecognized selection " + selection;
+        }
+        if (participatingUsers.contains(uid)) {
+            return "Unable to join event: You are already participating in this event!";
+        }
+        Casino.User user = Casino.getUser(uid);
+        if (user == null) {
+            return Casino.USER_NOT_FOUND_MESSAGE;
+        }
+        // TODO: Check if the user is participating in an event on another server
+
+        participatingUsers.add(uid);
+        CasinoServerManager.sendEventMessage(server,
+            createPublicUserJoinMessage(user, character, selection));
+        return "Succesfully joined" + type.name().replace('_', ' ') + " event with selection"
+            + joinSelections.get(selection);
+    }
+
     private static class TestEvent extends Event {
+        private static long SELECTION_1_VALUE = 1;
+        private static long SELECTION_2_VALUE = 2;
+
         TestEvent(EventType type, long server, Duration timeUntilResolution) {
-            super(type, server, timeUntilResolution);
+            super(type, server, timeUntilResolution,
+                Map.ofEntries(entry(SELECTION_1_VALUE, "Option 1"),
+                              entry(SELECTION_2_VALUE, "Option 2")));
         }
 
         String createInitialMessage() {
@@ -150,7 +202,9 @@ abstract class Event {
             return new LinkedList<>(Arrays.asList("D", "D O", "D O N", "D O N E"));
         }
 
-        void handleJoinMessage(long uid, Gacha.GachaCharacter character, int selection) {}
+        String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character, long selection) {
+            return user.getNickname() + " joined with " + character.getDisplayName() + " and selection " + selection;
+        }
     }
 
     //////////////////////////////////////////////////////////
