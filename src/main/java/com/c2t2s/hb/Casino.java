@@ -1036,7 +1036,7 @@ class Casino {
     }
 
     static User getUser(long uid) {
-        String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, "
+        String query = "SELECT nickname, work_count, fish_count, pick_count, rob_count, balance, in_jail, "
             + "last_claim, timestamp2, chocolate_coins FROM money_user NATURAL JOIN job_user WHERE uid = "
             + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {

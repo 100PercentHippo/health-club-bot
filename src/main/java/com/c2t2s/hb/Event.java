@@ -137,12 +137,14 @@ abstract class Event {
     }
 
     Void postReminder() {
+        if (!CasinoServerManager.hasEvent(server)) { return null; }
         CasinoServerManager.schedule(this::resolve, EVENT_ENDING_REMINDER_WINDOW);
         CasinoServerManager.sendEventMessage(server, createReminderMessage());
         return null;
     }
 
     Void resolve() {
+        if (!CasinoServerManager.hasEvent(server)) { return null; }
         complete = true;
         CasinoServerManager.schedule(() -> {
             CasinoServerManager.beginNewEvent(server);
@@ -160,11 +162,11 @@ abstract class Event {
     String handleUserJoin(long uid, Gacha.GachaCharacter character, long selection) {
         if (complete) {
             return "Unable to join event: Event has ended";
-        }
-        if (!joinSelections.containsKey(selection)) {
+        } else if (!CasinoServerManager.hasEvent(server)) {
+            return "Unable to join event: No event found";
+        } else if (!joinSelections.containsKey(selection)) {
             return "Unable to join event: Unrecognized selection " + selection;
-        }
-        if (participatingUsers.contains(uid)) {
+        } else  if (participatingUsers.contains(uid)) {
             return "Unable to join event: You are already participating in this event!";
         }
         Casino.User user = Casino.getUser(uid);

@@ -476,7 +476,7 @@ public class HBMain {
             entry(GACHA_EVENT_JOIN, new SimpleCasinoCommand(
                 i -> CasinoServerManager.handleEventJoin(i.getServer().get().getId(),
                     i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
-                    i.getArgumentLongValueByIndex(1).get()))),
+                    i.getArgumentLongValueByIndex(1).get()), true)),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
                 i -> handleRegisterChannel(i.getUser().getId(), i.getServer(), i.getChannel(), i.getArgumentLongValueByIndex(0).get()),
                 false,
@@ -889,7 +889,7 @@ public class HBMain {
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND_GROUP, "event", "Commands relating to gacha events",
                 Arrays.asList(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "join", "Join an event",
                     Arrays.asList(SlashCommandOption.createStringOption(GACHA_COMMAND_CHARACTER_OPTION, "Which character to join with", true, true),
-                        SlashCommandOption.createLongOption("Selection", "How to participate in the event", true))))))
+                        SlashCommandOption.createLongOption("Selection", "How to participate in the event", true, true))))))
             .setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(ALLORNOTHING_COMMAND).setDescription("Test your luck, and maybe set a high score")
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "odds", "Chance to win each roll", true,

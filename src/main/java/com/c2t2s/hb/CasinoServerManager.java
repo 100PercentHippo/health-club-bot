@@ -103,8 +103,8 @@ public class CasinoServerManager {
 
         void initializeEvent() {
             if (eventChannel == null) { return; }
-            //activeEvent = Event.EventFactory.createEvent(serverId, EventType.FISH);
-            //activeEvent.initialize();
+            activeEvent = Event.EventFactory.createEvent(serverId, EventType.FISH);
+            schedule(activeEvent::initialize, Duration.ofSeconds(15));
         }
 
         void createNewEvent() {
@@ -398,6 +398,10 @@ public class CasinoServerManager {
     static void beginNewEvent(long server) {
         if (!servers.containsKey(server)) { return; }
         servers.get(server).createNewEvent();
+    }
+
+    static boolean hasEvent(long server) {
+        return servers.containsKey(server) && servers.get(server).activeEvent != null;
     }
 
     //////////////////////////////////////////////////////////
