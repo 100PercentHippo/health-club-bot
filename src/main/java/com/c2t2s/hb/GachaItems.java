@@ -78,8 +78,8 @@ public class GachaItems {
         }
     }
 
-    // This could be adjusted to be doubles in more granular control
-    // is wanted in the future
+    // This could be adjusted to be doubles in more
+    //  granular control if wanted in the future
     static class StatArray {
         private static final int[] EMPTY_STAT_ARRAY = {0, 0, 0, 0, 0};
 
@@ -140,6 +140,16 @@ public class GachaItems {
                 }
                 builder.append(stats[stat.index]);
             }
+            return builder.toString();
+        }
+
+        String printStat(ITEM_STAT stat) {
+            StringBuilder builder = new StringBuilder();
+            builder.append('[');
+            if (stats[stat.index] > 0) { builder.append('+'); }
+            builder.append(stats[stat.index]);
+            builder.append(stat.getLetter());
+            builder.append(']');
             return builder.toString();
         }
     }

@@ -226,7 +226,7 @@ class Gacha {
                 + (level * 10);
         }
 
-        private GachaItems.StatArray getCharacterStats() {
+        GachaItems.StatArray getCharacterStats() {
             int baseAmount = getBaseBuffAmount();
             return new GachaItems.StatArray((int)workBonus * baseAmount, (int)fishBonus * baseAmount,
                 (int)pickBonus * baseAmount, (int)robBonus * baseAmount, (int)miscBonus * baseAmount);

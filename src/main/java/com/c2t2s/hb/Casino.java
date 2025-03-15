@@ -11,6 +11,7 @@ class Casino {
     private Casino() {}
 
     static class User {
+        long uid;
         private String nickname;
         private int work;
         private int fish;
@@ -22,8 +23,10 @@ class Casino {
         private Timestamp timer;
         private Timestamp timer2;
 
-        private User(String nickname, int work, int fish, int pick, int rob, long balance,
-                long chocolateCoins, boolean inJail, Timestamp timer, Timestamp timer2) {
+        private User(long uid, String nickname, int work, int fish, int pick, int rob,
+                long balance, long chocolateCoins, boolean inJail, Timestamp timer,
+                Timestamp timer2) {
+            this.uid = uid;
             this.nickname = nickname;
             this.work = work;
             this.fish = fish;
@@ -60,6 +63,7 @@ class Casino {
             return timer2;
         }
 
+        long getUid() { return uid; }
         String getNickname() { return nickname; }
         int getWork() { return work; }
         int getFish() { return fish; }
@@ -1036,23 +1040,24 @@ class Casino {
     }
 
     static User getUser(long uid) {
-        String query = "SELECT nickname, work_count, fish_count, pick_count, rob_count, balance, in_jail, "
+        String query = "SELECT uid, nickname, work_count, fish_count, pick_count, rob_count, balance, in_jail, "
             + "last_claim, timestamp2, chocolate_coins FROM money_user NATURAL JOIN job_user WHERE uid = "
             + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                String nickname = results.getString(1);
-                int work = results.getInt(2);
-                int fish = results.getInt(3);
-                int pick = results.getInt(4);
-                int rob = results.getInt(5);
-                long balance = results.getLong(6);
-                boolean isJail = results.getBoolean(7);
-                Timestamp time = results.getTimestamp(8);
-                Timestamp time2 = results.getTimestamp(9);
-                long chocolateCoins = results.getLong(10);
-                return new Casino.User(nickname, work, fish, pick, rob, balance, chocolateCoins,
-                    isJail, time, time2);
+                long fetchedUid = results.getLong(1);
+                String nickname = results.getString(2);
+                int work = results.getInt(3);
+                int fish = results.getInt(4);
+                int pick = results.getInt(5);
+                int rob = results.getInt(6);
+                long balance = results.getLong(7);
+                boolean isJail = results.getBoolean(8);
+                Timestamp time = results.getTimestamp(9);
+                Timestamp time2 = results.getTimestamp(10);
+                long chocolateCoins = results.getLong(11);
+                return new Casino.User(fetchedUid, nickname, work, fish, pick, rob, balance,
+                    chocolateCoins,isJail, time, time2);
             }
             return null;
         }, null);
