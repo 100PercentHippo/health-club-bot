@@ -127,6 +127,7 @@ abstract class Event {
     static final String JOIN_COMMAND_PROMPT = "\n\nJoin with `/gacha event join` for coins, pulls, and character xp!";
     static final String INVALID_SELECTION_MESSAGE = "Invalid selection for this event";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
+    static final NumberFormat ONE_DECIMAL_PERCENT = new DecimalFormat("0.0%");
 
     protected Event(EventType type, long server, Duration timeUntilResolution,
             Map<Long, String> joinSelections) {
@@ -157,8 +158,12 @@ abstract class Event {
 
     boolean canUsersRejoin() { return true; }
 
+    double getPayoutBonusPercent() {
+        return totalPayoutMultiplier / 10.0;
+    }
+
     double getPayoutMultiplier() {
-        return 1.0 + (totalPayoutMultiplier / 100.0);
+        return 1.0 + (totalPayoutMultiplier / 1000.0);
     }
 
     void awardCharacterXp() {
@@ -233,13 +238,16 @@ abstract class Event {
             return null;
         }
 
+        totalPayoutMultiplier += character.getCharacterStats().getStat(type.assocatedStat);
+        participatingUsers.add(uid);
+
         String joinMessage = createPublicUserJoinMessage(user, character, selection);
         if (joinMessage.equals(INVALID_SELECTION_MESSAGE)) {
+            totalPayoutMultiplier -= character.getCharacterStats().getStat(type.assocatedStat);
+            participatingUsers.remove(uid);
             return joinMessage;
         }
 
-        totalPayoutMultiplier += character.getCharacterStats().getStat(type.assocatedStat);
-        participatingUsers.add(uid);
         CasinoServerManager.sendEventMessage(server, joinMessage);
 
         StringBuilder output = new StringBuilder("Successfully joined ");
@@ -343,29 +351,30 @@ abstract class Event {
             builder.append("A new Fishing event is starting, destination: ");
             builder.append(details.destination);
             builder.append("\nPotential fish for Boat 1 and Boat 2 (shallow water):");
-            builder.append("\n\tCommon fish worth ");
+            builder.append("\n\tCommon fish - ");
             builder.append(BASE_COMMON_FISH_VALUE);
-            builder.append(" coins per participant, requires a roll of ");
-            builder.append(BASE_EASY_ROLL_REQUIREMENT);
-            builder.append("+\n\tUncommon fish worth ");
+            builder.append(" coins, requires a roll of ");
+            builder.append(getRequiredRoll(0, true));
+            builder.append("+\n\tUncommon fish - ");
             builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coins per participant, requires a roll of ");
-            builder.append(BASE_HARD_ROLL_REQUIREMENT);
-            builder.append("+\nPotential fish for Boat 2 (shallow water):");
-            builder.append("\n\tUncommon fish worth ");
+            builder.append(" coins, requires a roll of ");
+            builder.append(getRequiredRoll(0, false));
+            builder.append("+\nPotential fish for Boat 3 (deep water):");
+            builder.append("\n\tUncommon fish - ");
             builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coins per participant, requires a roll of ");
-            builder.append(BASE_EASY_ROLL_REQUIREMENT);
-            builder.append("+\n\tRare fish worth ");
+            builder.append(" coins, requires a roll of ");
+            builder.append(getRequiredRoll(0, true));
+            builder.append("+\n\tRare fish - ");
             builder.append(BASE_RARE_FISH_VALUE);
-            builder.append(" coins per participant, requires a roll of ");
-            builder.append(BASE_HARD_ROLL_REQUIREMENT);
+            builder.append(" coins, requires a roll of ");
+            builder.append(getRequiredRoll(0, false));
             builder.append('+');
             builder.append(JOIN_COMMAND_PROMPT);
             return builder.toString();
         }
 
         int getRequiredRoll(int participants, boolean isEasy) {
+            if (participants == 0) { participants = 1; }
             int requirement =  (isEasy ? BASE_EASY_ROLL_REQUIREMENT : BASE_HARD_ROLL_REQUIREMENT)
                 - (ROLL_REDUCTION_PER_PARTICIPANT * (participants - 1));
             if (requirement < 0) {
@@ -376,7 +385,7 @@ abstract class Event {
 
         String displayCurrentState() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Boat 1: ");
+            builder.append("\nBoat 1: ");
             builder.append(boat1Users.size());
             builder.append(" participants. ");
             builder.append(BASE_COMMON_FISH_VALUE);
@@ -386,7 +395,7 @@ abstract class Event {
             builder.append(BASE_UNCOMMON_FISH_VALUE);
             builder.append(" coin Uncommon on ");
             builder.append(getRequiredRoll(boat1Users.size(), false));
-            builder.append("Boat 2: ");
+            builder.append("\nBoat 2: ");
             builder.append(boat2Users.size());
             builder.append(" participants. ");
             builder.append(BASE_COMMON_FISH_VALUE);
@@ -396,7 +405,7 @@ abstract class Event {
             builder.append(BASE_UNCOMMON_FISH_VALUE);
             builder.append(" coin Uncommon on ");
             builder.append(getRequiredRoll(boat2Users.size(), false));
-            builder.append("Boat 3: ");
+            builder.append("\nBoat 3: ");
             builder.append(boat3Users.size());
             builder.append(" participants. ");
             builder.append(BASE_UNCOMMON_FISH_VALUE);
@@ -434,10 +443,10 @@ abstract class Event {
             builder.append("Boat 1:");
             messageFrames.add(builder.toString());
             payout += resolveBoat(boat1Users, builder, messageFrames, false);
-            builder.append("Boat 2:");
+            builder.append("\nBoat 2:");
             messageFrames.add(builder.toString());
             payout += resolveBoat(boat2Users, builder, messageFrames, false);
-            builder.append("Boat 3:");
+            builder.append("\nBoat 3:");
             messageFrames.add(builder.toString());
             payout += resolveBoat(boat3Users, builder, messageFrames, true);
 
@@ -535,8 +544,8 @@ abstract class Event {
             builder.append(' ');
             builder.append(character.getCharacterStats().printStat(type.assocatedStat));
             builder.append(". Total payout bonus is now +");
-            builder.append(Stats.oneDecimal.format(totalPayoutMultiplier / 10));
-            builder.append("%\n");
+            builder.append(ONE_DECIMAL_PERCENT.format(getPayoutBonusPercent()));
+            builder.append("\nEvent state is now:");
             builder.append(displayCurrentState());
             return builder.toString();
         }
