@@ -14,6 +14,7 @@ import org.javacord.api.entity.message.Message;
 
 import static java.util.Map.entry;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
@@ -39,19 +40,22 @@ abstract class Event {
     static final int EVENTTYPE_ID_SUPER_GUESS = 5;
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
     enum EventType {
-        FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH),
-        ROB(EVENTTYPE_ID_ROB, GachaItems.ITEM_STAT.ROB),
-        WORK(EVENTTYPE_ID_WORK, GachaItems.ITEM_STAT.WORK),
-        PICKPOCKET(EVENTTYPE_ID_PICKPOCKET, GachaItems.ITEM_STAT.PICK),
-        AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC),
-        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC),
-        SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC);
+        FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, Color.BLUE),
+        ROB(EVENTTYPE_ID_ROB, GachaItems.ITEM_STAT.ROB, Color.RED),
+        WORK(EVENTTYPE_ID_WORK, GachaItems.ITEM_STAT.WORK, Color.GREEN),
+        PICKPOCKET(EVENTTYPE_ID_PICKPOCKET, GachaItems.ITEM_STAT.PICK, Color.DARK_GRAY),
+        AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC, Color.YELLOW),
+        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC, Color.YELLOW),
+        SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC, Color.YELLOW);
 
         int id;
         GachaItems.ITEM_STAT assocatedStat;
-        private EventType(int id, GachaItems.ITEM_STAT associatedStat) {
+        Color embedColor;
+
+        private EventType(int id, GachaItems.ITEM_STAT associatedStat, Color embedColor) {
             this.id = id;
             this.assocatedStat = associatedStat;
+            this.embedColor = embedColor;
         }
 
         static EventType fromId(int id) {
@@ -156,6 +160,8 @@ abstract class Event {
 
     abstract String createAboutMessage();
 
+    abstract String createEmbedTitle();
+
     boolean canUsersRejoin() { return true; }
 
     double getPayoutBonusPercent() {
@@ -170,6 +176,14 @@ abstract class Event {
         // TODO
     }
 
+    HBMain.EmbedResponse createEmbedResponse() {
+        return createEmbedResponse("");
+    }
+
+    HBMain.EmbedResponse createEmbedResponse(String message) {
+        return new HBMain.EmbedResponse(type.embedColor, message, createEmbedTitle());
+    }
+
     Void initialize() {
         if (timeUntilResolution.compareTo(EVENT_ENDING_REMINDER_WINDOW) < 0) {
             CasinoServerManager.schedule(this::lockEvent, timeUntilResolution);
@@ -178,14 +192,14 @@ abstract class Event {
                 timeUntilResolution.minus(EVENT_ENDING_REMINDER_WINDOW));
         }
 
-        CasinoServerManager.sendEventMessage(server, createInitialMessage());
+        CasinoServerManager.sendEventMessage(server, createEmbedResponse(createInitialMessage()));
         return null;
     }
 
     Void postReminder() {
         if (!CasinoServerManager.hasEvent(server)) { return null; }
         CasinoServerManager.schedule(this::resolve, EVENT_ENDING_REMINDER_WINDOW);
-        CasinoServerManager.sendEventMessage(server, createReminderMessage());
+        CasinoServerManager.sendEventMessage(server, createEmbedResponse(createReminderMessage()));
         return null;
     }
 
@@ -205,7 +219,7 @@ abstract class Event {
 
         Queue<String> messages = createResolutionMessages();
         // TODO: Log event output
-        CasinoServerManager.sendMultipartEventMessage(server, messages);
+        CasinoServerManager.sendMultipartEventMessage(server, createEmbedResponse(), messages);
         return null;
     }
 
@@ -248,7 +262,7 @@ abstract class Event {
             return joinMessage;
         }
 
-        CasinoServerManager.sendEventMessage(server, joinMessage);
+        CasinoServerManager.sendEventMessage(server, createEmbedResponse(joinMessage));
 
         StringBuilder output = new StringBuilder("Successfully joined ");
         output.append(type.name().replace('_', ' ').toLowerCase());
@@ -274,23 +288,31 @@ abstract class Event {
                               entry(SELECTION_2_VALUE, "Option 2")));
         }
 
+        @Override
         String createInitialMessage() {
             return type.name() + " event starting";
         }
 
+        @Override
         String createReminderMessage() {
             return "Ending soon!";
         }
 
+        @Override
         Queue<String> createResolutionMessages() {
             return new LinkedList<>(Arrays.asList("D", "D O", "D O N", "D O N E"));
         }
 
+        @Override
         String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character, long selection) {
             return user.getNickname() + " joined with " + character.getDisplayName() + " and selection " + selection;
         }
 
+        @Override
         String createAboutMessage() { return "Test"; }
+
+        @Override
+        String createEmbedTitle() { return "Test event"; }
     }
 
     private static class FishEvent extends Event {
@@ -346,6 +368,7 @@ abstract class Event {
             details = fetchFishEventDetails(seed);
         }
 
+        @Override
         String createInitialMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("A new Fishing event is starting, destination: ");
@@ -424,17 +447,19 @@ abstract class Event {
             return builder.toString();
         }
 
+        @Override
         String createReminderMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("Fishing event to ");
             builder.append(details.destination);
             builder.append(" ending in ");
-            builder.append(EVENT_ENDING_REMINDER_WINDOW);
+            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
             builder.append(" minutes! Current event state:\n");
             builder.append(displayCurrentState());
             return builder.toString();
         }
 
+        @Override
         Queue<String> createResolutionMessages() {
             Queue<String> messageFrames = new LinkedList<>();
             StringBuilder builder = new StringBuilder();
@@ -531,6 +556,7 @@ abstract class Event {
             return payout;
         }
 
+        @Override
         String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
             FishParticipant participant = new FishParticipant(user.getUid(), user.getNickname());
@@ -552,11 +578,12 @@ abstract class Event {
             builder.append(character.getCharacterStats().printStat(type.assocatedStat));
             builder.append(". Total payout bonus is now +");
             builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
-            builder.append("\nEvent state is now:");
+            builder.append("%\nEvent state is now:");
             builder.append(displayCurrentState());
             return builder.toString();
         }
 
+        @Override
         String createAboutMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("Fish events are cooperative events where players embark on boats to ");
@@ -576,6 +603,11 @@ abstract class Event {
             builder.append(" or more).\n\nEither send everyone fishing in deep water to catch ");
             builder.append("the rare fish, or spread out for a higher potential payout!");
             return builder.toString();
+        }
+
+        @Override
+        String createEmbedTitle() {
+            return "Fishing Event to " + details.destination;
         }
     }
 

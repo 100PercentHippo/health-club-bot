@@ -165,6 +165,10 @@ public class HBMain {
         private Color color;
         private ActionRow buttons;
 
+        EmbedResponse(Color color) {
+            this.color = color;
+        }
+
         EmbedResponse(Color color, String message) {
             this.message = message;
             this.color = color;

@@ -16,12 +16,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageBuilder;
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 
 import com.c2t2s.hb.Event.EventType;
 import com.c2t2s.hb.Gacha.GachaCharacter;
-import com.c2t2s.hb.HBMain.AutocompleteStringOption;
 import com.c2t2s.hb.HBMain.CasinoCommand;
 
 public class CasinoServerManager {
@@ -89,16 +91,32 @@ public class CasinoServerManager {
             return sentMessages;
         }
 
-        Message sendEventMessage(String message) {
-            return sendEventMessage(message, false);
+        Message sendEventEmbed(EmbedBuilder embed, ActionRow buttons, boolean skipReturn) {
+            if (eventChannel == null) { return null; }
+
+            MessageBuilder messageBuilder = new MessageBuilder();
+            messageBuilder.setEmbed(embed);
+            if (buttons != null) {
+                messageBuilder.addComponents(buttons);
+            }
+
+            if (skipReturn) {
+                messageBuilder.send(eventChannel);
+                return null;
+            } else {
+                return messageBuilder.send(eventChannel).join();
+            }
         }
 
-        Message sendEventMessage(String message, boolean skipReturn) {
-            if (skipReturn) {
-                eventChannel.sendMessage(message);
-                return null;
+        void sendEventEmbed(HBMain.EmbedResponse message) {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setColor(message.getColor());
+            embedBuilder.setDescription(message.getMessage());
+            if (message.hasTitle()) {
+                embedBuilder.setTitle(message.getTitle());
             }
-            return eventChannel.sendMessage(message).join();
+
+            sendEventEmbed(embedBuilder, message.getButtons(), true);
         }
 
         void initializeEvent() {
@@ -372,21 +390,32 @@ public class CasinoServerManager {
         servers.get(server).sendCasinoMessage(message);
     }
 
-    static void sendEventMessage(long server, String message) {
+    static void sendEventMessage(long server, HBMain.EmbedResponse message) {
         if (!servers.containsKey(server)) { return; }
-        servers.get(server).sendEventMessage(message);
+        servers.get(server).sendEventEmbed(message);
     }
 
-    static void sendMultipartEventMessage(long server, Queue<String> messageParts) {
+    static void sendMultipartEventMessage(long server, HBMain.EmbedResponse response,
+            Queue<String> messageParts) {
         if (!servers.containsKey(server)) { return; }
-        Message message = servers.get(server).sendEventMessage(messageParts.poll(), false);
-        timer.schedule(() -> updateMessage(message, messageParts), 1, TimeUnit.SECONDS);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(response.getColor());
+        embedBuilder.setDescription(messageParts.poll());
+        if (response.hasTitle()) {
+            embedBuilder.setTitle(response.getTitle());
+        }
+        Message message = servers.get(server).sendEventEmbed(embedBuilder, response.getButtons(),
+            false);
+        timer.schedule(() -> updateEmbed(message, embedBuilder, messageParts), 1,
+            TimeUnit.SECONDS);
     }
 
-    static Void updateMessage(Message message, Queue<String> updatedContents) {
-        message.edit(updatedContents.poll());
+    static Void updateEmbed(Message message, EmbedBuilder builder, Queue<String> updatedContents) {
+        builder.setDescription(updatedContents.poll());
+        message.edit(builder);
         if (!updatedContents.isEmpty()) {
-            timer.schedule(() -> updateMessage(message, updatedContents), 1, TimeUnit.SECONDS);
+            timer.schedule(() -> updateEmbed(message, builder, updatedContents), 1,
+                TimeUnit.SECONDS);
         }
         return null;
     }
