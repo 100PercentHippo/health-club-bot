@@ -127,7 +127,7 @@ abstract class Event {
     static final String JOIN_COMMAND_PROMPT = "\n\nJoin with `/gacha event join` for coins, pulls, and character xp!";
     static final String INVALID_SELECTION_MESSAGE = "Invalid selection for this event";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
-    static final NumberFormat ONE_DECIMAL_PERCENT = new DecimalFormat("0.0%");
+    static final NumberFormat ONE_DECIMAL = new DecimalFormat("0.0");
 
     protected Event(EventType type, long server, Duration timeUntilResolution,
             Map<Long, String> joinSelections) {
@@ -387,7 +387,9 @@ abstract class Event {
             StringBuilder builder = new StringBuilder();
             builder.append("\nBoat 1: ");
             builder.append(boat1Users.size());
-            builder.append(" participants. ");
+            builder.append(" participant");
+            builder.append(Casino.getPluralSuffix(boat1Users.size()));
+            builder.append(". ");
             builder.append(BASE_COMMON_FISH_VALUE);
             builder.append(" coin Common on ");
             builder.append(getRequiredRoll(boat1Users.size(), true));
@@ -397,7 +399,9 @@ abstract class Event {
             builder.append(getRequiredRoll(boat1Users.size(), false));
             builder.append("\nBoat 2: ");
             builder.append(boat2Users.size());
-            builder.append(" participants. ");
+            builder.append(" participant");
+            builder.append(Casino.getPluralSuffix(boat2Users.size()));
+            builder.append(". ");
             builder.append(BASE_COMMON_FISH_VALUE);
             builder.append(" coin Common on ");
             builder.append(getRequiredRoll(boat2Users.size(), true));
@@ -407,7 +411,9 @@ abstract class Event {
             builder.append(getRequiredRoll(boat2Users.size(), false));
             builder.append("\nBoat 3: ");
             builder.append(boat3Users.size());
-            builder.append(" participants. ");
+            builder.append(" participant");
+            builder.append(Casino.getPluralSuffix(boat3Users.size()));
+            builder.append(". ");
             builder.append(BASE_UNCOMMON_FISH_VALUE);
             builder.append(" coin Common on ");
             builder.append(getRequiredRoll(boat3Users.size(), true));
@@ -476,6 +482,7 @@ abstract class Event {
 
             if (participants.isEmpty()) {
                 builder.append("\n\tEmpty :(");
+                messageFrames.add(builder.toString());
                 return 0;
             }
 
@@ -544,7 +551,7 @@ abstract class Event {
             builder.append(' ');
             builder.append(character.getCharacterStats().printStat(type.assocatedStat));
             builder.append(". Total payout bonus is now +");
-            builder.append(ONE_DECIMAL_PERCENT.format(getPayoutBonusPercent()));
+            builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
             builder.append("\nEvent state is now:");
             builder.append(displayCurrentState());
             return builder.toString();
