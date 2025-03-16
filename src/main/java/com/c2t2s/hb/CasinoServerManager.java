@@ -394,22 +394,21 @@ public class CasinoServerManager {
         Message message = servers.get(server).sendEventEmbed(response.toEmbedBuilder(),
             response.getButtons(), false);
         if (!responses.isEmpty()) {
-            timer.schedule(() -> updateEmbed(message, responses), 1,
-                TimeUnit.SECONDS);
+            schedule(() -> updateEmbed(message, responses), Duration.ofSeconds(1));
         }
     }
 
     static Void updateEmbed(Message message, Queue<HBMain.EmbedResponse> responses) {
         message.edit(responses.poll().toEmbedBuilder());
         if (!responses.isEmpty()) {
-            timer.schedule(() -> updateEmbed(message, responses), 1,
-                TimeUnit.SECONDS);
+            schedule(() -> updateEmbed(message, responses), Duration.ofSeconds(1));
         }
         return null;
     }
 
     static void schedule(Callable<Void> method, Duration timeUntil) {
-        timer.schedule(method, timeUntil.toSeconds(), TimeUnit.SECONDS);
+        timer.schedule(() -> {try { method.call(); } catch (Exception e) { e.printStackTrace(); }},
+            timeUntil.toSeconds(), TimeUnit.SECONDS);
     }
 
     static void beginNewEvent(long server) {

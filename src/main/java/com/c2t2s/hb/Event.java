@@ -376,6 +376,7 @@ abstract class Event {
             if (bigRoll < 100) {
                 builder.append('+');
             }
+            response.addInlineBlock("Potential fish for Boat 3:", builder.toString());
 
             response.setFooter(JOIN_COMMAND_PROMPT);
             return response;
@@ -394,36 +395,45 @@ abstract class Event {
         Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState() {
             return new LinkedList<>(Arrays.asList(
                 new HBMain.EmbedResponse.InlineBlock("Boat 1",
-                    printCurrentState(boat1Users.size(), false)),
+                    printCurrentState(boat1Users, false)),
                 new HBMain.EmbedResponse.InlineBlock("Boat 2",
-                    printCurrentState(boat2Users.size(), false)),
+                    printCurrentState(boat2Users, false)),
                 new HBMain.EmbedResponse.InlineBlock("Boat 3",
-                    printCurrentState(boat3Users.size(), true)))
+                    printCurrentState(boat3Users, true)))
             );
         }
 
-        String printCurrentState(int participants, boolean deep) {
+        String printCurrentState(List<FishParticipant> participants, boolean deep) {
             int easyFishValue = deep ? BASE_UNCOMMON_FISH_VALUE : BASE_COMMON_FISH_VALUE;
             int hardFishValue = deep ? BASE_RARE_FISH_VALUE : BASE_UNCOMMON_FISH_VALUE;
             String easyFishRarity = deep ? "Uncommon" : "Rare";
             String hardFishRarity = deep ? "Rare" : "Uncommon";
 
             StringBuilder builder = new StringBuilder();
-            builder.append(participants);
-            builder.append(" participant");
-            builder.append(Casino.getPluralSuffix(participants));
-            builder.append("\n");
+            if (participants.isEmpty()) {
+                builder.append("[Empty]");
+            } else {
+                builder.append(participants);
+                builder.append(" participant");
+                builder.append(Casino.getPluralSuffix(participants.size()));
+                builder.append(':');
+                for (FishParticipant participant : participants) {
+                    builder.append('\n');
+                    builder.append(participant.nickname);
+                }
+            }
+            builder.append("\n\n");
             builder.append(easyFishValue);
             builder.append(" coin ");
             builder.append(easyFishRarity);
             builder.append(" on ");
-            builder.append(getRequiredRoll(participants, true));
+            builder.append(getRequiredRoll(participants.size(), true));
             builder.append("+\n");
             builder.append(hardFishValue);
             builder.append(" coin ");
             builder.append(hardFishRarity);
             builder.append(" on ");
-            int highRoll = getRequiredRoll(participants, false);
+            int highRoll = getRequiredRoll(participants.size(), false);
             builder.append(highRoll);
             if (highRoll < 100) {
                 builder.append('+');
