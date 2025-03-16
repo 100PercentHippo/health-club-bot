@@ -217,7 +217,7 @@ public class HBMain {
         EmbedResponse setInlineBlocks(Queue<InlineBlock> inlineBlocks, boolean shouldCopy) {
             if (shouldCopy) {
                 for (InlineBlock block : inlineBlocks) {
-                    inlineBlocks.add(new InlineBlock(block));
+                    this.inlineBlocks.add(new InlineBlock(block));
                 }
             } else {
                 this.inlineBlocks = inlineBlocks;

@@ -413,7 +413,7 @@ abstract class Event {
             if (participants.isEmpty()) {
                 builder.append("[Empty]");
             } else {
-                builder.append(participants);
+                builder.append(participants.size());
                 builder.append(" participant");
                 builder.append(Casino.getPluralSuffix(participants.size()));
                 builder.append(':');
