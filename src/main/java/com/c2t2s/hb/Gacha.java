@@ -252,6 +252,8 @@ class Gacha {
                 + getDisplayName();
         }
 
+        long getId() { return id; }
+
         private static SHINY_TYPE parseUniqueIdShiny(String uniqueId) {
             try {
                 int index = uniqueId.indexOf(UNIQUE_ID_SEPARATOR);
