@@ -25,9 +25,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 
 import static java.util.Map.entry;
 
@@ -160,10 +162,33 @@ public class HBMain {
     }
 
     static class EmbedResponse {
+        static class InlineBlock {
+            String title;
+            String body;
+
+            InlineBlock(String title, String body) {
+                this.title = title;
+                this.body = body;
+            }
+
+            InlineBlock(InlineBlock other) {
+                if (other != null) {
+                    title = new String(other.title);
+                    body = new String(other.body);
+                }
+            }
+
+            void setBody(String body) {
+                this.body = body;
+            }
+        }
+
         private String title;
         private String message;
+        private String footer;
         private Color color;
         private ActionRow buttons;
+        private Queue<InlineBlock> inlineBlocks = new LinkedList<>();
 
         EmbedResponse(Color color) {
             this.color = color;
@@ -180,12 +205,29 @@ public class HBMain {
             this.color = color;
         }
 
-        Color getColor() {
-            return color;
+        EmbedResponse addInlineBlock(String title, String body) {
+            inlineBlocks.add(new InlineBlock(title, body));
+            return this;
         }
 
-        String getTitle() {
-            return title;
+        EmbedResponse setInlineBlocks(Queue<InlineBlock> inlineBlocks) {
+            return setInlineBlocks(inlineBlocks, false);
+        }
+
+        EmbedResponse setInlineBlocks(Queue<InlineBlock> inlineBlocks, boolean shouldCopy) {
+            if (shouldCopy) {
+                for (InlineBlock block : inlineBlocks) {
+                    inlineBlocks.add(new InlineBlock(block));
+                }
+            } else {
+                this.inlineBlocks = inlineBlocks;
+            }
+            return this;
+        }
+
+        EmbedResponse setFooter(String footer) {
+            this.footer = footer;
+            return this;
         }
 
         String getMessage() {
@@ -196,12 +238,24 @@ public class HBMain {
             return buttons;
         }
 
-        boolean hasTitle() {
-            return title != null && !title.isEmpty();
-        }
-
         boolean hasButtons() {
             return buttons != null;
+        }
+
+        EmbedBuilder toEmbedBuilder() {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setColor(color);
+            if (title != null && !title.isEmpty()) {
+                embedBuilder.setTitle(title);
+            }
+            embedBuilder.setDescription(message);
+            for (InlineBlock block : inlineBlocks) {
+                embedBuilder.addInlineField(block.title, block.body);
+            }
+            if (footer != null && !footer.isEmpty()) {
+                embedBuilder.setFooter(footer);
+            }
+            return embedBuilder;
         }
     }
 
@@ -1017,12 +1071,7 @@ public class HBMain {
             return;
         }
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setColor(embedResponse.getColor());
-        embedBuilder.setDescription(embedResponse.getMessage());
-        if (embedResponse.hasTitle()) {
-            embedBuilder.setTitle(embedResponse.getTitle());
-        }
+        EmbedBuilder embedBuilder = embedResponse.toEmbedBuilder();
         MessageBuilder messageBuilder = new MessageBuilder();
         messageBuilder.setEmbed(embedBuilder);
         if (embedResponse.hasButtons()) {

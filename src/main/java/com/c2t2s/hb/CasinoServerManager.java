@@ -109,14 +109,7 @@ public class CasinoServerManager {
         }
 
         void sendEventEmbed(HBMain.EmbedResponse message) {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setColor(message.getColor());
-            embedBuilder.setDescription(message.getMessage());
-            if (message.hasTitle()) {
-                embedBuilder.setTitle(message.getTitle());
-            }
-
-            sendEventEmbed(embedBuilder, message.getButtons(), true);
+            sendEventEmbed(message.toEmbedBuilder(), message.getButtons(), true);
         }
 
         void initializeEvent() {
@@ -395,26 +388,21 @@ public class CasinoServerManager {
         servers.get(server).sendEventEmbed(message);
     }
 
-    static void sendMultipartEventMessage(long server, HBMain.EmbedResponse response,
-            Queue<String> messageParts) {
-        if (!servers.containsKey(server)) { return; }
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setColor(response.getColor());
-        embedBuilder.setDescription(messageParts.poll());
-        if (response.hasTitle()) {
-            embedBuilder.setTitle(response.getTitle());
+    static void sendMultipartEventMessage(long server, Queue<HBMain.EmbedResponse> responses) {
+        if (!servers.containsKey(server) || responses.isEmpty()) { return; }
+        HBMain.EmbedResponse response = responses.poll();
+        Message message = servers.get(server).sendEventEmbed(response.toEmbedBuilder(),
+            response.getButtons(), false);
+        if (!responses.isEmpty()) {
+            timer.schedule(() -> updateEmbed(message, responses), 1,
+                TimeUnit.SECONDS);
         }
-        Message message = servers.get(server).sendEventEmbed(embedBuilder, response.getButtons(),
-            false);
-        timer.schedule(() -> updateEmbed(message, embedBuilder, messageParts), 1,
-            TimeUnit.SECONDS);
     }
 
-    static Void updateEmbed(Message message, EmbedBuilder builder, Queue<String> updatedContents) {
-        builder.setDescription(updatedContents.poll());
-        message.edit(builder);
-        if (!updatedContents.isEmpty()) {
-            timer.schedule(() -> updateEmbed(message, builder, updatedContents), 1,
+    static Void updateEmbed(Message message, Queue<HBMain.EmbedResponse> responses) {
+        message.edit(responses.poll().toEmbedBuilder());
+        if (!responses.isEmpty()) {
+            timer.schedule(() -> updateEmbed(message, responses), 1,
                 TimeUnit.SECONDS);
         }
         return null;

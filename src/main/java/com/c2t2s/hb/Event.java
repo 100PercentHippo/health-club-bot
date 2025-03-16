@@ -3,6 +3,7 @@ package com.c2t2s.hb;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,14 +40,15 @@ abstract class Event {
     static final int EVENTTYPE_ID_AVERAGE = 4;
     static final int EVENTTYPE_ID_SUPER_GUESS = 5;
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
+    static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
     enum EventType {
-        FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, Color.BLUE),
-        ROB(EVENTTYPE_ID_ROB, GachaItems.ITEM_STAT.ROB, Color.RED),
-        WORK(EVENTTYPE_ID_WORK, GachaItems.ITEM_STAT.WORK, Color.GREEN),
-        PICKPOCKET(EVENTTYPE_ID_PICKPOCKET, GachaItems.ITEM_STAT.PICK, Color.DARK_GRAY),
-        AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC, Color.YELLOW),
-        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC, Color.YELLOW),
-        SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC, Color.YELLOW);
+        FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, new Color(91, 170, 255)), // Light Blue
+        ROB(EVENTTYPE_ID_ROB, GachaItems.ITEM_STAT.ROB, new Color(255, 213, 0)), // Gold
+        WORK(EVENTTYPE_ID_WORK, GachaItems.ITEM_STAT.WORK, new Color(91, 41, 3)), // Brown
+        PICKPOCKET(EVENTTYPE_ID_PICKPOCKET, GachaItems.ITEM_STAT.PICK, new Color(0, 136, 50)), // Money Green
+        AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
+        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
+        SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR);
 
         int id;
         GachaItems.ITEM_STAT assocatedStat;
@@ -150,13 +152,13 @@ abstract class Event {
         return type;
     }
 
-    abstract String createInitialMessage();
+    abstract HBMain.EmbedResponse createInitialMessage();
 
-    abstract String createReminderMessage();
+    abstract HBMain.EmbedResponse createReminderMessage();
 
-    abstract Queue<String> createResolutionMessages();
+    abstract Queue<HBMain.EmbedResponse> createResolutionMessages();
 
-    abstract String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character, long selection);
+    abstract HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character, long selection);
 
     abstract String createAboutMessage();
 
@@ -176,12 +178,22 @@ abstract class Event {
         // TODO
     }
 
-    HBMain.EmbedResponse createEmbedResponse() {
-        return createEmbedResponse("");
-    }
-
     HBMain.EmbedResponse createEmbedResponse(String message) {
         return new HBMain.EmbedResponse(type.embedColor, message, createEmbedTitle());
+    }
+
+    HBMain.EmbedResponse createEmbedResponse(String message,
+            Queue<HBMain.EmbedResponse.InlineBlock> inlineBlocks) {
+        return createEmbedResponse(message, inlineBlocks, false);
+    }
+
+    HBMain.EmbedResponse createEmbedResponse(String message,
+            Queue<HBMain.EmbedResponse.InlineBlock> inlineBlocks, boolean shouldCopy) {
+        return createEmbedResponse(message).setInlineBlocks(inlineBlocks, shouldCopy);
+    }
+
+    HBMain.EmbedResponse createErrorResponse(String message) {
+        return new HBMain.EmbedResponse(Color.RED, message);
     }
 
     Void initialize() {
@@ -192,14 +204,14 @@ abstract class Event {
                 timeUntilResolution.minus(EVENT_ENDING_REMINDER_WINDOW));
         }
 
-        CasinoServerManager.sendEventMessage(server, createEmbedResponse(createInitialMessage()));
+        CasinoServerManager.sendEventMessage(server, createInitialMessage());
         return null;
     }
 
     Void postReminder() {
         if (!CasinoServerManager.hasEvent(server)) { return null; }
         CasinoServerManager.schedule(this::resolve, EVENT_ENDING_REMINDER_WINDOW);
-        CasinoServerManager.sendEventMessage(server, createEmbedResponse(createReminderMessage()));
+        CasinoServerManager.sendEventMessage(server, createReminderMessage());
         return null;
     }
 
@@ -217,9 +229,9 @@ abstract class Event {
             return null;
         }, NEW_EVENT_DELAY);
 
-        Queue<String> messages = createResolutionMessages();
+        Queue<HBMain.EmbedResponse> messages = createResolutionMessages();
         // TODO: Log event output
-        CasinoServerManager.sendMultipartEventMessage(server, createEmbedResponse(), messages);
+        CasinoServerManager.sendMultipartEventMessage(server, messages);
         return null;
     }
 
@@ -255,14 +267,14 @@ abstract class Event {
         totalPayoutMultiplier += character.getCharacterStats().getStat(type.assocatedStat);
         participatingUsers.add(uid);
 
-        String joinMessage = createPublicUserJoinMessage(user, character, selection);
-        if (joinMessage.equals(INVALID_SELECTION_MESSAGE)) {
+        HBMain.EmbedResponse joinMessage = createPublicUserJoinMessage(user, character, selection);
+        if (joinMessage.getMessage().equals(INVALID_SELECTION_MESSAGE)) {
             totalPayoutMultiplier -= character.getCharacterStats().getStat(type.assocatedStat);
             participatingUsers.remove(uid);
-            return joinMessage;
+            return joinMessage.getMessage();
         }
 
-        CasinoServerManager.sendEventMessage(server, createEmbedResponse(joinMessage));
+        CasinoServerManager.sendEventMessage(server, joinMessage);
 
         StringBuilder output = new StringBuilder("Successfully joined ");
         output.append(type.name().replace('_', ' ').toLowerCase());
@@ -276,43 +288,6 @@ abstract class Event {
             output.append("\nTo change your character or selection, join the event again");
         }
         return output.toString();
-    }
-
-    private static class TestEvent extends Event {
-        private static long SELECTION_1_VALUE = 1;
-        private static long SELECTION_2_VALUE = 2;
-
-        TestEvent(EventType type, long server, Duration timeUntilResolution) {
-            super(type, server, timeUntilResolution,
-                Map.ofEntries(entry(SELECTION_1_VALUE, "Option 1"),
-                              entry(SELECTION_2_VALUE, "Option 2")));
-        }
-
-        @Override
-        String createInitialMessage() {
-            return type.name() + " event starting";
-        }
-
-        @Override
-        String createReminderMessage() {
-            return "Ending soon!";
-        }
-
-        @Override
-        Queue<String> createResolutionMessages() {
-            return new LinkedList<>(Arrays.asList("D", "D O", "D O N", "D O N E"));
-        }
-
-        @Override
-        String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character, long selection) {
-            return user.getNickname() + " joined with " + character.getDisplayName() + " and selection " + selection;
-        }
-
-        @Override
-        String createAboutMessage() { return "Test"; }
-
-        @Override
-        String createEmbedTitle() { return "Test event"; }
     }
 
     private static class FishEvent extends Event {
@@ -369,31 +344,41 @@ abstract class Event {
         }
 
         @Override
-        String createInitialMessage() {
+        HBMain.EmbedResponse createInitialMessage() {
+            HBMain.EmbedResponse response = createEmbedResponse(
+                "A new Fishing event is starting, destination: " + details.destination);
+
             StringBuilder builder = new StringBuilder();
-            builder.append("A new Fishing event is starting, destination: ");
-            builder.append(details.destination);
-            builder.append("\nPotential fish for Boat 1 and Boat 2 (shallow water):");
-            builder.append("\n\tCommon fish - ");
+            builder.append("Shallow water\nCommon fish - ");
             builder.append(BASE_COMMON_FISH_VALUE);
-            builder.append(" coins, requires a roll of ");
+            builder.append(" coins, roll ");
             builder.append(getRequiredRoll(0, true));
-            builder.append("+\n\tUncommon fish - ");
+            builder.append("+\nUncommon fish - ");
             builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coins, requires a roll of ");
-            builder.append(getRequiredRoll(0, false));
-            builder.append("+\nPotential fish for Boat 3 (deep water):");
-            builder.append("\n\tUncommon fish - ");
+            builder.append(" coins, roll ");
+            int bigRoll = getRequiredRoll(0, false);
+            builder.append(bigRoll);
+            if (bigRoll < 100) {
+                builder.append('+');
+            }
+            response.addInlineBlock("Potential fish for Boats 1 & 2:", builder.toString());
+
+            builder = new StringBuilder();
+            builder.append("Deep water\nUncommon fish - ");
             builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coins, requires a roll of ");
+            builder.append(" coins, roll ");
             builder.append(getRequiredRoll(0, true));
-            builder.append("+\n\tRare fish - ");
+            builder.append("+\nRare fish - ");
             builder.append(BASE_RARE_FISH_VALUE);
-            builder.append(" coins, requires a roll of ");
-            builder.append(getRequiredRoll(0, false));
-            builder.append('+');
-            builder.append(JOIN_COMMAND_PROMPT);
-            return builder.toString();
+            builder.append(" coins, roll ");
+            bigRoll = getRequiredRoll(0, false);
+            builder.append(bigRoll);
+            if (bigRoll < 100) {
+                builder.append('+');
+            }
+
+            response.setFooter(JOIN_COMMAND_PROMPT);
+            return response;
         }
 
         int getRequiredRoll(int participants, boolean isEasy) {
@@ -406,92 +391,92 @@ abstract class Event {
             return requirement;
         }
 
-        String displayCurrentState() {
+        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState() {
+            return new LinkedList<>(Arrays.asList(
+                new HBMain.EmbedResponse.InlineBlock("Boat 1",
+                    printCurrentState(boat1Users.size(), false)),
+                new HBMain.EmbedResponse.InlineBlock("Boat 2",
+                    printCurrentState(boat2Users.size(), false)),
+                new HBMain.EmbedResponse.InlineBlock("Boat 3",
+                    printCurrentState(boat3Users.size(), true)))
+            );
+        }
+
+        String printCurrentState(int participants, boolean deep) {
+            int easyFishValue = deep ? BASE_UNCOMMON_FISH_VALUE : BASE_COMMON_FISH_VALUE;
+            int hardFishValue = deep ? BASE_RARE_FISH_VALUE : BASE_UNCOMMON_FISH_VALUE;
+            String easyFishRarity = deep ? "Uncommon" : "Rare";
+            String hardFishRarity = deep ? "Rare" : "Uncommon";
+
             StringBuilder builder = new StringBuilder();
-            builder.append("\nBoat 1: ");
-            builder.append(boat1Users.size());
+            builder.append(participants);
             builder.append(" participant");
-            builder.append(Casino.getPluralSuffix(boat1Users.size()));
-            builder.append(". ");
-            builder.append(BASE_COMMON_FISH_VALUE);
-            builder.append(" coin Common on ");
-            builder.append(getRequiredRoll(boat1Users.size(), true));
-            builder.append("+, ");
-            builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coin Uncommon on ");
-            builder.append(getRequiredRoll(boat1Users.size(), false));
-            builder.append("\nBoat 2: ");
-            builder.append(boat2Users.size());
-            builder.append(" participant");
-            builder.append(Casino.getPluralSuffix(boat2Users.size()));
-            builder.append(". ");
-            builder.append(BASE_COMMON_FISH_VALUE);
-            builder.append(" coin Common on ");
-            builder.append(getRequiredRoll(boat2Users.size(), true));
-            builder.append("+, ");
-            builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coin Uncommon on ");
-            builder.append(getRequiredRoll(boat2Users.size(), false));
-            builder.append("\nBoat 3: ");
-            builder.append(boat3Users.size());
-            builder.append(" participant");
-            builder.append(Casino.getPluralSuffix(boat3Users.size()));
-            builder.append(". ");
-            builder.append(BASE_UNCOMMON_FISH_VALUE);
-            builder.append(" coin Common on ");
-            builder.append(getRequiredRoll(boat3Users.size(), true));
-            builder.append("+, ");
-            builder.append(BASE_RARE_FISH_VALUE);
-            builder.append(" coin Uncommon on ");
-            builder.append(getRequiredRoll(boat3Users.size(), false));
+            builder.append(Casino.getPluralSuffix(participants));
+            builder.append("\n");
+            builder.append(easyFishValue);
+            builder.append(" coin ");
+            builder.append(easyFishRarity);
+            builder.append(" on ");
+            builder.append(getRequiredRoll(participants, true));
+            builder.append("+\n");
+            builder.append(hardFishValue);
+            builder.append(" coin ");
+            builder.append(hardFishRarity);
+            builder.append(" on ");
+            int highRoll = getRequiredRoll(participants, false);
+            builder.append(highRoll);
+            if (highRoll < 100) {
+                builder.append('+');
+            }
             return builder.toString();
         }
 
         @Override
-        String createReminderMessage() {
+        HBMain.EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Fishing event to ");
-            builder.append(details.destination);
-            builder.append(" ending in ");
+            builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
-            builder.append(" minutes! Current event state:\n");
-            builder.append(displayCurrentState());
-            return builder.toString();
+            builder.append(" minutes!\n\nCurrent fishing boat fleet:");
+            return createEmbedResponse(builder.toString()).setInlineBlocks(displayCurrentState());
         }
 
         @Override
-        Queue<String> createResolutionMessages() {
-            Queue<String> messageFrames = new LinkedList<>();
-            StringBuilder builder = new StringBuilder();
-            builder.append("Fishing event to ");
-            builder.append(details.destination);
-            builder.append(":\n\n");
+        Queue<HBMain.EmbedResponse> createResolutionMessages() {
+            Queue<HBMain.EmbedResponse> messageFrames = new LinkedList<>();
             for (int seconds = COUNTDOWN_SECONDS; seconds > 0; seconds--) {
-                messageFrames.add(builder.toString() + "Starting in " + seconds + " seconds");
+                messageFrames.add(createEmbedResponse("Starting in " + seconds
+                    + " seconds"));
             }
 
             long payout = 0;
-            builder.append("Boat 1:");
-            messageFrames.add(builder.toString());
-            payout += resolveBoat(boat1Users, builder, messageFrames, false);
-            builder.append("\nBoat 2:");
-            messageFrames.add(builder.toString());
-            payout += resolveBoat(boat2Users, builder, messageFrames, false);
-            builder.append("\nBoat 3:");
-            messageFrames.add(builder.toString());
-            payout += resolveBoat(boat3Users, builder, messageFrames, true);
+            Deque<HBMain.EmbedResponse.InlineBlock> inlineBlocks = new LinkedList<>();
+            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Boat 1", ""));
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
+            payout += resolveBoat(boat1Users, inlineBlocks, messageFrames, false);
+            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Boat 2", ""));
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
+            payout += resolveBoat(boat2Users, inlineBlocks, messageFrames, false);
+            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Boat 3", ""));
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
+            payout += resolveBoat(boat3Users, inlineBlocks, messageFrames, true);
 
-            builder.append("\n\nPayout: ");
-            builder.append(payout);
-            messageFrames.add(builder.toString());
+            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Payout:", ""));
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
+            StringBuilder payoutBuilder = new StringBuilder();
+            payoutBuilder.append(payout);
+            payoutBuilder.append(" coins");
+            inlineBlocks.peekLast().setBody(payoutBuilder.toString());
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             payout *= getPayoutMultiplier();
-            builder.append(" x");
-            builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
-            builder.append(" = ");
-            messageFrames.add(builder.toString());
-            builder.append(payout);
-            builder.append(" each");
-            messageFrames.add(builder.toString());
+            payoutBuilder.append("\nx");
+            payoutBuilder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+            inlineBlocks.peekLast().setBody(payoutBuilder.toString());
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
+            payoutBuilder.append("\n= ");
+            payoutBuilder.append(payout);
+            payoutBuilder.append(" each");
+            inlineBlocks.peekLast().setBody(payoutBuilder.toString());
+            messageFrames.add(createEmbedResponse("", inlineBlocks, true));
 
             awardCharacterXp();
 
@@ -500,33 +485,40 @@ abstract class Event {
             return messageFrames;
         }
 
-        int resolveBoat(List<FishParticipant> participants, StringBuilder builder,
-                Queue<String> messageFrames, boolean deep) {
+        int resolveBoat(List<FishParticipant> participants,
+                Deque<HBMain.EmbedResponse.InlineBlock> displayBlocks,
+                Queue<HBMain.EmbedResponse> messageFrames, boolean deep) {
             int highestRoll = 0;
             int payout = 0;
 
             if (participants.isEmpty()) {
-                builder.append("\n\tEmpty :(");
-                messageFrames.add(builder.toString());
+                displayBlocks.peekLast().setBody("Empty :(");
+                messageFrames.add(createEmbedResponse("", displayBlocks, true));
                 return 0;
             }
 
+            StringBuilder builder = new StringBuilder();
             for (FishParticipant participant : participants) {
-                builder.append("\n\t\t");
+                if (builder.length() != 0) {
+                    builder.append('\n');
+                }
                 builder.append(participant.nickname);
                 builder.append(": ");
-                messageFrames.add(builder.toString());
+                displayBlocks.peekLast().setBody(builder.toString());
+                messageFrames.add(createEmbedResponse("", displayBlocks, true));
                 participant.roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
                 if (participant.roll > highestRoll) { highestRoll = participant.roll; }
                 builder.append('`');
                 builder.append(TWO_DIGITS.format(participant.roll));
                 builder.append('`');
-                messageFrames.add(builder.toString());
+                displayBlocks.peekLast().setBody(builder.toString());
+                messageFrames.add(createEmbedResponse("", displayBlocks, true));
             }
             builder.append("\n\tHighest Roll: `");
             builder.append(TWO_DIGITS.format(highestRoll));
             builder.append("`. You catch: ");
-            messageFrames.add(builder.toString());
+            displayBlocks.peekLast().setBody(builder.toString());
+            messageFrames.add(createEmbedResponse("", displayBlocks, true));
             if (highestRoll >= getRequiredRoll(boat1Users.size(), false)) {
                 payout = deep ? BASE_RARE_FISH_VALUE : BASE_UNCOMMON_FISH_VALUE;
                 builder.append(deep ? details.deepRare : details.shallowUncommon);
@@ -552,12 +544,13 @@ abstract class Event {
             } else {
                 builder.append(" Nothing :(");
             }
-            messageFrames.add(builder.toString());
+            displayBlocks.peekLast().setBody(builder.toString());
+            messageFrames.add(createEmbedResponse("", displayBlocks, true));
             return payout;
         }
 
         @Override
-        String createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
             FishParticipant participant = new FishParticipant(user.getUid(), user.getNickname());
             if (selection == BOAT_1_VALUE) {
@@ -567,7 +560,7 @@ abstract class Event {
             } else if (selection == BOAT_3_VALUE) {
                 boat3Users.add(participant);
             } else {
-                return INVALID_SELECTION_MESSAGE;
+                return createErrorResponse(INVALID_SELECTION_MESSAGE);
             }
 
             StringBuilder builder = new StringBuilder();
@@ -576,11 +569,10 @@ abstract class Event {
             builder.append(character.getDisplayName());
             builder.append(' ');
             builder.append(character.getCharacterStats().printStat(type.assocatedStat));
-            builder.append(". Total payout bonus is now +");
+            builder.append(".\nTotal payout bonus is now +");
             builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
-            builder.append("%\nEvent state is now:");
-            builder.append(displayCurrentState());
-            return builder.toString();
+            builder.append("%\n\nFishing fleet is now:");
+            return createEmbedResponse(builder.toString()).setInlineBlocks(displayCurrentState());
         }
 
         @Override
