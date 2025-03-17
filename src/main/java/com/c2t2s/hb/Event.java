@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +17,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
@@ -28,11 +31,12 @@ abstract class Event {
         private EventFactory() {}
 
         static Event createEvent(long server, EventType type) {
-            if (type == EventType.FISH) {
-                return new FishEvent(server, Duration.ofMinutes(2));
-            } else {
-                return new PickEvent(server, Duration.ofMinutes(2));
-            }
+            // if (type == EventType.FISH) {
+            //     return new FishEvent(server, Duration.ofMinutes(2));
+            // } else if (type == EventType.PICK) {
+            //     return new PickEvent(server, Duration.ofMinutes(2));
+            // }
+            return new SlotsEvent(server, Duration.ofMinutes(2));
         }
     }
 
@@ -119,6 +123,18 @@ abstract class Event {
             this.nickname = nickname;
             this.cid = cid;
             this.characterMultiplier = characterMultiplier;
+        }
+
+        String getNickname() { return nickname; }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof Participant && ((Participant)other).uid == uid;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int)uid;
         }
     }
 
@@ -325,6 +341,27 @@ abstract class Event {
             + type.name().replace('_', ' ').toLowerCase() + " events work?"));
     }
 
+    void appendJoinMessage(StringBuilder builder, Casino.User user,
+            Gacha.GachaCharacter character) {
+        appendJoinMessage(builder, user, character, false);
+    }
+
+    void appendJoinMessage(StringBuilder builder, Casino.User user,
+            Gacha.GachaCharacter character,boolean rejoining) {
+        builder.append(user.getNickname());
+        builder.append(" ");
+        if (rejoining) {
+            builder.append("re");
+        }
+        builder.append("joined with ");
+        builder.append(character.getDisplayName());
+        builder.append(' ');
+        builder.append(character.getCharacterStats().printStat(type.assocatedStat));
+        builder.append(".\nTotal payout bonus is now +");
+        builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
+        builder.append('%');
+    }
+
     private static class FishEvent extends Event {
         private static final long BOAT_1_VALUE = 1;
         private static final long BOAT_2_VALUE = 2;
@@ -519,14 +556,8 @@ abstract class Event {
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.append(user.getNickname());
-            builder.append(" joined with ");
-            builder.append(character.getDisplayName());
-            builder.append(' ');
-            builder.append(character.getCharacterStats().printStat(type.assocatedStat));
-            builder.append(".\nTotal payout bonus is now +");
-            builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
-            builder.append("%\n\nFishing fleet is now:");
+            appendJoinMessage(builder, user, character);
+            builder.append("\n\nFishing fleet is now:");
             return createEmbedResponse(builder.toString(), displayCurrentState())
                 .setFooter(JOIN_COMMAND_PROMPT);
         }
@@ -720,14 +751,14 @@ abstract class Event {
 
         @Override
         String createAboutMessage() {
-            return "During a pickpocketing event there are a number of unaware targets at the "
+            return "During a pickpocketing event there are a number of unsuspecting targets at the "
                 + "given location. The amount of coins each target is carrying increases with the "
-                + "number of event participants. Each player secretely picks a number of targets "
+                + "number of event participants. Each player secretly picks a number of targets "
                 + "to pickpocket, and receives coins from each target once the event ends. "
                 + "However, if the event participants collectively pick more pockets than the "
                 + "number of targets, the targets realize what is happening, and half of them run "
                 + "away! If there aren't enough targets for everyone's selection, the "
-                + "participants who selected the fewest targets go first*, and receive coins from "
+                + "participants who selected the fewest targets go first†, and receive coins from "
                 + "the targets they're able to pickpocket, while targets remain.\n\nExample 1: "
                 + "There are 10 total targets with 40 coins each. Player A selects 2 targets and "
                 + "Player B selects 7 targets. Player A will receive 80 coins while Player B "
@@ -736,10 +767,10 @@ abstract class Event {
                 + "total have been selected, half the targets run away and 5 remain. Player A "
                 + "goes first and receives 160 coins. Player B is only able to pickpocket 1 "
                 + "target and receives 40 coins.\n\nWill you capitalize on other's cautious "
-                + "selections, or overcommit and receive nothing?\n\n-# *Ties are split as evenly "
-                + "as possible with any remainder lost. Example 3: There are 10 targets with 60 "
-                + "coins each. Players A and B both select 6 and Player C selects 8. Too many "
-                + "total targets are selected, so half the targets run away leaving 5 total "
+                + "selections, or overcommit and receive nothing?\n\n-# †Ties are split as evenly "
+                + "as possible with any remainder lost. Imagine there are 10 targets with 60 "
+                + "coins each. Players A and B both select 6 and Player C selects 9. Too many "
+                + "total targets (21) are selected, so half the targets run away leaving 5 total "
                 + "targets. Having selected the same value, Player A and B each get to "
                 + "pickpocket 2 targets and each receive 120 coins. Player C gets 0 coins as no "
                 + "targets remain.";
@@ -771,7 +802,7 @@ abstract class Event {
                 new HBMain.EmbedResponse.InlineBlock("Coins per target:",
                     currentCoinsPerTarget() + "\n(Increases as players join)"),
                 new HBMain.EmbedResponse.InlineBlock("Payout Multiplier:",
-                    "+" + ONE_DECIMAL.format(getPayoutBonusPercent()))));
+                    "+" + ONE_DECIMAL.format(getPayoutBonusPercent()) + "%")));
         }
 
         @Override
@@ -790,15 +821,7 @@ abstract class Event {
             participants.add(participant);
 
             StringBuilder builder = new StringBuilder();
-            builder.append(user.getNickname());
-            builder.append(" joined with ");
-            builder.append(character.getDisplayName());
-            builder.append(' ');
-            builder.append(character.getCharacterStats().printStat(type.assocatedStat));
-            builder.append(".\nEach target now carries ");
-            builder.append(currentCoinsPerTarget());
-            builder.append(" coins. The payout multiplier is now +");
-            builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
+            appendJoinMessage(builder, user, character);
             return createEmbedResponse(builder.toString(), displayCurrentState())
                 .setFooter(JOIN_COMMAND_PROMPT);
         }
@@ -953,6 +976,242 @@ abstract class Event {
                 new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
 
             // TODO: Log event completion
+
+            return messageFrames;
+        }
+    }
+
+    static class SlotsEvent extends Event {
+        private static final int ROWS = 10;
+        private static final int COLUMNS = 10;
+        private static final int COINS_PER_FRUIT = 1;
+        private static final int COINS_PER_GROUP = 2;
+        private static final double DIAMOND_CHANCE = 0.01;
+        private static final double FRUIT_CHANCE = 0.2;
+
+        private static final long CHERRY_ID = 0;
+        private static final long ORANGE_ID = 1;
+        private static final long LEMON_ID = 2;
+        private static final long BLUEBERRY_ID = 3;
+        private static final long GRAPE_ID = 4;
+        private static final long DIAMOND_ID = 5;
+        private static final String TEAM_CHERRY_NAME = "Team Cherry";
+        private static final String TEAM_ORANGE_NAME = "Team Orange";
+        private static final String TEAM_LEMON_NAME = "Team Lemon";
+        private static final String TEAM_BLUEBERRY_NAME = "Team Blueberry";
+        private static final String TEAM_GRAPE_NAME = "Team Grape";
+        private static final String PLACEHOLDER = ":black_large_square:";
+        private static final String EMPTY_ROW = Casino.repeatString(PLACEHOLDER, COLUMNS);
+
+        private Map<Long, SlotsTeam> teams = Map.ofEntries(
+            entry(CHERRY_ID, new SlotsTeam(TEAM_CHERRY_NAME, ":cherries:")),
+            entry(ORANGE_ID, new SlotsTeam(TEAM_ORANGE_NAME, ":tangerine:")),
+            entry(LEMON_ID, new SlotsTeam(TEAM_LEMON_NAME, ":lemon:")),
+            entry(BLUEBERRY_ID, new SlotsTeam(TEAM_BLUEBERRY_NAME, ":blueberries:")),
+            entry(GRAPE_ID, new SlotsTeam(TEAM_GRAPE_NAME, ":grapes:")));
+
+        static class SlotsTeam {
+            String teamName;
+            String emote;
+            List<Participant> members = new ArrayList<>();
+            long payout = 0;
+
+            SlotsTeam(String teamName, String emote) {
+                this.teamName = teamName;
+                this.emote = emote;
+            }
+
+            String getDisplayName() {
+                return emote + " " + teamName;
+            }
+        }
+
+        SlotsEvent(long server, Duration timeUntilResolution) {
+            super(EventType.SUPER_SLOTS, server, timeUntilResolution,
+                Map.ofEntries(entry(CHERRY_ID, TEAM_CHERRY_NAME),
+                              entry(ORANGE_ID, TEAM_ORANGE_NAME),
+                              entry(LEMON_ID, TEAM_LEMON_NAME),
+                              entry(BLUEBERRY_ID, TEAM_BLUEBERRY_NAME),
+                              entry(GRAPE_ID, TEAM_GRAPE_NAME)));
+        }
+
+        @Override
+        String createEmbedTitle() {
+            return "Super Slots!";
+        }
+
+        @Override
+        HBMain.EmbedResponse createInitialMessage() {
+            return createEmbedResponse(
+                "A new Miscellaneous event is starting: Super Slots!\n\nPick a team, and earn "
+                + "coins when your fruit shows up on the giant 10x10 slot machine!")
+                .setFooter(JOIN_COMMAND_PROMPT).setButtons(createAboutButton());
+        }
+
+        @Override
+        String createAboutMessage() {
+            return "At the end of the event a 10x10 board will be filled with the same fruits "
+                + "from `/slots`: :cherries:, :tangerine:, :lemon:, :blueberries:, and :grapes:. "
+                + "Each participant picks a team, and receives 1 coin every time that team's "
+                + "fruit appears on the slots board. Bonus coins are awarded for groups of fruit "
+                + "- multiple adjacent copies of the team's fruit. Diamonds also appear rarely, "
+                + "and award 1 coin to all teams. There's no limit to the number of participants "
+                + "that can join a given team, but whichever team *you* join is decidedly "
+                + "cooler than the others and is definitely going to earn more coins.";
+        }
+
+        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState() {
+            return displayCurrentState(false);
+        }
+
+        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState(boolean resolving) {
+            Queue<HBMain.EmbedResponse.InlineBlock> blocks = new LinkedList<>();
+            for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
+                SlotsTeam team = entry.getValue();
+                blocks.add(new HBMain.EmbedResponse.InlineBlock(team.getDisplayName() + ":"
+                        + (resolving ? team.payout : ""),
+                    team.members.isEmpty() ? "[Empty]" : team.members.stream()
+                        .map(Participant::getNickname).collect(Collectors.joining("\n"))));
+            }
+            return blocks;
+        }
+
+        @Override
+        HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user,
+                Gacha.GachaCharacter character, long selection) {
+            if (!teams.containsKey(selection)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
+            }
+            SlotsTeam team = teams.get(selection);
+            team.members.add(new Participant(user.getUid(), user.getNickname(),
+                character.getId(), character.getCharacterStats().getStat(type.assocatedStat)));
+
+            StringBuilder builder = new StringBuilder();
+            builder.append(user.getNickname());
+            builder.append(" brought ");
+            builder.append(character.getDisplayName());
+            builder.append(" and joined ");
+            builder.append(team.teamName);
+            builder.append("!\nTotal payout bonus is now +");
+            builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
+            builder.append("%");
+            return createEmbedResponse(builder.toString(), displayCurrentState())
+                .setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        @Override
+        HBMain.EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+                Gacha.GachaCharacter character, long selection) {
+            if (!teams.containsKey(selection)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
+            }
+
+            Participant oldParticipant = null;
+            long oldTeam = -1;
+            Participant newParticipant = new Participant(user.getUid(), user.getNickname(),
+                character.getId(), character.getCharacterStats().getStat(type.assocatedStat));
+            for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
+                List<Participant> members = entry.getValue().members;
+                if (members.contains(newParticipant)) {
+                    oldTeam = entry.getKey();
+                    oldParticipant = members.get(members.indexOf(newParticipant));
+                    break;
+                }
+            }
+
+            if (oldTeam == -1) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX
+                    + "Unable to find previous entry");
+            } else if (oldTeam == selection && character.getId() == oldParticipant.cid) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX
+                    + "You already joined that team with that character");
+            }
+
+            teams.get(oldTeam).members.remove(oldParticipant);
+            teams.get(selection).members.add(newParticipant);
+
+            StringBuilder builder = new StringBuilder();
+            if (oldTeam == selection) {
+                appendJoinMessage(builder, user, character, true);
+            } else {
+                builder.append(user.getNickname());
+                if (oldParticipant.cid != newParticipant.cid) {
+                    builder.append(" brought ");
+                    builder.append(character.getDisplayName());
+                    builder.append(" and ");
+                }
+                builder.append(" defected from ");
+                builder.append(teams.get(oldTeam).teamName);
+                builder.append(" to ");
+                builder.append(teams.get(selection).teamName);
+                if (oldParticipant.cid != newParticipant.cid) {
+                    builder.append(". Total payout bonus is now +");
+                    builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
+                    builder.append('%');
+                }
+            }
+            return createEmbedResponse(builder.toString(), displayCurrentState())
+                .setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        @Override
+        HBMain.EmbedResponse createReminderMessage() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Ending in ");
+            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
+            builder.append(" minutes!\n\nCurrent teams:");
+            return createEmbedResponse(builder.toString(), displayCurrentState())
+                .setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        private long generateFruit() {
+            double roll = HBMain.RNG_SOURCE.nextDouble();
+            if (roll < DIAMOND_CHANCE) {
+                return DIAMOND_ID;
+            }
+            // Dividing the roll by 0.2 converts it to
+            // evenly distributed IDs 0-4
+            return (long)(roll / FRUIT_CHANCE);
+        }
+
+        @Override
+        Queue<HBMain.EmbedResponse> createResolutionMessages() {
+            Queue<HBMain.EmbedResponse> messageFrames = new LinkedList<>();
+            createResolutionCountdown(messageFrames);
+
+            long[][] fruit = new long[ROWS][COLUMNS];
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = 0; i < ROWS; i++) {
+                for (int j = 0; j < COLUMNS; j++) {
+                    fruit[i][j] = generateFruit();
+                    int value = COINS_PER_FRUIT;
+                    if (i > 0 && fruit[i-1][j] == fruit[i][j]) { value += COINS_PER_GROUP; }
+                    if (j > 0 && fruit[i][j-1] == fruit[i][j]) { value += COINS_PER_GROUP; }
+                    if (fruit[i][j] == DIAMOND_ID) {
+                        for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
+                            entries.getValue().payout += value;
+                        }
+                    } else {
+                        teams.get(fruit[i][j]).payout += value;
+                    }
+
+                    builder.append(teams.get(fruit[i][j]).emote);
+                    messageFrames.add(createEmbedResponse(builder.toString()
+                        + Casino.repeatString(PLACEHOLDER, 9 - j)
+                        + Casino.repeatString(EMPTY_ROW, 9 - i), displayCurrentState()));
+                }
+                builder.append('\n');
+            }
+
+            builder.append("\nPayout multiplier: x");
+            builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+            for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
+                entries.getValue().payout *= getPayoutMultiplier();
+            }
+            messageFrames.add(createEmbedResponse(builder.toString(), displayCurrentState()));
+
+            // TODO: Log results and pay coins
 
             return messageFrames;
         }
