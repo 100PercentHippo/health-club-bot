@@ -1001,7 +1001,7 @@ abstract class Event {
         private static final String TEAM_BLUEBERRY_NAME = "Team Blueberry";
         private static final String TEAM_GRAPE_NAME = "Team Grape";
         private static final String PLACEHOLDER = ":black_large_square:";
-        private static final String EMPTY_ROW = Casino.repeatString(PLACEHOLDER, COLUMNS);
+        private static final String EMPTY_ROW = "\n" + Casino.repeatString(PLACEHOLDER, COLUMNS);
 
         private Map<Long, SlotsTeam> teams = Map.ofEntries(
             entry(CHERRY_ID, new SlotsTeam(TEAM_CHERRY_NAME, ":cherries:")),
@@ -1199,9 +1199,12 @@ abstract class Event {
                         builder.append(teams.get(fruit[i][j]).emote);
                     }
 
-                    messageFrames.add(createEmbedResponse(builder.toString()
-                        + Casino.repeatString(PLACEHOLDER, 9 - j)
-                        + Casino.repeatString(EMPTY_ROW, 9 - i), displayCurrentState()));
+                    // Only post a frame every other fruit to save memory
+                    if (j % 2 == 1) {
+                        messageFrames.add(createEmbedResponse(builder.toString()
+                            + Casino.repeatString(PLACEHOLDER, 9 - j)
+                            + Casino.repeatString(EMPTY_ROW, 9 - i), displayCurrentState(true)));
+                    }
                 }
                 builder.append('\n');
             }
@@ -1211,7 +1214,7 @@ abstract class Event {
             for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
                 entries.getValue().payout *= getPayoutMultiplier();
             }
-            messageFrames.add(createEmbedResponse(builder.toString(), displayCurrentState()));
+            messageFrames.add(createEmbedResponse(builder.toString(), displayCurrentState(true)));
 
             // TODO: Log results and pay coins
 
