@@ -9,7 +9,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.javacord.api.entity.message.component.ActionRow;
@@ -31,12 +29,13 @@ abstract class Event {
         private EventFactory() {}
 
         static Event createEvent(long server, EventType type) {
-            // if (type == EventType.FISH) {
-            //     return new FishEvent(server, Duration.ofMinutes(2));
-            // } else if (type == EventType.PICK) {
-            //     return new PickEvent(server, Duration.ofMinutes(2));
-            // }
-            return new SlotsEvent(server, Duration.ofMinutes(2));
+            if (type == EventType.FISH) {
+                return new FishEvent(server, Duration.ofMinutes(2));
+            } else if (type == EventType.PICKPOCKET) {
+                return new PickEvent(server, Duration.ofMinutes(2));
+            } else {
+                return new SlotsEvent(server, Duration.ofMinutes(2));
+            }
         }
     }
 
@@ -369,9 +368,9 @@ abstract class Event {
         private static final int BASE_EASY_ROLL_REQUIREMENT = 50;
         private static final int BASE_HARD_ROLL_REQUIREMENT = 100;
         private static final int ROLL_REDUCTION_PER_PARTICIPANT = 10;
-        private static final int BASE_COMMON_FISH_VALUE = 100;
-        private static final int BASE_UNCOMMON_FISH_VALUE = 200;
-        private static final int BASE_RARE_FISH_VALUE = 300;
+        private static final int BASE_COMMON_FISH_VALUE = 200;
+        private static final int BASE_UNCOMMON_FISH_VALUE = 500;
+        private static final int BASE_RARE_FISH_VALUE = 1000;
 
         static class FishEventDetails {
             String destination;
@@ -687,9 +686,9 @@ abstract class Event {
     }
 
     private static class PickEvent extends Event {
-        private static final int MIN_PICK_TARGETS = 15;
-        private static final int AVERAGE_PICK_TARGETS = 40;
-        private static final int PICK_TARGETS_STD_DEV = 10;
+        static final int MIN_PICK_TARGETS = 15;
+        static final int AVERAGE_PICK_TARGETS = 40;
+        static final int PICK_TARGETS_STD_DEV = 10;
         private static final int POT_PER_PLAYER = 200;
         private static final long DEFAULT_SELECTION_FILLER = -10;
 
@@ -984,8 +983,8 @@ abstract class Event {
     static class SlotsEvent extends Event {
         private static final int ROWS = 10;
         private static final int COLUMNS = 10;
-        private static final int COINS_PER_FRUIT = 1;
-        private static final int COINS_PER_GROUP = 2;
+        private static final int COINS_PER_FRUIT = 5;
+        private static final int COINS_PER_GROUP = 10;
         private static final double DIAMOND_CHANCE = 0.01;
         private static final double FRUIT_CHANCE = 0.2;
 
@@ -1262,7 +1261,9 @@ abstract class Event {
     }
 
     static PickEvent.PickEventDetails fetchPickEventDetails(long seed) {
-        return new PickEvent.PickEventDetails(PickEvent.AVERAGE_PICK_TARGETS, "Test Land");
+        return new PickEvent.PickEventDetails(HBMain.generateBoundedNormal(
+            PickEvent.AVERAGE_PICK_TARGETS, PickEvent.PICK_TARGETS_STD_DEV,
+            PickEvent.MIN_PICK_TARGETS), "Test Land");
     }
 
 
