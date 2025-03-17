@@ -1069,7 +1069,7 @@ abstract class Event {
             for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
                 SlotsTeam team = entry.getValue();
                 blocks.add(new HBMain.EmbedResponse.InlineBlock(team.getDisplayName() + ":"
-                        + (resolving ? team.payout : ""),
+                        + (resolving ? " " + team.payout : ""),
                     team.members.isEmpty() ? "[Empty]" : team.members.stream()
                         .map(Participant::getNickname).collect(Collectors.joining("\n"))));
             }
@@ -1182,30 +1182,41 @@ abstract class Event {
 
             long[][] fruit = new long[ROWS][COLUMNS];
             StringBuilder builder = new StringBuilder();
+            StringBuilder reverseBuilder;
 
             for (int i = 0; i < ROWS; i++) {
-                for (int j = 0; j < COLUMNS; j++) {
-                    fruit[i][j] = generateFruit();
-                    int value = COINS_PER_FRUIT;
-                    if (i > 0 && fruit[i-1][j] == fruit[i][j]) { value += COINS_PER_GROUP; }
-                    if (j > 0 && fruit[i][j-1] == fruit[i][j]) { value += COINS_PER_GROUP; }
-                    if (fruit[i][j] == DIAMOND_ID) {
-                        for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
-                            entries.getValue().payout += value;
+                reverseBuilder = new StringBuilder();
+                // Insert elements 2 at a time, one left and one right
+                for (int k = 0; k < COLUMNS / 2; k++) {
+                    for (int j : Arrays.asList(k, COLUMNS - k - 1)) {
+                        fruit[i][j] = generateFruit();
+                        int value = COINS_PER_FRUIT;
+                        if (i > 0 && fruit[i-1][j] == fruit[i][j]) { value += COINS_PER_GROUP; }
+                        if (j > 0 && fruit[i][j-1] == fruit[i][j]) { value += COINS_PER_GROUP; }
+                        if (fruit[i][j] == DIAMOND_ID) {
+                            for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
+                                entries.getValue().payout += value;
+                            }
+                            if (j == k) {
+                                builder.append(":gem:");
+                            } else {
+                                reverseBuilder.insert(0, ":gem:");
+                            }
+                        } else {
+                            teams.get(fruit[i][j]).payout += value;
+                            if (j == k) {
+                                builder.append(teams.get(fruit[i][j]).emote);
+                            } else {
+                                reverseBuilder.insert(0, teams.get(fruit[i][j]).emote);
+                            }
                         }
-                        builder.append(":gem:");
-                    } else {
-                        teams.get(fruit[i][j]).payout += value;
-                        builder.append(teams.get(fruit[i][j]).emote);
                     }
 
-                    // Only post a frame every other fruit to save memory
-                    if (j % 2 == 1) {
-                        messageFrames.add(createEmbedResponse(builder.toString()
-                            + Casino.repeatString(PLACEHOLDER, 9 - j)
-                            + Casino.repeatString(EMPTY_ROW, 9 - i), displayCurrentState(true)));
-                    }
+                    messageFrames.add(createEmbedResponse(builder.toString()
+                        + Casino.repeatString(PLACEHOLDER, 8 - 2 * k) + reverseBuilder.toString()
+                        + Casino.repeatString(EMPTY_ROW, 9 - i), displayCurrentState(true)));
                 }
+                builder.append(reverseBuilder.toString());
                 builder.append('\n');
             }
 
