@@ -230,6 +230,11 @@ public class HBMain {
             return this;
         }
 
+        EmbedResponse setButtons(ActionRow buttons) {
+            this.buttons = buttons;
+            return this;
+        }
+
         String getMessage() {
             return message;
         }
@@ -420,6 +425,7 @@ public class HBMain {
     private static final String LIST_GEMS_COMMAND = "gacha gem list";
     private static final String GACHA_EVENT_JOIN = "gacha event join";
     private static final String GACHA_COMMAND_CHARACTER_OPTION = "character";
+            static final String GACHA_EVENT_PREFIX = "gacha event";
 
 
     private static final int REGISTER_SUBCOMMAND_ADD_CASINO_CHANNEL = 0;
@@ -613,6 +619,9 @@ public class HBMain {
                     break;
                 case ROLL_COMMAND:
                     handleRollButtonPress(interaction);
+                    break;
+                case GACHA_EVENT_PREFIX:
+                    handleGachaEventButtonPress(interaction);
                     break;
                 default:
                     System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
@@ -811,6 +820,11 @@ public class HBMain {
             System.out.println(String.format("Encountered unexpected roll command: %s (full command %s)",
                 command, interaction.getCustomId()));
         }
+    }
+
+    private static void handleGachaEventButtonPress(MessageComponentInteraction interaction) {
+        respondImmediately(new SingleResponse(CasinoServerManager.handleAboutButtonPress(
+            interaction.getServer().get().getId())), interaction, true);
     }
 
     private static String handleRegisterChannel(long uid, Optional<Server> serverOptional,

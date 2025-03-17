@@ -361,6 +361,15 @@ public class CasinoServerManager {
         return servers.get(server).activeEvent.handleSelectionAutocomplete();
     }
 
+    static String handleAboutButtonPress(long server) {
+        if (!servers.containsKey(server)) {
+            return "Error: Current server not found";
+        } else if (servers.get(server).activeEvent == null) {
+            return "Error: No active event found";
+        }
+        return servers.get(server).activeEvent.createAboutMessage();
+    }
+
     static long getMoneyMachinePot(long server) {
         if (!servers.containsKey(server)) {
             return -1;

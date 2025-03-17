@@ -17,6 +17,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.component.Button;
+
 abstract class Event {
 
     static class EventFactory {
@@ -25,7 +28,11 @@ abstract class Event {
         private EventFactory() {}
 
         static Event createEvent(long server, EventType type) {
-            return new FishEvent(server, Duration.ofMinutes(2));
+            if (type == EventType.FISH) {
+                return new FishEvent(server, Duration.ofMinutes(2));
+            } else {
+                return new PickEvent(server, Duration.ofMinutes(2));
+            }
         }
     }
 
@@ -135,6 +142,8 @@ abstract class Event {
     static final String INVALID_SELECTION_PREFIX = "Invalid selection: ";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
     static final NumberFormat ONE_DECIMAL = new DecimalFormat("0.0");
+    static final HBMain.EmbedResponse.InlineBlock EMPTY_INLINE_BLOCK
+        = new HBMain.EmbedResponse.InlineBlock("\u200B", "\u200B");
 
     protected Event(EventType type, long server, Duration timeUntilResolution,
             Map<Long, String> joinSelections) {
@@ -311,6 +320,11 @@ abstract class Event {
         }
     }
 
+    ActionRow createAboutButton() {
+        return ActionRow.of(Button.secondary(HBMain.GACHA_EVENT_PREFIX + ".about", "How do "
+            + type.name().replace('_', ' ').toLowerCase() + " events work?"));
+    }
+
     private static class FishEvent extends Event {
         private static final long BOAT_1_VALUE = 1;
         private static final long BOAT_2_VALUE = 2;
@@ -403,8 +417,8 @@ abstract class Event {
                 builder.append('+');
             }
             response.addInlineBlock("Potential fish for Boat 3:", builder.toString());
-
             response.setFooter(JOIN_COMMAND_PROMPT);
+            response.setButtons(createAboutButton());
             return response;
         }
 
@@ -700,6 +714,7 @@ abstract class Event {
             response.addInlineBlock("Coins per target:",
                 currentCoinsPerTarget() + "\n(Increases as players join)");
             response.setFooter(JOIN_COMMAND_PROMPT);
+            response.setButtons(createAboutButton());
             return response;
         }
 
@@ -752,8 +767,11 @@ abstract class Event {
             return new LinkedList<>(Arrays.asList(
                 new HBMain.EmbedResponse.InlineBlock("Participants:", builderOne.toString()),
                 new HBMain.EmbedResponse.InlineBlock("Targets:", builderTwo.toString()),
+                EMPTY_INLINE_BLOCK,
                 new HBMain.EmbedResponse.InlineBlock("Coins per target:",
-                    currentCoinsPerTarget() + "\n(Increases as players join)")));
+                    currentCoinsPerTarget() + "\n(Increases as players join)"),
+                new HBMain.EmbedResponse.InlineBlock("Payout Multiplier:",
+                    "+" + ONE_DECIMAL.format(getPayoutBonusPercent()))));
         }
 
         @Override
@@ -764,7 +782,7 @@ abstract class Event {
                     + "targets (autocomplete cannot be used for this event type)");
             } else if (selection < 1 || selection > 99) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX
-                    + "Number of targets must be between 1 and 99 inclusive");
+                    + "Number of targets must be 1-99");
             }
             PickParticipant participant = new PickParticipant(user.getUid(), user.getNickname(),
                 character.getId(), character.getCharacterStats().getStat(type.assocatedStat),
@@ -779,7 +797,8 @@ abstract class Event {
             builder.append(character.getCharacterStats().printStat(type.assocatedStat));
             builder.append(".\nEach target now carries ");
             builder.append(currentCoinsPerTarget());
-            builder.append(" coins.");
+            builder.append(" coins. The payout multiplier is now +");
+            builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
             return createEmbedResponse(builder.toString(), displayCurrentState())
                 .setFooter(JOIN_COMMAND_PROMPT);
         }
@@ -885,8 +904,6 @@ abstract class Event {
                     participant.successfulTargets = targetsToPay;
                     participant.payout = targetsToPay * (long)coinsPerTarget;
 
-                    // TODO: Pay coins and log result
-
                     int index = 0;
                     for (int i = 0; i < participant.joinOrder; i++) {
                         index = column3text.indexOf('\n', index) + 1;
@@ -905,6 +922,35 @@ abstract class Event {
                         new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
                 }
             }
+
+            // Modify payout to include multiplier
+            StringBuilder intermediatePayoutBuilder = new StringBuilder();
+            StringBuilder finalPayoutBuilder = new StringBuilder();
+            for (Map.Entry<Integer, List<PickParticipant>> entry : payoutOrder.entrySet()) {
+                for (PickParticipant participant : entry.getValue()) {
+                    String line = "";
+                    if (intermediatePayoutBuilder.length() != 0) {
+                        line = "\n";
+                    }
+                    line = line + participant.payout + " x "
+                        + Stats.twoDecimals.format(getPayoutMultiplier());
+                    intermediatePayoutBuilder.append(line);
+                    finalPayoutBuilder.append(line);
+                    participant.payout *= getPayoutMultiplier();
+                    finalPayoutBuilder.append(" = ");
+                    finalPayoutBuilder.append(participant.payout);
+
+                    // TODO: Pay coins and log result
+                }
+            }
+            column3 = new HBMain.EmbedResponse.InlineBlock("Payout:",
+                intermediatePayoutBuilder.toString());
+            messageFrames.add(createEmbedResponse(description,
+                new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
+            column3 = new HBMain.EmbedResponse.InlineBlock("Payout:",
+                finalPayoutBuilder.toString());
+            messageFrames.add(createEmbedResponse(description,
+                new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
 
             // TODO: Log event completion
 
