@@ -1073,6 +1073,7 @@ abstract class Event {
                     team.members.isEmpty() ? "[Empty]" : team.members.stream()
                         .map(Participant::getNickname).collect(Collectors.joining("\n"))));
             }
+            blocks.add(EMPTY_INLINE_BLOCK);
             return blocks;
         }
 
@@ -1192,11 +1193,12 @@ abstract class Event {
                         for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
                             entries.getValue().payout += value;
                         }
+                        builder.append(":gem:");
                     } else {
                         teams.get(fruit[i][j]).payout += value;
+                        builder.append(teams.get(fruit[i][j]).emote);
                     }
 
-                    builder.append(teams.get(fruit[i][j]).emote);
                     messageFrames.add(createEmbedResponse(builder.toString()
                         + Casino.repeatString(PLACEHOLDER, 9 - j)
                         + Casino.repeatString(EMPTY_ROW, 9 - i), displayCurrentState()));
