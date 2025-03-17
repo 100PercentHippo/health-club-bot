@@ -1190,9 +1190,20 @@ abstract class Event {
                 for (int k = 0; k < COLUMNS / 2; k++) {
                     for (int j : Arrays.asList(k, COLUMNS - k - 1)) {
                         fruit[i][j] = generateFruit();
+
                         int value = COINS_PER_FRUIT;
                         if (i > 0 && fruit[i-1][j] == fruit[i][j]) { value += COINS_PER_GROUP; }
-                        if (j > 0 && fruit[i][j-1] == fruit[i][j]) { value += COINS_PER_GROUP; }
+                        // Since we're filling from either side, check for grouping
+                        // to the left if we're on the left side or the last entry
+                        // of the right side, and check to the right if we're on the
+                        // right side
+                        if (j > 0 && (j == k || j == k + 1) && fruit[i][j-1] == fruit[i][j]) {
+                            value += COINS_PER_GROUP;
+                        }
+                        if (j != k && j < COLUMNS - 1 && fruit[i][j+1] == fruit[i][j]) {
+                            value += COINS_PER_GROUP;
+                        }
+
                         if (fruit[i][j] == DIAMOND_ID) {
                             for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
                                 entries.getValue().payout += value;
