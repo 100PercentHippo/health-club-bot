@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 
+import com.c2t2s.hb.HBMain.EmbedResponse;
+import com.c2t2s.hb.HBMain.EmbedResponse.InlineBlock;
+
 abstract class Event {
 
     static class EventFactory {
@@ -157,8 +160,8 @@ abstract class Event {
     static final String INVALID_SELECTION_PREFIX = "Invalid selection: ";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
     static final NumberFormat ONE_DECIMAL = new DecimalFormat("0.0");
-    static final HBMain.EmbedResponse.InlineBlock EMPTY_INLINE_BLOCK
-        = new HBMain.EmbedResponse.InlineBlock("\u200B", "\u200B");
+    static final InlineBlock EMPTY_INLINE_BLOCK
+        = new InlineBlock("\u200B", "\u200B");
 
     protected Event(EventType type, long server, Duration timeUntilResolution,
             Map<Long, String> joinSelections) {
@@ -187,19 +190,19 @@ abstract class Event {
 
     abstract String createEmbedTitle();
 
-    abstract HBMain.EmbedResponse createInitialMessage();
+    abstract EmbedResponse createInitialMessage();
 
     abstract String createAboutMessage();
 
-    abstract HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user,
+    abstract EmbedResponse createPublicUserJoinMessage(Casino.User user,
         Gacha.GachaCharacter character, long selection);
 
-    abstract HBMain.EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+    abstract EmbedResponse createPublicUserRejoinMessage(Casino.User user,
         Gacha.GachaCharacter character, long selection);
 
-    abstract HBMain.EmbedResponse createReminderMessage();
+    abstract EmbedResponse createReminderMessage();
 
-    abstract Queue<HBMain.EmbedResponse> createResolutionMessages();
+    abstract Queue<EmbedResponse> createResolutionMessages();
 
     boolean canUsersRejoin() { return true; }
 
@@ -215,22 +218,22 @@ abstract class Event {
         // TODO
     }
 
-    HBMain.EmbedResponse createEmbedResponse(String message) {
-        return new HBMain.EmbedResponse(type.embedColor, message, createEmbedTitle());
+    EmbedResponse createEmbedResponse(String message) {
+        return new EmbedResponse(type.embedColor, message, createEmbedTitle());
     }
 
-    HBMain.EmbedResponse createEmbedResponse(String message,
-            Queue<HBMain.EmbedResponse.InlineBlock> inlineBlocks) {
+    EmbedResponse createEmbedResponse(String message,
+            Queue<InlineBlock> inlineBlocks) {
         return createEmbedResponse(message, inlineBlocks, false);
     }
 
-    HBMain.EmbedResponse createEmbedResponse(String message,
-            Queue<HBMain.EmbedResponse.InlineBlock> inlineBlocks, boolean shouldCopy) {
+    EmbedResponse createEmbedResponse(String message,
+            Queue<InlineBlock> inlineBlocks, boolean shouldCopy) {
         return createEmbedResponse(message).setInlineBlocks(inlineBlocks, shouldCopy);
     }
 
-    HBMain.EmbedResponse createErrorResponse(String message) {
-        return new HBMain.EmbedResponse(Color.RED, message);
+    EmbedResponse createErrorResponse(String message) {
+        return new EmbedResponse(Color.RED, message);
     }
 
     Void initialize() {
@@ -266,7 +269,7 @@ abstract class Event {
             return null;
         }, NEW_EVENT_DELAY);
 
-        Queue<HBMain.EmbedResponse> messages = createResolutionMessages();
+        Queue<EmbedResponse> messages = createResolutionMessages();
         // TODO: Log event output
         CasinoServerManager.sendMultipartEventMessage(server, messages);
         return null;
@@ -305,7 +308,7 @@ abstract class Event {
         totalPayoutMultiplier += character.getCharacterStats().getStat(type.assocatedStat);
         participatingUsers.add(uid);
 
-        HBMain.EmbedResponse joinMessage = createPublicUserJoinMessage(user, character, selection);
+        EmbedResponse joinMessage = createPublicUserJoinMessage(user, character, selection);
         if (joinMessage.getMessage().startsWith(INVALID_SELECTION_PREFIX)) {
             totalPayoutMultiplier -= character.getCharacterStats().getStat(type.assocatedStat);
             participatingUsers.remove(uid);
@@ -328,7 +331,7 @@ abstract class Event {
         return output.toString();
     }
 
-    void createResolutionCountdown(Queue<HBMain.EmbedResponse> messageFrames) {
+    void createResolutionCountdown(Queue<EmbedResponse> messageFrames) {
         for (int seconds = COUNTDOWN_SECONDS; seconds > 0; seconds--) {
             messageFrames.add(createEmbedResponse("Starting in " + seconds
                 + " seconds"));
@@ -420,8 +423,8 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createInitialMessage() {
-            HBMain.EmbedResponse response = createEmbedResponse(
+        EmbedResponse createInitialMessage() {
+            EmbedResponse response = createEmbedResponse(
                 "A new Fishing event is starting, destination: " + details.destination);
 
             StringBuilder builder = new StringBuilder();
@@ -490,13 +493,13 @@ abstract class Event {
             return requirement;
         }
 
-        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState() {
+        Queue<InlineBlock> displayCurrentState() {
             return new LinkedList<>(Arrays.asList(
-                new HBMain.EmbedResponse.InlineBlock("Boat 1",
+                new InlineBlock("Boat 1",
                     printCurrentState(boat1Users, false)),
-                new HBMain.EmbedResponse.InlineBlock("Boat 2",
+                new InlineBlock("Boat 2",
                     printCurrentState(boat2Users, false)),
-                new HBMain.EmbedResponse.InlineBlock("Boat 3",
+                new InlineBlock("Boat 3",
                     printCurrentState(boat3Users, true)))
             );
         }
@@ -504,7 +507,7 @@ abstract class Event {
         String printCurrentState(List<FishParticipant> participants, boolean deep) {
             int easyFishValue = deep ? BASE_UNCOMMON_FISH_VALUE : BASE_COMMON_FISH_VALUE;
             int hardFishValue = deep ? BASE_RARE_FISH_VALUE : BASE_UNCOMMON_FISH_VALUE;
-            String easyFishRarity = deep ? "Uncommon" : "Rare";
+            String easyFishRarity = deep ? "Uncommon" : "Common";
             String hardFishRarity = deep ? "Rare" : "Uncommon";
 
             StringBuilder builder = new StringBuilder();
@@ -521,16 +524,16 @@ abstract class Event {
                 }
             }
             builder.append("\n\n");
-            builder.append(easyFishValue);
-            builder.append(" coin ");
             builder.append(easyFishRarity);
-            builder.append(" on ");
+            builder.append(" (");
+            builder.append(easyFishValue);
+            builder.append(") on ");
             builder.append(getRequiredRoll(participants.size(), true));
             builder.append("+\n");
-            builder.append(hardFishValue);
-            builder.append(" coin ");
             builder.append(hardFishRarity);
-            builder.append(" on ");
+            builder.append(" (");
+            builder.append(hardFishValue);
+            builder.append(") on ");
             int highRoll = getRequiredRoll(participants.size(), false);
             builder.append(highRoll);
             if (highRoll < 100) {
@@ -540,7 +543,7 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
             FishParticipant participant = new FishParticipant(user.getUid(), user.getNickname(),
                 character.getId(), character.getCharacterStats().getStat(type.assocatedStat));
@@ -562,14 +565,14 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
             // TODO
             return null;
         }
 
         @Override
-        HBMain.EmbedResponse createReminderMessage() {
+        EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
@@ -579,23 +582,23 @@ abstract class Event {
         }
 
         @Override
-        Queue<HBMain.EmbedResponse> createResolutionMessages() {
-            Queue<HBMain.EmbedResponse> messageFrames = new LinkedList<>();
+        Queue<EmbedResponse> createResolutionMessages() {
+            Queue<EmbedResponse> messageFrames = new LinkedList<>();
             createResolutionCountdown(messageFrames);
 
             long payout = 0;
-            Deque<HBMain.EmbedResponse.InlineBlock> inlineBlocks = new LinkedList<>();
-            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Boat 1", ""));
+            Deque<InlineBlock> inlineBlocks = new LinkedList<>();
+            inlineBlocks.add(new InlineBlock("Boat 1:          ", ""));
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             payout += resolveBoat(boat1Users, inlineBlocks, messageFrames, false);
-            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Boat 2", ""));
+            inlineBlocks.add(new InlineBlock("Boat 2:          ", ""));
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             payout += resolveBoat(boat2Users, inlineBlocks, messageFrames, false);
-            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Boat 3", ""));
+            inlineBlocks.add(new InlineBlock("Boat 3:          ", ""));
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             payout += resolveBoat(boat3Users, inlineBlocks, messageFrames, true);
 
-            inlineBlocks.add(new HBMain.EmbedResponse.InlineBlock("Payout:", ""));
+            inlineBlocks.add(new InlineBlock("Payout:", ""));
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             StringBuilder payoutBuilder = new StringBuilder();
             payoutBuilder.append(payout);
@@ -621,8 +624,8 @@ abstract class Event {
         }
 
         int resolveBoat(List<FishParticipant> participants,
-                Deque<HBMain.EmbedResponse.InlineBlock> displayBlocks,
-                Queue<HBMain.EmbedResponse> messageFrames, boolean deep) {
+                Deque<InlineBlock> displayBlocks,
+                Queue<EmbedResponse> messageFrames, boolean deep) {
             int highestRoll = 0;
             int payout = 0;
 
@@ -737,8 +740,8 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createInitialMessage() {
-            HBMain.EmbedResponse response = createEmbedResponse(
+        EmbedResponse createInitialMessage() {
+            EmbedResponse response = createEmbedResponse(
                 "A new Pickpocketing event is starting, destination: " + details.destination);
             response.addInlineBlock("Total targets:", Integer.toString(details.totalTargets));
             response.addInlineBlock("Coins per target:",
@@ -775,7 +778,7 @@ abstract class Event {
                 + "targets remain.";
         }
 
-        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState() {
+        Queue<InlineBlock> displayCurrentState() {
             StringBuilder builderOne = new StringBuilder();
             StringBuilder builderTwo = new StringBuilder();
             if (participants.isEmpty()) {
@@ -795,17 +798,17 @@ abstract class Event {
             builderTwo.append(details.totalTargets);
             builderTwo.append('`');
             return new LinkedList<>(Arrays.asList(
-                new HBMain.EmbedResponse.InlineBlock("Participants:", builderOne.toString()),
-                new HBMain.EmbedResponse.InlineBlock("Targets:", builderTwo.toString()),
+                new InlineBlock("Participants:", builderOne.toString()),
+                new InlineBlock("Targets:", builderTwo.toString()),
                 EMPTY_INLINE_BLOCK,
-                new HBMain.EmbedResponse.InlineBlock("Coins per target:",
+                new InlineBlock("Coins per target:",
                     currentCoinsPerTarget() + "\n(Increases as players join)"),
-                new HBMain.EmbedResponse.InlineBlock("Payout Multiplier:",
+                new InlineBlock("Payout Multiplier:",
                     "+" + ONE_DECIMAL.format(getPayoutBonusPercent()) + "%")));
         }
 
         @Override
-        HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
             if (selection == DEFAULT_SELECTION_FILLER) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Manually enter number of "
@@ -826,14 +829,14 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
             // TODO
             return null;
         }
 
         @Override
-        HBMain.EmbedResponse createReminderMessage() {
+        EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
@@ -843,8 +846,8 @@ abstract class Event {
         }
 
         @Override
-        Queue<HBMain.EmbedResponse> createResolutionMessages() {
-            Queue<HBMain.EmbedResponse> messageFrames = new LinkedList<>();
+        Queue<EmbedResponse> createResolutionMessages() {
+            Queue<EmbedResponse> messageFrames = new LinkedList<>();
             createResolutionCountdown(messageFrames);
 
             if (participants.isEmpty()) {
@@ -874,13 +877,13 @@ abstract class Event {
             }
             builderOne.append("\n**Total:**");
             String userTargets = Casino.repeatString("`??`\n", participants.size());
-            HBMain.EmbedResponse.InlineBlock column1
-                = new HBMain.EmbedResponse.InlineBlock("Participants:", builderOne.toString());
-            HBMain.EmbedResponse.InlineBlock column2
-                = new HBMain.EmbedResponse.InlineBlock("Targets Hit:",
+            InlineBlock column1
+                = new InlineBlock("Participants:", builderOne.toString());
+            InlineBlock column2
+                = new InlineBlock("Targets Hit:",
                     userTargets + '`' + totalTargetsSelected + '`');
-            HBMain.EmbedResponse.InlineBlock column3
-                = new HBMain.EmbedResponse.InlineBlock("Payout:", "");
+            InlineBlock column3
+                = new InlineBlock("Payout:", "");
 
             // Reveal everyone's targets in order smallest to largest
             messageFrames.add(createEmbedResponse(description, new LinkedList<>(Arrays.asList(
@@ -898,7 +901,7 @@ abstract class Event {
                             + "targets ran away\nCoins per target: " + coinsPerTarget;
                         details.totalTargets /= 2;
                     }
-                    column2 = new HBMain.EmbedResponse.InlineBlock("Targets Hit:",
+                    column2 = new InlineBlock("Targets Hit:",
                         userTargets + '`' + totalTargetsSelected + '`');
                     messageFrames.add(createEmbedResponse(description,
                         new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
@@ -939,7 +942,7 @@ abstract class Event {
                     }
                     column3text = column3text.substring(0, index) + participant.payout
                         + column3text.substring(index);
-                    column3 = new HBMain.EmbedResponse.InlineBlock("Payout:", column3text);
+                    column3 = new InlineBlock("Payout:", column3text);
                     messageFrames.add(createEmbedResponse(description,
                         new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
                 }
@@ -965,16 +968,279 @@ abstract class Event {
                     // TODO: Pay coins and log result
                 }
             }
-            column3 = new HBMain.EmbedResponse.InlineBlock("Payout:",
+            column3 = new InlineBlock("Payout:",
                 intermediatePayoutBuilder.toString());
             messageFrames.add(createEmbedResponse(description,
                 new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
-            column3 = new HBMain.EmbedResponse.InlineBlock("Payout:",
+            column3 = new InlineBlock("Payout:",
                 finalPayoutBuilder.toString());
             messageFrames.add(createEmbedResponse(description,
                 new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
 
             // TODO: Log event completion
+
+            return messageFrames;
+        }
+    }
+
+    static class RobEvent extends Event {
+        private static final int POT_PER_PLAYER = 175;
+        private static final int TOO_FEW_PLAYERS_PAYOUT = 150;
+        private static final double LOUD_PLAYER_PORTION = 0.4;
+        private static final double ALL_QUIET_BONUS = 0.2;
+        private static final int MINIMUM_PARTICIPANTS = 3;
+        private static final long QUIET_SELECTION_ID = 0;
+        private static final long LOUD_SELECTION_ID = 1;
+
+        static class RobEventDetails {
+            String destination;
+            String target;
+
+            RobEventDetails(String destination, String target) {
+                this.destination = destination;
+                this.target = target;
+            }
+        }
+
+        static class RobParticipant extends Participant {
+            boolean isQuiet;
+
+            RobParticipant(long uid, String nickname, long cid, int characterMultiplier,
+                    boolean isQuiet) {
+                super(uid, nickname, cid, characterMultiplier);
+                this.isQuiet = isQuiet;
+            }
+        }
+
+        RobEventDetails details;
+        List<RobParticipant> participants = new ArrayList<>();
+
+        RobEvent(long server, Duration timeUntilResolution) {
+            super(EventType.ROB, server, timeUntilResolution,
+                Map.ofEntries(entry(QUIET_SELECTION_ID,"Quiet: Stick to the plan - receive a "
+                    + "bonus if everybody else is quiet as well"), entry(LOUD_SELECTION_ID,
+                    "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
+                    + "as nobody else goes loud")));
+            details = fetchRobEventDetails(seed);
+        }
+
+        @Override
+        String createEmbedTitle() {
+            return "Rob Event to steal " + details.target + " from " + details.destination;
+        }
+
+        @Override
+        EmbedResponse createInitialMessage() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Robert is putting together a crew to steal ");
+            builder.append(details.target);
+            builder.append(" from ");
+            builder.append(details.destination);
+            builder.append(". He has the perfect plan to get in, grab every valuable, and get ");
+            builder.append("out all without being seen, and is offering you a bonus if ");
+            builder.append("everything goes according to plan (for once). However, you're ");
+            builder.append("pretty sure if you go loud you can catch everyone by surprise, grab ");
+            builder.append("a few valuables for yourself, and make a break for it before the ");
+            builder.append("crew knows what happened. There won't be much to grab if multiple ");
+            builder.append("people go loud, and the bonus is pretty tempting, so this time ");
+            builder.append("you're sticking to the plan.\n\n-# unless?\n\nRobert needs a crew ");
+            builder.append("of at least 3 for his plan to work, but will pay you a small amount ");
+            builder.append("for your time if not enough volunteers arrive.");
+
+            EmbedResponse response = createEmbedResponse(builder.toString());
+            response.setFooter(JOIN_COMMAND_PROMPT);
+            response.setButtons(createAboutButton());
+            return response;
+        }
+
+        @Override
+        String createAboutMessage() {
+            return "When joining a Rob Event, participants choose to either stay quiet and stick "
+                + "to Robert's plan or go loud and betray the team. If the entire crew stays "
+                + "quiet the take is split evenly and Robert gives everyone a "
+                + TWO_DIGITS.format(100 * ALL_QUIET_BONUS)
+                + "% bonus for the successful heist. If you choose to go loud, you steal "
+                + TWO_DIGITS.format(100 * LOUD_PLAYER_PORTION) + "% of the total take, leaving "
+                + "the rest to be split among the participants that were quiet. If more than "
+                + "one participant chooses to go loud, they split the "
+                + TWO_DIGITS.format(100 * LOUD_PLAYER_PORTION) + "%, likely resulting in less "
+                + "profit than staying stealthy.\n\nThe total take increases as participants "
+                + "join the crew (more hands to carry loot). At least " + MINIMUM_PARTICIPANTS
+                + " participants are needed to start the heist, but Robert will pay a reduced "
+                + "amount (" + TOO_FEW_PLAYERS_PAYOUT + " coins) to participants if not enough "
+                + "join.";
+        }
+
+        int getHeistTake() {
+            return (int)(POT_PER_PLAYER * participants.size() * getPayoutMultiplier());
+        }
+
+        Queue<InlineBlock> printParticipants() {
+            StringBuilder builder = new StringBuilder();
+            for (Participant participant : participants) {
+                if (builder.length() != 0) { builder.append('\n'); }
+                builder.append(participant.nickname);
+            }
+            Queue<InlineBlock> output = new LinkedList<>();
+            output.add(new InlineBlock("Heist Crew:", builder.toString()));
+            return output;
+        }
+
+        void addMoreParticipantsNeededMessage(StringBuilder builder) {
+            if (participants.size() >= MINIMUM_PARTICIPANTS) {
+                return;
+            }
+            int participantsNeeded = MINIMUM_PARTICIPANTS - participants.size();
+            builder.append("\n\nRobert needs at least ");
+            builder.append(participantsNeeded);
+            builder.append(" more participant");
+            builder.append(Casino.getPluralSuffix(participantsNeeded));
+            builder.append(" to pull of the heist");
+        }
+
+        @Override
+        EmbedResponse createPublicUserJoinMessage(Casino.User user,
+                Gacha.GachaCharacter character, long selection) {
+            if (!(selection == QUIET_SELECTION_ID || selection == LOUD_SELECTION_ID)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
+            }
+            RobParticipant participant = new RobParticipant(user.getUid(), user.getNickname(),
+                character.getId(), character.getCharacterStats().getStat(type.assocatedStat),
+                selection == QUIET_SELECTION_ID);
+            participants.add(participant);
+
+            StringBuilder builder = new StringBuilder();
+            appendJoinMessage(builder, user, character);
+            builder.append("\n\nTotal heist value is now: ");
+            builder.append(getHeistTake());
+            addMoreParticipantsNeededMessage(builder);
+            return createEmbedResponse(builder.toString(), printParticipants())
+                .setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        @Override
+        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+                Gacha.GachaCharacter character, long selection) {
+            RobParticipant newParticipant = new RobParticipant(user.getUid(), user.getNickname(),
+                character.getId(), character.getCharacterStats().getStat(type.assocatedStat),
+                selection == QUIET_SELECTION_ID);
+            if (!(selection == QUIET_SELECTION_ID || selection == LOUD_SELECTION_ID)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
+            } else if (!participants.contains(newParticipant)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX
+                    + "Unable to find previous entry");
+            }
+            RobParticipant oldParticipant = participants.get(participants.indexOf(newParticipant));
+            if (oldParticipant.isQuiet == newParticipant.isQuiet
+                    && oldParticipant.cid == newParticipant.cid) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX
+                    + "You already joined with that character");
+            }
+
+            participants.remove(oldParticipant);
+            participants.add(newParticipant);
+
+            StringBuilder builder = new StringBuilder();
+            if (oldParticipant.cid == newParticipant.cid) {
+                builder.append(user.getNickname());
+                builder.append(" changed their selection :face_with_raised_eyebrow:");
+            } else {
+                appendJoinMessage(builder, user, character, true);
+            }
+            addMoreParticipantsNeededMessage(builder);
+            builder.append("\n\nTotal heist value is now: ");
+            builder.append(getHeistTake());
+            return createEmbedResponse(builder.toString(), printParticipants())
+                .setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        @Override
+        EmbedResponse createReminderMessage() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("The heist is starting in ");
+            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
+            builder.append(" minutes!\n\nThe total heist value is currently: ");
+            builder.append(getHeistTake());
+            addMoreParticipantsNeededMessage(builder);
+            return createEmbedResponse(builder.toString(), printParticipants())
+                .setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        @Override
+        Queue<EmbedResponse> createResolutionMessages() {
+            Queue<EmbedResponse> messageFrames = new LinkedList<>();
+            StringBuilder builder = new StringBuilder();
+            String robert = "Robert is monitoring the heist :neutral_face:";
+            createResolutionCountdown(messageFrames);
+
+            if (participants.size() < MINIMUM_PARTICIPANTS) {
+                builder.append("Robert was not able to assemble a full crew, but he pays those ");
+                builder.append("who tried to join for their time.");
+                robert = "Robert is sad :slight_frown:";
+
+                // TODO: Log event and payout
+
+                Queue<InlineBlock> crewBlock = printParticipants();
+                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
+                    .addInlineBlock("Payout:", "").setFooter(robert));
+                StringBuilder payoutString = new StringBuilder(
+                    Integer.toString(TOO_FEW_PLAYERS_PAYOUT));
+                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
+                    .addInlineBlock("Payout:", Casino.repeatString(payoutString.toString(),
+                        participants.size())).setFooter(robert));
+                payoutString.append(" x ");
+                payoutString.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
+                    .addInlineBlock("Payout:", Casino.repeatString(payoutString.toString(),
+                        participants.size())).setFooter(robert));
+                payoutString.append(" = ");
+                payoutString.append((int)(TOO_FEW_PLAYERS_PAYOUT * getPayoutMultiplier()));
+                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
+                    .addInlineBlock("Payout:", Casino.repeatString(payoutString.toString(),
+                        participants.size())).setFooter(robert));
+                return messageFrames;
+            }
+
+            List<RobParticipant> quietParticipants = new ArrayList<>();
+            List<RobParticipant> loadParticipants = new ArrayList<>();
+            for (RobParticipant participant : participants) {
+                if (participant.isQuiet) {
+                    quietParticipants.add(participant);
+                } else {
+                    loadParticipants.add(participant);
+                }
+            }
+
+            builder.append("Total heist take: ");
+            messageFrames.add(createEmbedResponse(builder.toString()).setFooter(robert));
+            builder.append(POT_PER_PLAYER * participants.size());
+            messageFrames.add(createEmbedResponse(builder.toString()).setFooter(robert));
+            builder.append(" x ");
+            builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+            messageFrames.add(createEmbedResponse(builder.toString()).setFooter(robert));
+            builder.append(" = ");
+            int totalPayout = getHeistTake();
+            builder.append(totalPayout);
+
+            InlineBlock quietBlock = new InlineBlock("Quiet Crew:", "");
+            InlineBlock quietPayout = new InlineBlock("Total Payout: " + totalPayout, "");
+            Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(quietBlock, quietPayout));
+            messageFrames.add(createEmbedResponse(builder.toString(), blocks, true)
+                .setFooter(robert));
+
+            // Reveal Quiet Players 1 at a time
+
+            // Add Loud Block
+
+            // Robert: Pleased :slight_smile: Upset :angry: Furious :rage:
+
+            // Reveal Loud Players 1 at a time
+
+            // Populate Quiet payouts
+
+            // Populate Loud payouts
+
+            // TODO: Log event and player outcomes
 
             return messageFrames;
         }
@@ -1040,11 +1306,17 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createInitialMessage() {
-            return createEmbedResponse(
-                "A new Miscellaneous event is starting: Super Slots!\n\nPick a team, and earn "
-                + "coins when your fruit shows up on the giant 10x10 slot machine!")
-                .setFooter(JOIN_COMMAND_PROMPT).setButtons(createAboutButton());
+        EmbedResponse createInitialMessage() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("A new Miscellaneous event is starting: Super Slots!\n\nPick a team, ");
+            builder.append("and earn coins when your fruit shows up on the giant 10x10 slot ");
+            builder.append("machine! The teams are:");
+            for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
+                builder.append('\n');
+                builder.append(entry.getValue().getDisplayName());
+            }
+            return createEmbedResponse(builder.toString()).setFooter(JOIN_COMMAND_PROMPT)
+                .setButtons(createAboutButton());
         }
 
         @Override
@@ -1059,15 +1331,15 @@ abstract class Event {
                 + "cooler than the others and is definitely going to earn more coins.";
         }
 
-        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState() {
+        Queue<InlineBlock> displayCurrentState() {
             return displayCurrentState(false);
         }
 
-        Queue<HBMain.EmbedResponse.InlineBlock> displayCurrentState(boolean resolving) {
-            Queue<HBMain.EmbedResponse.InlineBlock> blocks = new LinkedList<>();
+        Queue<InlineBlock> displayCurrentState(boolean resolving) {
+            Queue<InlineBlock> blocks = new LinkedList<>();
             for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
                 SlotsTeam team = entry.getValue();
-                blocks.add(new HBMain.EmbedResponse.InlineBlock(team.getDisplayName() + ":"
+                blocks.add(new InlineBlock(team.getDisplayName() + ":"
                         + (resolving ? " " + team.payout : ""),
                     team.members.isEmpty() ? "[Empty]" : team.members.stream()
                         .map(Participant::getNickname).collect(Collectors.joining("\n"))));
@@ -1077,7 +1349,7 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createPublicUserJoinMessage(Casino.User user,
+        EmbedResponse createPublicUserJoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
             if (!teams.containsKey(selection)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
@@ -1100,7 +1372,7 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
             if (!teams.containsKey(selection)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
@@ -1155,7 +1427,7 @@ abstract class Event {
         }
 
         @Override
-        HBMain.EmbedResponse createReminderMessage() {
+        EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
@@ -1175,8 +1447,8 @@ abstract class Event {
         }
 
         @Override
-        Queue<HBMain.EmbedResponse> createResolutionMessages() {
-            Queue<HBMain.EmbedResponse> messageFrames = new LinkedList<>();
+        Queue<EmbedResponse> createResolutionMessages() {
+            Queue<EmbedResponse> messageFrames = new LinkedList<>();
             createResolutionCountdown(messageFrames);
 
             long[][] fruit = new long[ROWS][COLUMNS];
@@ -1266,5 +1538,7 @@ abstract class Event {
             PickEvent.MIN_PICK_TARGETS), "Test Land");
     }
 
-
+    static RobEvent.RobEventDetails fetchRobEventDetails(long seed) {
+        return new RobEvent.RobEventDetails("Test Land", "Test Prize");
+    }
 }
