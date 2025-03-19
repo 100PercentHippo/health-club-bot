@@ -181,6 +181,10 @@ public class HBMain {
             void setBody(String body) {
                 this.body = body;
             }
+
+            void setTitle(String title) {
+                this.title = title;
+            }
         }
 
         private String title;

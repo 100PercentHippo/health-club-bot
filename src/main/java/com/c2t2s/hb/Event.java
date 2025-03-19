@@ -32,13 +32,16 @@ abstract class Event {
         private EventFactory() {}
 
         static Event createEvent(long server, EventType type) {
-            if (type == EventType.FISH) {
-                return new FishEvent(server, Duration.ofMinutes(2));
-            } else if (type == EventType.PICKPOCKET) {
-                return new PickEvent(server, Duration.ofMinutes(2));
-            } else {
-                return new SlotsEvent(server, Duration.ofMinutes(2));
-            }
+            // if (type == EventType.FISH) {
+            //     return new FishEvent(server, Duration.ofMinutes(2));
+            // } else if (type == EventType.PICKPOCKET) {
+            //     return new PickEvent(server, Duration.ofMinutes(2));
+            // } else if (type == EventType.ROB) {
+            //     return new RobEvent(server, Duration.ofMinutes(2));
+            // } else if (type == EventType.SUPER_SLOTS) {
+            //     return new SlotsEvent(server, Duration.ofMinutes(2));
+            // }
+            return new RobEvent(server, Duration.ofMinutes(2));
         }
     }
 
@@ -230,6 +233,11 @@ abstract class Event {
     EmbedResponse createEmbedResponse(String message,
             Queue<InlineBlock> inlineBlocks, boolean shouldCopy) {
         return createEmbedResponse(message).setInlineBlocks(inlineBlocks, shouldCopy);
+    }
+
+    EmbedResponse createEmbedResponse(String message,
+            Queue<InlineBlock> inlineBlocks, boolean shouldCopy, String footer) {
+        return createEmbedResponse(message, inlineBlocks, shouldCopy).setFooter(footer);
     }
 
     EmbedResponse createErrorResponse(String message) {
@@ -560,8 +568,8 @@ abstract class Event {
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
             builder.append("\n\nFishing fleet is now:");
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -577,8 +585,8 @@ abstract class Event {
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
             builder.append(" minutes!\n\nCurrent fishing boat fleet:");
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -824,8 +832,8 @@ abstract class Event {
 
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -841,8 +849,8 @@ abstract class Event {
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
             builder.append(" minutes!\n\nCurrent participants:");
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -1022,6 +1030,9 @@ abstract class Event {
                     "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
                     + "as nobody else goes loud")));
             details = fetchRobEventDetails(seed);
+            // TODO: Remove Test Players after testing
+            participants.add(new RobParticipant(0, "Test Player 1", 0, 10, true));
+            participants.add(new RobParticipant(0, "Test Player 2", 0, 10, false));
         }
 
         @Override
@@ -1043,9 +1054,7 @@ abstract class Event {
             builder.append("a few valuables for yourself, and make a break for it before the ");
             builder.append("crew knows what happened. There won't be much to grab if multiple ");
             builder.append("people go loud, and the bonus is pretty tempting, so this time ");
-            builder.append("you're sticking to the plan.\n\n-# unless?\n\nRobert needs a crew ");
-            builder.append("of at least 3 for his plan to work, but will pay you a small amount ");
-            builder.append("for your time if not enough volunteers arrive.");
+            builder.append("you're sticking to the plan.\n\n-# unless?");
 
             EmbedResponse response = createEmbedResponse(builder.toString());
             response.setFooter(JOIN_COMMAND_PROMPT);
@@ -1072,14 +1081,20 @@ abstract class Event {
         }
 
         int getHeistTake() {
-            return (int)(POT_PER_PLAYER * participants.size() * getPayoutMultiplier());
+            int participantCount = participants.size();
+            if (participantCount == 0) { participantCount = 1; }
+            return (int)(POT_PER_PLAYER * participantCount * getPayoutMultiplier());
         }
 
         Queue<InlineBlock> printParticipants() {
             StringBuilder builder = new StringBuilder();
-            for (Participant participant : participants) {
-                if (builder.length() != 0) { builder.append('\n'); }
-                builder.append(participant.nickname);
+            if (participants.isEmpty()) {
+                builder.append("[Empty]");
+            } else {
+                for (Participant participant : participants) {
+                    if (builder.length() != 0) { builder.append('\n'); }
+                    builder.append(participant.nickname);
+                }
             }
             Queue<InlineBlock> output = new LinkedList<>();
             output.add(new InlineBlock("Heist Crew:", builder.toString()));
@@ -1095,7 +1110,7 @@ abstract class Event {
             builder.append(participantsNeeded);
             builder.append(" more participant");
             builder.append(Casino.getPluralSuffix(participantsNeeded));
-            builder.append(" to pull of the heist");
+            builder.append(" to pull off the heist");
         }
 
         @Override
@@ -1114,8 +1129,8 @@ abstract class Event {
             builder.append("\n\nTotal heist value is now: ");
             builder.append(getHeistTake());
             addMoreParticipantsNeededMessage(builder);
-            return createEmbedResponse(builder.toString(), printParticipants())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), printParticipants(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -1150,8 +1165,8 @@ abstract class Event {
             addMoreParticipantsNeededMessage(builder);
             builder.append("\n\nTotal heist value is now: ");
             builder.append(getHeistTake());
-            return createEmbedResponse(builder.toString(), printParticipants())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), printParticipants(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -1162,8 +1177,8 @@ abstract class Event {
             builder.append(" minutes!\n\nThe total heist value is currently: ");
             builder.append(getHeistTake());
             addMoreParticipantsNeededMessage(builder);
-            return createEmbedResponse(builder.toString(), printParticipants())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), printParticipants(), false,
+                JOIN_COMMAND_PROMPT);
         }
 
         @Override
@@ -1175,7 +1190,9 @@ abstract class Event {
 
             if (participants.size() < MINIMUM_PARTICIPANTS) {
                 builder.append("Robert was not able to assemble a full crew, but he pays those ");
-                builder.append("who tried to join for their time.");
+                builder.append("who tried to join ");
+                builder.append(TOO_FEW_PLAYERS_PAYOUT);
+                builder.append(" coins.");
                 robert = "Robert is sad :slight_frown:";
 
                 // TODO: Log event and payout
@@ -1202,12 +1219,12 @@ abstract class Event {
             }
 
             List<RobParticipant> quietParticipants = new ArrayList<>();
-            List<RobParticipant> loadParticipants = new ArrayList<>();
+            List<RobParticipant> loudParticipants = new ArrayList<>();
             for (RobParticipant participant : participants) {
                 if (participant.isQuiet) {
                     quietParticipants.add(participant);
                 } else {
-                    loadParticipants.add(participant);
+                    loudParticipants.add(participant);
                 }
             }
 
@@ -1221,26 +1238,102 @@ abstract class Event {
             builder.append(" = ");
             int totalPayout = getHeistTake();
             builder.append(totalPayout);
+            String description = builder.toString();
 
             InlineBlock quietBlock = new InlineBlock("Quiet Crew:", "");
             InlineBlock quietPayout = new InlineBlock("Total Payout: " + totalPayout, "");
+            builder = new StringBuilder();
             Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(quietBlock, quietPayout));
-            messageFrames.add(createEmbedResponse(builder.toString(), blocks, true)
-                .setFooter(robert));
+            messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
-            // Reveal Quiet Players 1 at a time
+            if (quietParticipants.isEmpty()) {
+                robert = "Robert is furious :rage:";
+                quietBlock.setBody("[Empty]");
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+            } else {
+                for (RobParticipant participant : quietParticipants) {
+                    if (builder.length() != 0) { builder.append('\n'); }
+                    builder.append(participant.getNickname());
+                    quietBlock.setBody(builder.toString());
+                    messageFrames.add(createEmbedResponse(description, blocks, true,
+                        robert));
+                }
+            }
 
-            // Add Loud Block
+            InlineBlock loudBlock = new InlineBlock("Loud Crew:", "");
+            InlineBlock loudPayout = new InlineBlock("Loud Payout: ", "");
+            builder = new StringBuilder();
+            blocks.add(EMPTY_INLINE_BLOCK);
+            blocks.add(loudBlock);
+            blocks.add(loudPayout);
+            int loudCut = 0;
+            messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
-            // Robert: Pleased :slight_smile: Upset :angry: Furious :rage:
+            if (loudParticipants.isEmpty()) {
+                robert = "Robert is pleased :slight_smile:";
+                loudBlock.setBody("[Empty]");
+                loudPayout.setTitle("Loud Payout: 0");
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+            } else {
+                if (!quietParticipants.isEmpty()) {
+                    robert = "Robert is upset :angry:";
+                }
+                loudCut = (int)(totalPayout * LOUD_PLAYER_PORTION);
+                totalPayout -= loudCut;
+                quietPayout.setTitle("Total Payout: " + totalPayout);
+                loudPayout.setTitle("Loud Payout: " + loudCut);
+                for (RobParticipant participant : loudParticipants) {
+                    if (builder.length() != 0) { builder.append('\n'); }
+                    builder.append(participant.getNickname());
+                    loudBlock.setBody(builder.toString());
+                    messageFrames.add(createEmbedResponse(description, blocks, true,
+                        robert));
+                }
+            }
 
-            // Reveal Loud Players 1 at a time
+            if (!quietParticipants.isEmpty()) {
+                int quietCut = totalPayout / quietParticipants.size();
+                builder = new StringBuilder(Integer.toString(quietCut));
+                quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                    quietParticipants.size()));
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                builder.append(" x ");
+                builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+                quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                    quietParticipants.size()));
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                quietCut *= getPayoutMultiplier();
+                builder.append(" = ");
+                builder.append(quietCut);
+                quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                    quietParticipants.size()));
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
-            // Populate Quiet payouts
+                // TODO: Log player outcomes
+            }
 
-            // Populate Loud payouts
+            if (!loudParticipants.isEmpty()) {
+                loudCut = loudCut / loudParticipants.size();
+                builder = new StringBuilder(Integer.toString(loudCut));
+                loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                    loudParticipants.size()));
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                builder.append(" x ");
+                builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+                loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                    quietParticipants.size()));
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                loudCut *= getPayoutMultiplier();
+                builder.append(" = ");
+                builder.append(loudCut);
+                loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                    quietParticipants.size()));
+                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
-            // TODO: Log event and player outcomes
+                // TODO: Log player outcomes
+            }
+
+            // TODO: Log event
 
             return messageFrames;
         }
