@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,6 +55,7 @@ abstract class Event {
     static final int EVENTTYPE_ID_AVERAGE = 4;
     static final int EVENTTYPE_ID_SUPER_GUESS = 5;
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
+    static final int EVENTTYPE_ID_GIVEAWAY = 7;
     static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
     enum EventType {
         FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, new Color(91, 170, 255)), // Light Blue
@@ -62,7 +64,8 @@ abstract class Event {
         PICKPOCKET(EVENTTYPE_ID_PICKPOCKET, GachaItems.ITEM_STAT.PICK, new Color(0, 136, 50)), // Money Green
         AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
         SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
-        SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR);
+        SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
+        GIVEAWAY(EVENTTYPE_ID_GIVEAWAY, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR);
 
         int id;
         GachaItems.ITEM_STAT assocatedStat;
@@ -149,7 +152,7 @@ abstract class Event {
     private Map<Long, String> joinSelections;
     private List<HBMain.AutocompleteIdOption> options = new ArrayList<>();
 
-    private Set<Long> participatingUsers = new HashSet<>();
+    protected Set<Long> participatingUsers = new HashSet<>();
     private boolean complete = false;
     protected long seed;
     protected int totalPayoutMultiplier = 0;
@@ -252,7 +255,10 @@ abstract class Event {
                 timeUntilResolution.minus(EVENT_ENDING_REMINDER_WINDOW));
         }
 
-        CasinoServerManager.sendEventMessage(server, createInitialMessage());
+        EmbedResponse response = createInitialMessage();
+        response.setFooter(JOIN_COMMAND_PROMPT);
+        response.setButtons(createAboutButton());
+        CasinoServerManager.sendEventMessage(server, response);
         return null;
     }
 
@@ -464,8 +470,6 @@ abstract class Event {
                 builder.append('+');
             }
             response.addInlineBlock("Potential fish for Boat 3:", builder.toString());
-            response.setFooter(JOIN_COMMAND_PROMPT);
-            response.setButtons(createAboutButton());
             return response;
         }
 
@@ -730,9 +734,7 @@ abstract class Event {
         List<PickParticipant> participants = new ArrayList<>();
 
         PickEvent(long server, Duration timeUntilResolution) {
-            super(EventType.PICKPOCKET, server, timeUntilResolution,
-                Map.ofEntries(entry(DEFAULT_SELECTION_FILLER,
-                    "Enter a number of targets from 1-99")));
+            super(EventType.PICKPOCKET, server, timeUntilResolution, new HashMap<>());
             supportsUserSelections = true;
             details = fetchPickEventDetails(seed);
         }
@@ -744,7 +746,7 @@ abstract class Event {
 
         @Override
         String createEmbedTitle() {
-            return "Pickpocketing event at " + details.destination;
+            return "Pickpocketing Event at " + details.destination;
         }
 
         @Override
@@ -754,8 +756,6 @@ abstract class Event {
             response.addInlineBlock("Total targets:", Integer.toString(details.totalTargets));
             response.addInlineBlock("Coins per target:",
                 currentCoinsPerTarget() + "\n(Increases as players join)");
-            response.setFooter(JOIN_COMMAND_PROMPT);
-            response.setButtons(createAboutButton());
             return response;
         }
 
@@ -818,10 +818,7 @@ abstract class Event {
         @Override
         EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
-            if (selection == DEFAULT_SELECTION_FILLER) {
-                return createErrorResponse(INVALID_SELECTION_PREFIX + "Manually enter number of "
-                    + "targets (autocomplete cannot be used for this event type)");
-            } else if (selection < 1 || selection > 99) {
+            if (selection < 1 || selection > 99) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX
                     + "Number of targets must be 1-99");
             }
@@ -1032,7 +1029,7 @@ abstract class Event {
             details = fetchRobEventDetails(seed);
             // TODO: Remove Test Players after testing
             participants.add(new RobParticipant(0, "Test Player 1", 0, 10, true));
-            participants.add(new RobParticipant(0, "Test Player 2", 0, 10, false));
+            participants.add(new RobParticipant(0, "Test Player 2", 0, 10, true));
         }
 
         @Override
@@ -1054,11 +1051,9 @@ abstract class Event {
             builder.append("a few valuables for yourself, and make a break for it before the ");
             builder.append("crew knows what happened. There won't be much to grab if multiple ");
             builder.append("people go loud, and the bonus is pretty tempting, so this time ");
-            builder.append("you're sticking to the plan.\n\n-# unless?");
+            builder.append("you're sticking to the plan.\n\n-# unless?\n\n");
 
             EmbedResponse response = createEmbedResponse(builder.toString());
-            response.setFooter(JOIN_COMMAND_PROMPT);
-            response.setButtons(createAboutButton());
             return response;
         }
 
@@ -1241,9 +1236,10 @@ abstract class Event {
             String description = builder.toString();
 
             InlineBlock quietBlock = new InlineBlock("Quiet Crew:", "");
-            InlineBlock quietPayout = new InlineBlock("Total Payout: " + totalPayout, "");
+            InlineBlock quietPayout = new InlineBlock("Quiet Payout: " + totalPayout, "");
             builder = new StringBuilder();
-            Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(quietBlock, quietPayout));
+            Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(quietBlock, quietPayout,
+                EMPTY_INLINE_BLOCK));
             messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
             if (quietParticipants.isEmpty()) {
@@ -1263,9 +1259,9 @@ abstract class Event {
             InlineBlock loudBlock = new InlineBlock("Loud Crew:", "");
             InlineBlock loudPayout = new InlineBlock("Loud Payout: ", "");
             builder = new StringBuilder();
-            blocks.add(EMPTY_INLINE_BLOCK);
             blocks.add(loudBlock);
             blocks.add(loudPayout);
+            blocks.add(EMPTY_INLINE_BLOCK);
             int loudCut = 0;
             messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
@@ -1309,6 +1305,10 @@ abstract class Event {
                     quietParticipants.size()));
                 messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
+                if (loudParticipants.isEmpty()) {
+                    // TODO: Add 20%
+                }
+
                 // TODO: Log player outcomes
             }
 
@@ -1321,13 +1321,13 @@ abstract class Event {
                 builder.append(" x ");
                 builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
                 loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
-                    quietParticipants.size()));
+                    loudParticipants.size()));
                 messageFrames.add(createEmbedResponse(description, blocks, true, robert));
                 loudCut *= getPayoutMultiplier();
                 builder.append(" = ");
                 builder.append(loudCut);
                 loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
-                    quietParticipants.size()));
+                    loudParticipants.size()));
                 messageFrames.add(createEmbedResponse(description, blocks, true, robert));
 
                 // TODO: Log player outcomes
@@ -1408,8 +1408,7 @@ abstract class Event {
                 builder.append('\n');
                 builder.append(entry.getValue().getDisplayName());
             }
-            return createEmbedResponse(builder.toString()).setFooter(JOIN_COMMAND_PROMPT)
-                .setButtons(createAboutButton());
+            return createEmbedResponse(builder.toString());
         }
 
         @Override
@@ -1608,6 +1607,126 @@ abstract class Event {
         }
     }
 
+    private static class GiveawayEvent extends Event {
+        static final int COIN_AMOUNT_1 = 250;
+        static final int COIN_AMOUNT_2 = 251;
+        static final int GIVEAWAY_CHARACTER_CID = 0; // TODO
+        static final long COIN_1_SELECTION_ID = 0;
+        static final long COIN_2_SELECTION_ID = 1;
+        static final long ITEM_SELECTION_ID = 2;
+        static final long GEM_SELECTION_ID = 3;
+        static final long CHARACTER_SELECTION_ID = 4;
+
+        enum GiveawayPrize {
+            COIN_1(COIN_1_SELECTION_ID, Integer.toString(COIN_AMOUNT_1) + " coins"),
+            COIN_2(COIN_2_SELECTION_ID, Integer.toString(COIN_AMOUNT_2) + " coins"),
+            ITEM(ITEM_SELECTION_ID, "A Random Item"),
+            GAMBLERS_GEM(GEM_SELECTION_ID, "2 Gambler's Gems"),
+            CHARACTER(CHARACTER_SELECTION_ID, "Placeholder (2 Star Misc)");
+
+            long id;
+            String description;
+            GiveawayPrize(long id, String description) {
+                this.id = id;
+                this.description = description;
+            }
+        }
+
+        static class GiveawayParticipant extends Participant {
+            int selection;
+            boolean won = false;
+
+            GiveawayParticipant(long uid, String nickname, long cid, int characterMultiplier,
+                    int selection) {
+                super(uid, nickname, cid, characterMultiplier);
+                this.selection = selection;
+            }
+        }
+
+        static class GiveawayEventDetails {
+            int shiny;
+
+            GiveawayEventDetails(int shiny) {
+                this.shiny = shiny;
+            }
+        }
+
+        GiveawayEventDetails details;
+        Map<Long, List<GiveawayParticipant>> prizeSelections = new HashMap<>();
+
+        static Map<Long, String> getSelections() {
+            Map<Long, String> output = new TreeMap<>();
+            for (GiveawayPrize prize : GiveawayPrize.values()) {
+                output.put(prize.id, prize.description);
+            }
+            return output;
+        }
+
+        GiveawayEvent(long server, Duration timeUntilResolution) {
+            super(EventType.GIVEAWAY, server, timeUntilResolution, getSelections());
+            for (GiveawayPrize prize : GiveawayPrize.values()) {
+                prizeSelections.put(prize.id, new ArrayList<>());
+            }
+            details = fetchGiveawayEventDetails(seed);
+        }
+
+        @Override
+        String createEmbedTitle() {
+            return "Giveaway Event";
+        }
+
+        @Override
+        EmbedResponse createInitialMessage() {
+            EmbedResponse response = createEmbedResponse("A new Giveaway event is starting!");
+            StringBuilder builder = new StringBuilder();
+            for (GiveawayPrize prize : GiveawayPrize.values()) {
+                if (builder.length() != 0) { builder.append('\n'); }
+                builder.append(prize.description);
+            }
+            response.addInlineBlock("Prizes:", builder.toString());
+            return response;
+        }
+
+        @Override
+        String createAboutMessage() {
+            return "Several prizes are being given away! When joining, select the prize you want "
+                + "to receive. If multiple people select the same prize the winner will be "
+                + "determined by rolling 1-100.\n\nWill you pick a prize you know nobody else "
+                + "will pick, or trust your dice to secure what you want most?";
+        }
+
+        @Override
+        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+                long selection) {
+            prizeSelections.get(selection).add(new GiveawayParticipant(user.getUid(),
+                user.getNickname(), character.getId(),
+                character.getCharacterStats().getStat(type.assocatedStat), (int)selection));
+
+            return createEmbedResponse(user.getNickname() + " joined with "
+                + character.getDisplayName() + ". There are now " + participatingUsers.size()
+                + " players participating in the giveaway.").setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        @Override
+        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+                Gacha.GachaCharacter character, long selection) {
+            // TODO
+            return null;
+        }
+
+        @Override
+        EmbedResponse createReminderMessage() {
+            // TODO
+            return null;
+        }
+
+        @Override
+        Queue<EmbedResponse> createResolutionMessages() {
+            // TODO
+            return null;
+        }
+    }
+
     //////////////////////////////////////////////////////////
 
     // CREATE TABLE IF NOT EXISTS event (
@@ -1633,5 +1752,9 @@ abstract class Event {
 
     static RobEvent.RobEventDetails fetchRobEventDetails(long seed) {
         return new RobEvent.RobEventDetails("Test Land", "Test Prize");
+    }
+
+    static GiveawayEvent.GiveawayEventDetails fetchGiveawayEventDetails(long seed) {
+        return new GiveawayEvent.GiveawayEventDetails(0);
     }
 }
