@@ -42,13 +42,14 @@ abstract class Event {
             //     return new RobEvent(server, Duration.ofMinutes(2));
             // } else if (type == EventType.SUPER_SLOTS) {
             //     return new SlotsEvent(server, Duration.ofMinutes(2));
+            // } else if (type == EventType.GIVEAWAY) {
+            //     return new GiveawayEvent(server, Duration.ofMinutes(2));
             // }
             return new RobEvent(server, Duration.ofMinutes(2));
         }
     }
 
     // It is probably obvious looking at these enums that I'm a C++ dev
-    static final int BASE_EVENT_COUNT = 4; // FISH, ROB, WORK, PICKPOCKET
     static final int EVENTTYPE_ID_FISH = 0;
     static final int EVENTTYPE_ID_ROB = 1;
     static final int EVENTTYPE_ID_WORK = 2;
@@ -58,6 +59,8 @@ abstract class Event {
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
     static final int EVENTTYPE_ID_GIVEAWAY = 7;
     static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
+    static final double GIVEAWAY_EVENT_CHANCE = 1; // TODO: Reduce to 0.2
+
     enum EventType {
         FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, new Color(91, 170, 255)), // Light Blue
         ROB(EVENTTYPE_ID_ROB, GachaItems.ITEM_STAT.ROB, new Color(255, 213, 0)), // Gold
@@ -102,8 +105,11 @@ abstract class Event {
             // Fish -> Rob -> Work -> Pick -> Bonus
             if (previousType == EventType.PICKPOCKET) {
                 // Pick random non-base event type
-                int bonusEventIndex = HBMain.RNG_SOURCE.nextInt(EventType.values().length - BASE_EVENT_COUNT);
-                return EventType.values()[bonusEventIndex + BASE_EVENT_COUNT];
+                if (HBMain.RNG_SOURCE.nextDouble() < GIVEAWAY_EVENT_CHANCE) {
+                    return EventType.GIVEAWAY;
+                } else {
+                    return EventType.SUPER_SLOTS;
+                }
             }
 
             switch (previousType) {
@@ -155,7 +161,6 @@ abstract class Event {
 
     protected Set<Long> participatingUsers = new HashSet<>();
     private boolean complete = false;
-    protected long seed;
     protected int totalPayoutMultiplier = 0;
     protected boolean supportsUserSelections = false;
 
@@ -175,13 +180,8 @@ abstract class Event {
         this.type = type;
         this.server = server;
         this.timeUntilResolution = timeUntilResolution;
-        this.joinSelections = joinSelections;
 
-        for (Map.Entry<Long, String> entry : joinSelections.entrySet()) {
-            // Options are displayed in reverse order in Discord, so add every element to the front
-            // the member will be backwards, but Discord and the constructor arg can be correct
-            options.add(0, new HBMain.AutocompleteIdOption(entry.getKey(), entry.getValue()));
-        }
+        setJoinSelections(joinSelections);
     }
 
     protected Event(EventType type, long server, Duration timeUntilResolution) {
@@ -189,6 +189,16 @@ abstract class Event {
         this.server = server;
         this.timeUntilResolution = timeUntilResolution;
         // options and joinSelections will be empty
+    }
+
+    protected void setJoinSelections(Map<Long, String> joinSelections) {
+        this.joinSelections = joinSelections;
+
+        for (Map.Entry<Long, String> entry : joinSelections.entrySet()) {
+            // Options are displayed in reverse order in Discord, so add every element to the front
+            // the member will be backwards, but Discord and the constructor arg can be correct
+            options.add(0, new HBMain.AutocompleteIdOption(entry.getKey(), entry.getValue()));
+        }
     }
 
     EventType getType() {
@@ -383,6 +393,110 @@ abstract class Event {
         return character.getCharacterStats().getStat(type.assocatedStat);
     }
 
+    private static class WorkEvent extends Event {
+        private static final int SMALL_TASK_GOAL = 50;
+        private static final int MEDIUM_TASK_GOAL = 100;
+        private static final int BIG_TASK_GOAL = 150;
+        private static final long SMALL_TASK_REWARD = 200;
+        private static final long MEDIUM_TASK_REWARD = 400;
+        private static final long BIG_TASK_REWARD = 600;
+        private static final long SMALL_TASK_SELECTION_ID = 0;
+        private static final long MEDIUM_TASK_SELECTION_ID = 1;
+        private static final long BIG_TASK_SELECTION_ID = 2;
+        private static final int RANDOM_WORKERS = 2;
+
+        static class WorkEventDetails {
+            String location;
+            String smallTaskName;
+            String mediumTaskName;
+            String bigTaskName;
+            int smallTaskProgress = 0;
+            int mediumTaskProgress = 1;
+            int largeTaskProgress = 2;
+
+            WorkEventDetails(String location, String smallTaskName, String mediumTaskName,
+                    String bigTaskName) {
+                this.location = location;
+                this.smallTaskName = smallTaskName;
+                this.mediumTaskName = mediumTaskName;
+                this.bigTaskName = bigTaskName;
+            }
+        }
+
+        static class WorkParticipant extends Participant {
+            int roll;
+            int task;
+            boolean successful = false;
+
+            WorkParticipant(long uid, String nickname, long cid, int characterMultiplier,
+                    int roll, int task) {
+                super(uid, nickname, cid, characterMultiplier);
+                this.roll = roll;
+                this.task = task;
+            }
+        }
+
+        WorkEventDetails details;
+        List<WorkParticipant> participants = new ArrayList<>();
+
+        WorkEvent(long server, Duration timeUntilResolution) {
+            super(EventType.WORK, server, timeUntilResolution);
+            details = fetchWorkEventDetails();
+            setJoinSelections(Map.ofEntries(
+                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName),
+                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName),
+                entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
+        }
+
+        @Override
+        String createEmbedTitle() {
+            return "Work Event at " + details.location;
+        }
+
+        @Override
+        EmbedResponse createInitialMessage() {
+            // TODO
+            return null;
+        }
+
+        @Override
+        String createAboutMessage() {
+            // TODO
+            return "";
+        }
+
+        String displayCurrentState() {
+            // TODO
+            return "";
+        }
+
+        @Override
+        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+                long selection) {
+            // TODO
+            return null;
+        }
+
+        @Override
+        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
+                Gacha.GachaCharacter character, long selection) {
+            // TODO
+            return null;
+        }
+
+        @Override
+        EmbedResponse createReminderMessage() {
+            // TODO
+            return null;
+        }
+
+        @Override
+        Queue<EmbedResponse> createResolutionMessages() {
+            // TODO
+            return null;
+        }
+    }
+
     private static class FishEvent extends Event {
         private static final long BOAT_1_VALUE = 1;
         private static final long BOAT_2_VALUE = 2;
@@ -433,7 +547,7 @@ abstract class Event {
                 Map.ofEntries(entry(BOAT_1_VALUE, "Boat 1"),
                               entry(BOAT_2_VALUE, "Boat 2"),
                               entry(BOAT_3_VALUE, "Boat 3")));
-            details = fetchFishEventDetails(seed);
+            details = fetchFishEventDetails();
         }
 
         @Override
@@ -741,7 +855,7 @@ abstract class Event {
         PickEvent(long server, Duration timeUntilResolution) {
             super(EventType.PICKPOCKET, server, timeUntilResolution, new HashMap<>());
             supportsUserSelections = true;
-            details = fetchPickEventDetails(seed);
+            details = fetchPickEventDetails();
         }
 
         int currentCoinsPerTarget() {
@@ -1030,7 +1144,7 @@ abstract class Event {
                     + "bonus if everybody else is quiet as well"), entry(LOUD_SELECTION_ID,
                     "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
                     + "as nobody else goes loud")));
-            details = fetchRobEventDetails(seed);
+            details = fetchRobEventDetails();
             // TODO: Remove Test Players after testing
             participants.add(new RobParticipant(0, "Test Player 1", 0, 10, true));
             participants.add(new RobParticipant(0, "Test Player 2", 0, 10, true));
@@ -1682,20 +1796,23 @@ abstract class Event {
         GiveawayEventDetails details;
         Map<Long, List<GiveawayParticipant>> prizeSelections = new HashMap<>();
 
-        static Map<Long, String> getSelections() {
-            Map<Long, String> output = new TreeMap<>();
-            for (GiveawayPrize prize : GiveawayPrize.values()) {
-                output.put(prize.id, prize.description);
-            }
-            return output;
-        }
-
         GiveawayEvent(long server, Duration timeUntilResolution) {
-            super(EventType.GIVEAWAY, server, timeUntilResolution, getSelections());
+            super(EventType.GIVEAWAY, server, timeUntilResolution);
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 prizeSelections.put(prize.id, new ArrayList<>());
             }
-            details = fetchGiveawayEventDetails(seed);
+            details = fetchGiveawayEventDetails();
+
+            Map<Long, String> joinSelections = new TreeMap<>();
+            for (GiveawayPrize prize : GiveawayPrize.values()) {
+                if (prize == GiveawayPrize.CHARACTER) {
+                    joinSelections.put(prize.id,
+                        details.getShinyAdjective() + prize.description);
+                } else {
+                    joinSelections.put(prize.id, prize.description);
+                }
+            }
+            setJoinSelections(joinSelections);
         }
 
         @Override
@@ -1896,6 +2013,18 @@ abstract class Event {
                     }
 
                     eligibleWinners = winners;
+
+                    // Apply special giveaway character ability
+                    List<Integer> priorityWinners = new ArrayList<>();
+                    for (int index : eligibleWinners) {
+                        if (participants.get(index).cid == GIVEAWAY_CHARACTER_CID) {
+                            priorityWinners.add(index);
+                        }
+                    }
+                    if (!priorityWinners.isEmpty()) {
+                        eligibleWinners = priorityWinners;
+                    }
+
                     if (eligibleWinners.size() > 1) {
                         for (int index : eligibleWinners) {
                             participants.get(index).rollString += " - Tied!";
@@ -1941,22 +2070,26 @@ abstract class Event {
     //  CONSTRAINT event_server_id FOREIGN KEY(server) REFERENCES casino_server(server_id)
     // );
 
-    static FishEvent.FishEventDetails fetchFishEventDetails(long seed) {
+    static WorkEvent.WorkEventDetails fetchWorkEventDetails() {
+        return new WorkEvent.WorkEventDetails("Test Land", "Test Task 1", "Test Task 2", "Test Task 3");
+    }
+
+    static FishEvent.FishEventDetails fetchFishEventDetails() {
         return new FishEvent.FishEventDetails("Test Land", "Common Fish", "Uncommon Fish",
             "Uncommon Fish", "Rare Fish");
     }
 
-    static PickEvent.PickEventDetails fetchPickEventDetails(long seed) {
+    static PickEvent.PickEventDetails fetchPickEventDetails() {
         return new PickEvent.PickEventDetails(HBMain.generateBoundedNormal(
             PickEvent.AVERAGE_PICK_TARGETS, PickEvent.PICK_TARGETS_STD_DEV,
             PickEvent.MIN_PICK_TARGETS), "Test Land");
     }
 
-    static RobEvent.RobEventDetails fetchRobEventDetails(long seed) {
+    static RobEvent.RobEventDetails fetchRobEventDetails() {
         return new RobEvent.RobEventDetails("Test Land", "Test Prize");
     }
 
-    static GiveawayEvent.GiveawayEventDetails fetchGiveawayEventDetails(long seed) {
+    static GiveawayEvent.GiveawayEventDetails fetchGiveawayEventDetails() {
         Gacha.SHINY_TYPE shiny = Gacha.getGachaBanner(0).generateShinyType();
         return new GiveawayEvent.GiveawayEventDetails(shiny);
     }
