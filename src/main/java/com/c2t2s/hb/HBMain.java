@@ -551,7 +551,7 @@ public class HBMain {
                 false,
                 false)),
             entry(TEST_COMMAND, new SimpleCasinoCommand(
-                i -> GachaItems.handleTest(i.getServer().get().getId(), i.getUser().getId()),
+                i -> handleTest(),
                 false,
                 false,
                 false))
@@ -1096,5 +1096,9 @@ public class HBMain {
             messageBuilder.addComponents(embedResponse.getButtons());
         }
         messageBuilder.send(channel.get());
+    }
+
+    static String handleTest() {
+        return "Test";
     }
 }

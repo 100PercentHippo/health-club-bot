@@ -29,7 +29,7 @@ class Gacha {
     private static final int SHINY_TYPE_SHINY = 1;
     private static final int SHINY_TYPE_PRISMATIC = 2;
 
-    private enum SHINY_TYPE {
+    enum SHINY_TYPE {
         NORMAL(SHINY_TYPE_NORMAL, ""),
         SHINY(SHINY_TYPE_SHINY, "Foil"),
         PRISMATIC(SHINY_TYPE_PRISMATIC, "Prismatic");
@@ -311,7 +311,7 @@ class Gacha {
         }
     }
 
-    private static class GachaBanner {
+    static class GachaBanner {
         int bannerId;
         double oneStarChance;
         double twoStarChance;
@@ -411,7 +411,7 @@ class Gacha {
             return output.toString();
         }
 
-        private SHINY_TYPE generateShinyType() {
+        SHINY_TYPE generateShinyType() {
             if (HBMain.RNG_SOURCE.nextDouble() <= prismaticChance) {
                 return SHINY_TYPE.PRISMATIC;
             } else if (HBMain.RNG_SOURCE.nextDouble() <= shinyChance) {
@@ -774,16 +774,7 @@ class Gacha {
 
         long cid = cids.get(HBMain.RNG_SOURCE.nextInt(cids.size()));
 
-        int duplicates = checkCharacterDuplicates(uid, cid, shiny);
-        boolean alreadyMaxed = false;
-        if (duplicates < 0) {
-            awardNewCharacter(uid, cid, shiny);
-        } else if (duplicates < MAX_CHARACTER_DUPLICATES) {
-            awardCharacterDuplicate(uid, cid, shiny);
-        } else {
-            alreadyMaxed = true;
-            // Award coins once we have the character object to check rarity
-        }
+        boolean alreadyMaxed = awardCharacter(uid, cid, shiny);
 
         GachaCharacter character = getCharacter(uid, cid, shiny);
         if (character == null) {
@@ -798,6 +789,20 @@ class Gacha {
         response.addCharacterMessagePart(character.generateAwardText(alreadyMaxed), character.rarity,
             character.getPictureLink());
         return logCharacterAward(uid, banner.bannerId, character.rarity);
+    }
+
+    static boolean awardCharacter(long uid, long cid, Gacha.SHINY_TYPE shiny) {
+        int duplicates = checkCharacterDuplicates(uid, cid, shiny);
+        boolean alreadyMaxed = false;
+        if (duplicates < 0) {
+            awardNewCharacter(uid, cid, shiny);
+        } else if (duplicates < MAX_CHARACTER_DUPLICATES) {
+            awardCharacterDuplicate(uid, cid, shiny);
+        } else {
+            alreadyMaxed = true;
+            // Award coins once we have the character object to check value
+        }
+        return alreadyMaxed;
     }
 
     private static List<String> createThreeStarAnimation() {
@@ -1223,7 +1228,7 @@ class Gacha {
         }, null);
     }
 
-    private static GachaBanner getGachaBanner(long bannerId) {
+    static GachaBanner getGachaBanner(long bannerId) {
         String query = "SELECT banner_id, one_star_chance, two_star_chance, three_star_chance, four_star_chance, "
             + "five_star_chance, shiny_chance, prismatic_chance, scaling_one_star_bonus, scaling_two_star_bonus, "
             + "scaling_three_star_bonus, scaling_four_star_bonus, scaling_five_star_bonus, max_one_star_pity, "

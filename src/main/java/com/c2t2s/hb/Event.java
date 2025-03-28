@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 
+import com.c2t2s.hb.Gacha.GachaCharacter;
 import com.c2t2s.hb.HBMain.EmbedResponse;
 import com.c2t2s.hb.HBMain.EmbedResponse.InlineBlock;
 
@@ -303,10 +304,10 @@ abstract class Event {
             return "Unable to join event: Unrecognized selection " + selection;
         } else  if (participatingUsers.contains(uid) && !canUsersRejoin()) {
             return "Unable to join event: You are already participating in this event!";
-        } else if (character.getCharacterStats().getStat(type.assocatedStat) < 0) {
+        } else if (getStat(character) < 0) {
             return "Unable to join event: Cannot join events with characters whose bonus is negative ("
                 + character.getDisplayName() + " has a " + type.assocatedStat.getStatName()
-                + " bonus of " + character.getCharacterStats().getStat(type.assocatedStat);
+                + " bonus of " + getStat(character);
         }
         Casino.User user = Casino.getUser(uid);
         if (user == null) {
@@ -319,12 +320,12 @@ abstract class Event {
             return null;
         }
 
-        totalPayoutMultiplier += character.getCharacterStats().getStat(type.assocatedStat);
+        totalPayoutMultiplier += getStat(character);
         participatingUsers.add(uid);
 
         EmbedResponse joinMessage = createPublicUserJoinMessage(user, character, selection);
         if (joinMessage.getMessage().startsWith(INVALID_SELECTION_PREFIX)) {
-            totalPayoutMultiplier -= character.getCharacterStats().getStat(type.assocatedStat);
+            totalPayoutMultiplier -= getStat(character);
             participatingUsers.remove(uid);
             return joinMessage.getMessage();
         }
@@ -376,6 +377,10 @@ abstract class Event {
         builder.append(".\nTotal payout bonus is now +");
         builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
         builder.append('%');
+    }
+
+    int getStat(GachaCharacter character) {
+        return character.getCharacterStats().getStat(type.assocatedStat);
     }
 
     private static class FishEvent extends Event {
@@ -558,7 +563,7 @@ abstract class Event {
         EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
             FishParticipant participant = new FishParticipant(user.getUid(), user.getNickname(),
-                character.getId(), character.getCharacterStats().getStat(type.assocatedStat));
+                character.getId(), getStat(character));
             if (selection == BOAT_1_VALUE) {
                 boat1Users.add(participant);
             } else if (selection == BOAT_2_VALUE) {
@@ -823,8 +828,7 @@ abstract class Event {
                     + "Number of targets must be 1-99");
             }
             PickParticipant participant = new PickParticipant(user.getUid(), user.getNickname(),
-                character.getId(), character.getCharacterStats().getStat(type.assocatedStat),
-                (int)selection, participants.size());
+                character.getId(), getStat(character), (int)selection, participants.size());
             participants.add(participant);
 
             StringBuilder builder = new StringBuilder();
@@ -1115,8 +1119,7 @@ abstract class Event {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
             }
             RobParticipant participant = new RobParticipant(user.getUid(), user.getNickname(),
-                character.getId(), character.getCharacterStats().getStat(type.assocatedStat),
-                selection == QUIET_SELECTION_ID);
+                character.getId(), getStat(character), selection == QUIET_SELECTION_ID);
             participants.add(participant);
 
             StringBuilder builder = new StringBuilder();
@@ -1132,8 +1135,7 @@ abstract class Event {
         EmbedResponse createPublicUserRejoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
             RobParticipant newParticipant = new RobParticipant(user.getUid(), user.getNickname(),
-                character.getId(), character.getCharacterStats().getStat(type.assocatedStat),
-                selection == QUIET_SELECTION_ID);
+                character.getId(), getStat(character), selection == QUIET_SELECTION_ID);
             if (!(selection == QUIET_SELECTION_ID || selection == LOUD_SELECTION_ID)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
             } else if (!participants.contains(newParticipant)) {
@@ -1448,7 +1450,7 @@ abstract class Event {
             }
             SlotsTeam team = teams.get(selection);
             team.members.add(new Participant(user.getUid(), user.getNickname(),
-                character.getId(), character.getCharacterStats().getStat(type.assocatedStat)));
+                character.getId(), getStat(character)));
 
             StringBuilder builder = new StringBuilder();
             builder.append(user.getNickname());
@@ -1473,7 +1475,7 @@ abstract class Event {
             Participant oldParticipant = null;
             long oldTeam = -1;
             Participant newParticipant = new Participant(user.getUid(), user.getNickname(),
-                character.getId(), character.getCharacterStats().getStat(type.assocatedStat));
+                character.getId(), getStat(character));
             for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
                 List<Participant> members = entry.getValue().members;
                 if (members.contains(newParticipant)) {
@@ -1483,7 +1485,7 @@ abstract class Event {
                 }
             }
 
-            if (oldTeam == -1) {
+            if (oldTeam == -1 || oldParticipant == null) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX
                     + "Unable to find previous entry");
             } else if (oldTeam == selection && character.getId() == oldParticipant.cid) {
@@ -1611,6 +1613,8 @@ abstract class Event {
         static final int COIN_AMOUNT_1 = 250;
         static final int COIN_AMOUNT_2 = 251;
         static final int GIVEAWAY_CHARACTER_CID = 0; // TODO
+        static final int GIVEAWAY_GEM_GID = 19;
+        static final int GIVEAWAY_GEM_DUPLICATES = 2;
         static final long COIN_1_SELECTION_ID = 0;
         static final long COIN_2_SELECTION_ID = 1;
         static final long ITEM_SELECTION_ID = 2;
@@ -1620,8 +1624,9 @@ abstract class Event {
         enum GiveawayPrize {
             COIN_1(COIN_1_SELECTION_ID, Integer.toString(COIN_AMOUNT_1) + " coins"),
             COIN_2(COIN_2_SELECTION_ID, Integer.toString(COIN_AMOUNT_2) + " coins"),
-            ITEM(ITEM_SELECTION_ID, "A Random Item"),
-            GAMBLERS_GEM(GEM_SELECTION_ID, "2 Gambler's Gems"),
+            ITEM(ITEM_SELECTION_ID, "A Random High Quality Item"),
+            GAMBLERS_GEM(GEM_SELECTION_ID, Integer.toString(GIVEAWAY_GEM_DUPLICATES)
+                + " Gambler's Gems"),
             CHARACTER(CHARACTER_SELECTION_ID, "Placeholder (2 Star Misc)");
 
             long id;
@@ -1630,24 +1635,47 @@ abstract class Event {
                 this.id = id;
                 this.description = description;
             }
+
+            static GiveawayPrize fromId(long id) {
+                switch ((int)id) {
+                    default:
+                    case (int)COIN_1_SELECTION_ID:
+                        return COIN_1;
+                    case (int)COIN_2_SELECTION_ID:
+                        return COIN_2;
+                    case (int)ITEM_SELECTION_ID:
+                        return ITEM;
+                    case (int)GEM_SELECTION_ID:
+                        return GAMBLERS_GEM;
+                    case (int)CHARACTER_SELECTION_ID:
+                        return CHARACTER;
+                }
+            }
         }
 
         static class GiveawayParticipant extends Participant {
-            int selection;
+            long selection;
             boolean won = false;
+            int roll = -1;
+            String rollString = "";
 
             GiveawayParticipant(long uid, String nickname, long cid, int characterMultiplier,
-                    int selection) {
+                    long selection) {
                 super(uid, nickname, cid, characterMultiplier);
                 this.selection = selection;
             }
         }
 
         static class GiveawayEventDetails {
-            int shiny;
+            Gacha.SHINY_TYPE shiny;
 
-            GiveawayEventDetails(int shiny) {
+            GiveawayEventDetails(Gacha.SHINY_TYPE shiny) {
                 this.shiny = shiny;
+            }
+
+            String getShinyAdjective() {
+                if (shiny == Gacha.SHINY_TYPE.NORMAL) { return ""; }
+                return shiny.getAdjective() + ' ';
             }
         }
 
@@ -1681,6 +1709,9 @@ abstract class Event {
             StringBuilder builder = new StringBuilder();
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 if (builder.length() != 0) { builder.append('\n'); }
+                if (prize == GiveawayPrize.CHARACTER) {
+                    builder.append(details.getShinyAdjective());
+                }
                 builder.append(prize.description);
             }
             response.addInlineBlock("Prizes:", builder.toString());
@@ -1698,9 +1729,12 @@ abstract class Event {
         @Override
         EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
+            if (!prizeSelections.containsKey(selection)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX);
+            }
+
             prizeSelections.get(selection).add(new GiveawayParticipant(user.getUid(),
-                user.getNickname(), character.getId(),
-                character.getCharacterStats().getStat(type.assocatedStat), (int)selection));
+                user.getNickname(), character.getId(), getStat(character), selection));
 
             return createEmbedResponse(user.getNickname() + " joined with "
                 + character.getDisplayName() + ". There are now " + participatingUsers.size()
@@ -1710,20 +1744,188 @@ abstract class Event {
         @Override
         EmbedResponse createPublicUserRejoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
-            // TODO
-            return null;
+            if (!prizeSelections.containsKey(selection)) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX);
+            }
+
+            GiveawayParticipant oldParticipant = null;
+            long oldSelection = -1;
+            GiveawayParticipant newParticipant = new GiveawayParticipant(user.getUid(),
+                user.getNickname(), character.getId(), getStat(character), selection);
+            for (Map.Entry<Long, List<GiveawayParticipant>> entry : prizeSelections.entrySet()) {
+                if (entry.getValue().contains(newParticipant)) {
+                    oldSelection = entry.getKey();
+                    oldParticipant = entry.getValue().get(
+                        entry.getValue().indexOf(newParticipant));
+                    break;
+                }
+            }
+
+            if (oldSelection == -1 || oldParticipant == null) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX
+                    + "Unable to find previous entry");
+            } else if (oldSelection == selection && character.getId() == oldParticipant.cid) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX
+                    + "You already joined that team with that character");
+            }
+
+            prizeSelections.get(oldSelection).remove(oldParticipant);
+            prizeSelections.get(selection).add(newParticipant);
+
+            StringBuilder builder = new StringBuilder();
+            builder.append(user.getNickname());
+            if (newParticipant.cid != oldParticipant.cid) {
+                builder.append(" brought ").append(character.getDisplayName()).append(" instead");
+            }
+            if (newParticipant.cid != oldParticipant.cid
+                    && newParticipant.selection != oldParticipant.selection) {
+                builder.append(" and");
+            }
+            if (newParticipant.selection != oldParticipant.selection) {
+                builder.append(" changed their selection");
+            }
+            return createEmbedResponse(builder.toString()).setFooter(JOIN_COMMAND_PROMPT);
         }
 
         @Override
         EmbedResponse createReminderMessage() {
-            // TODO
-            return null;
+            StringBuilder builder = new StringBuilder();
+            builder.append("Ending in ").append(EVENT_ENDING_REMINDER_WINDOW.toMinutes())
+                .append(" minutes! There are currently ").append(participatingUsers.size())
+                .append(" participants");
+            if (details.shiny != Gacha.SHINY_TYPE.NORMAL) {
+                builder.append("\n\nRemember the character in this giveaway is ")
+                    .append(details.shiny.getAdjective()).append('!');
+            }
+            return createEmbedResponse(builder.toString()).setFooter(JOIN_COMMAND_PROMPT);
+        }
+
+        String givePrize(long uid, GiveawayPrize prize) {
+            switch (prize) {
+                case COIN_1:
+                    Casino.addMoney(uid, COIN_AMOUNT_1);
+                    return prize.description;
+                case COIN_2:
+                    Casino.addMoney(uid, COIN_AMOUNT_2);
+                    return prize.description;
+                case ITEM:
+                    GachaItems.Item item = GachaItems.generateItem(uid);
+                    item.enhancementLevel = 1;
+                    item.awardTo(uid);
+                    return item.getAutoCompleteDescription();
+                case GAMBLERS_GEM:
+                    GachaGems.Gem gem = GachaGems.Gem.fromId(GIVEAWAY_GEM_GID);
+                    for (int i = 0; i < GIVEAWAY_GEM_DUPLICATES; ++i) {
+                        GachaItems.handleAwardGem(uid, gem);
+                    }
+                    return prize.description;
+                case CHARACTER:
+                    Gacha.awardCharacter(uid, uid, details.shiny);
+                    return details.getShinyAdjective() + prize.description;
+                default:
+                    return "";
+            }
+        }
+
+        private String getRollString(List<GiveawayParticipant> participants) {
+            StringBuilder builder = new StringBuilder();
+            for (GiveawayParticipant participant : participants) {
+                if (builder.length() != 0) { builder.append('\n'); }
+                builder.append(participant.rollString);
+            }
+            return builder.toString();
         }
 
         @Override
         Queue<EmbedResponse> createResolutionMessages() {
-            // TODO
-            return null;
+            Queue<EmbedResponse> messageFrames = new LinkedList<>();
+            createResolutionCountdown(messageFrames);
+
+            String description = "The giveaway winners are:";
+            Queue<InlineBlock> blocks = new LinkedList<>();
+            messageFrames.add(createEmbedResponse(description, blocks, true));
+
+            for (Map.Entry<Long, List<GiveawayParticipant>> entry : prizeSelections.entrySet()) {
+                List<GiveawayParticipant> participants = entry.getValue();
+                GiveawayPrize prize = GiveawayPrize.fromId(entry.getKey());
+                String title = prize.description;
+                if (prize == GiveawayPrize.CHARACTER) {
+                    title = details.getShinyAdjective() + title;
+                }
+                InlineBlock mainBlock = new InlineBlock(title, "");
+                StringBuilder participantNames = new StringBuilder();
+                InlineBlock rollBlock = new InlineBlock("Rolls", "");
+                blocks.add(mainBlock);
+                blocks.add(rollBlock);
+                blocks.add(EMPTY_INLINE_BLOCK);
+                messageFrames.add(createEmbedResponse(description, blocks, true));
+
+                if (participants.isEmpty()) {
+                    mainBlock.setBody("[Empty]");
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
+                    continue;
+                }
+
+                List<Integer> eligibleWinners = new ArrayList<>();
+                int nameIndex = 0;
+                for (GiveawayParticipant participant : participants) {
+                    if (participantNames.length() != 0) { participantNames.append('\n'); }
+                    participantNames.append(participant.nickname);
+                    mainBlock.setBody(participantNames.toString());
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
+                    eligibleWinners.add(nameIndex);
+                    nameIndex++;
+                }
+
+                do {
+                    int highRoll = 0;
+                    List<Integer> winners = new ArrayList<>();
+                    for (int index : eligibleWinners) {
+                        GiveawayParticipant participant = participants.get(index);
+                        participant.roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
+                        participant.rollString += '`' + participant.roll + '`';
+                        if (participant.roll > highRoll) {
+                            highRoll = participant.roll;
+                            winners.clear();
+                            winners.add(index);
+                        } else if (participant.roll == highRoll) {
+                            winners.add(index);
+                        }
+                        rollBlock.setBody(getRollString(participants));
+                        messageFrames.add(createEmbedResponse(description, blocks, true));
+                    }
+
+                    eligibleWinners = winners;
+                    if (eligibleWinners.size() > 1) {
+                        for (int index : eligibleWinners) {
+                            participants.get(index).rollString += " - Tied!";
+                        }
+                        messageFrames.add(createEmbedResponse(description, blocks, true));
+                        // Remove "Tied!" suffix
+                        for (int index : eligibleWinners) {
+                            String rollString = participants.get(index).rollString;
+                            participants.get(index).rollString
+                                = rollString.substring(0, rollString.length() - 5);
+                        }
+                    } else if (eligibleWinners.isEmpty()) {
+                        System.out.println("Impossible state: encounted empty winner list while "
+                            + "distributing " + prize.description);
+                    } else {
+                        // 1 Winner
+                        GiveawayParticipant participant = participants.get(eligibleWinners.get(0));
+                        participant.rollString += " - Winner!";
+                        participant.won = true;
+                        givePrize(participant.uid, prize);
+                        messageFrames.add(createEmbedResponse(description, blocks, true));
+                    }
+
+                    // TODO: Log all participants to DB
+                } while (eligibleWinners.size() > 1);
+            }
+
+            // TODO: Log event result to DB
+
+            return messageFrames;
         }
     }
 
@@ -1755,6 +1957,7 @@ abstract class Event {
     }
 
     static GiveawayEvent.GiveawayEventDetails fetchGiveawayEventDetails(long seed) {
-        return new GiveawayEvent.GiveawayEventDetails(0);
+        Gacha.SHINY_TYPE shiny = Gacha.getGachaBanner(0).generateShinyType();
+        return new GiveawayEvent.GiveawayEventDetails(shiny);
     }
 }

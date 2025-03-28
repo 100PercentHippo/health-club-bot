@@ -565,10 +565,6 @@ public class GachaItems {
         return G0Item.generate(uid);
     }
 
-    static String handleTest(long server, long uid) {
-        return "Test";
-    }
-
     static String handleItemInfo(long uid, String iidString) {
         long iid = Item.parseItemIdString(iidString);
         if (iid < 0) {
