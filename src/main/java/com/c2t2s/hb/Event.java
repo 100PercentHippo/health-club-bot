@@ -34,7 +34,9 @@ abstract class Event {
         private EventFactory() {}
 
         static Event createEvent(long server, EventType type) {
-            // if (type == EventType.FISH) {
+            // if (type == EventType.WORK) {
+            //     return new WorkEvent(server, Duration.ofMinutes(2));
+            // } else if (type == EventType.FISH) {
             //     return new FishEvent(server, Duration.ofMinutes(2));
             // } else if (type == EventType.PICKPOCKET) {
             //     return new PickEvent(server, Duration.ofMinutes(2));
@@ -397,13 +399,15 @@ abstract class Event {
         private static final int SMALL_TASK_GOAL = 50;
         private static final int MEDIUM_TASK_GOAL = 100;
         private static final int BIG_TASK_GOAL = 150;
-        private static final long SMALL_TASK_REWARD = 200;
-        private static final long MEDIUM_TASK_REWARD = 400;
-        private static final long BIG_TASK_REWARD = 600;
+        private static final long SMALL_TASK_REWARD = 50;
+        private static final long MEDIUM_TASK_REWARD = 100;
+        private static final long BIG_TASK_REWARD = 200;
         private static final long SMALL_TASK_SELECTION_ID = 0;
         private static final long MEDIUM_TASK_SELECTION_ID = 1;
         private static final long BIG_TASK_SELECTION_ID = 2;
         private static final int RANDOM_WORKERS = 2;
+        private static final String EMPTY_LOADING_BAR = "▱";
+        private static final String FULL_LOADING_BAR = "▰";
 
         static class WorkEventDetails {
             String location;
@@ -411,8 +415,8 @@ abstract class Event {
             String mediumTaskName;
             String bigTaskName;
             int smallTaskProgress = 0;
-            int mediumTaskProgress = 1;
-            int largeTaskProgress = 2;
+            int mediumTaskProgress = 0;
+            int bigTaskProgress = 0;
 
             WorkEventDetails(String location, String smallTaskName, String mediumTaskName,
                     String bigTaskName) {
@@ -424,14 +428,12 @@ abstract class Event {
         }
 
         static class WorkParticipant extends Participant {
-            int roll;
             int task;
             boolean successful = false;
 
             WorkParticipant(long uid, String nickname, long cid, int characterMultiplier,
-                    int roll, int task) {
+                    int task) {
                 super(uid, nickname, cid, characterMultiplier);
-                this.roll = roll;
                 this.task = task;
             }
         }
@@ -453,47 +455,192 @@ abstract class Event {
             return "Work Event at " + details.location;
         }
 
+        int getPayout() {
+            int basePayout = 0;
+            if (details.smallTaskProgress >= SMALL_TASK_GOAL) {
+                basePayout += SMALL_TASK_REWARD;
+            }
+            if (details.mediumTaskProgress >= MEDIUM_TASK_GOAL) {
+                basePayout += MEDIUM_TASK_REWARD;
+            }
+            if (details.bigTaskProgress >= BIG_TASK_GOAL) {
+                basePayout += BIG_TASK_REWARD;
+            }
+            basePayout *= getPayoutMultiplier();
+            return basePayout;
+        }
+
+        void displayCurrentState(StringBuilder builder) {
+            int smallFilledBars = Math.min(details.smallTaskProgress, SMALL_TASK_GOAL) / 10;
+            int smallEmptyBars = (SMALL_TASK_GOAL / 10) - smallFilledBars;
+            int mediumFilledBars = Math.min(details.mediumTaskProgress, MEDIUM_TASK_GOAL) / 10;
+            int mediumEmptyBars = (MEDIUM_TASK_GOAL / 10) - mediumFilledBars;
+            int bigFilledBars = Math.min(details.bigTaskProgress, BIG_TASK_GOAL) / 10;
+            int bigEmptyBars = (BIG_TASK_GOAL / 10) - bigFilledBars;
+            builder.append(details.smallTaskName).append(" (").append(SMALL_TASK_REWARD)
+                .append(" coins):\n\t").append(details.smallTaskProgress).append('/')
+                .append(SMALL_TASK_GOAL).append(' ')
+                .append(Casino.repeatString(FULL_LOADING_BAR, smallFilledBars))
+                .append(Casino.repeatString(EMPTY_LOADING_BAR, smallEmptyBars))
+                .append('\n').append(details.mediumTaskName).append(" (")
+                .append(MEDIUM_TASK_REWARD).append(" coins):\n\t")
+                .append(details.mediumTaskProgress).append('/').append(MEDIUM_TASK_GOAL)
+                .append(' ').append(Casino.repeatString(FULL_LOADING_BAR, mediumFilledBars))
+                .append(Casino.repeatString(EMPTY_LOADING_BAR, mediumEmptyBars)).append('\n')
+                .append(details.bigTaskName).append(" (").append(BIG_TASK_REWARD)
+                .append(" coins):\n\t").append(details.bigTaskProgress).append('/')
+                .append(BIG_TASK_GOAL).append(' ')
+                .append(Casino.repeatString(FULL_LOADING_BAR, bigFilledBars))
+                .append(Casino.repeatString(EMPTY_LOADING_BAR, bigEmptyBars))
+                .append("\n\nCurrent wages per person: ").append(getPayout()).append(" coins");
+        }
+
         @Override
         EmbedResponse createInitialMessage() {
-            // TODO
-            return null;
+            StringBuilder builder = new StringBuilder();
+            builder.append("A new Work event is starting, destination: ").append(details.location)
+                .append("\n\nThe tasks that need to be done are:\n\n");
+            displayCurrentState(builder);
+            return createEmbedResponse(builder.toString());
         }
 
         @Override
         String createAboutMessage() {
-            // TODO
-            return "";
+            return "In a Work Event, there is a set of tasks that participants work together to "
+                + "complete. When joining, each participant selects the task they want to work "
+                + "towards, then rolls a number between 1-100, progressing the task by that "
+                + "amount. When a task accumulates enough progress all participants' wages "
+                + "increase by the associated amount. At the end of the event, " + RANDOM_WORKERS
+                + " NPCs will join random tasks, progressing them a random amount, which may help "
+                + "(or might not). Work together with other participants to complete all the "
+                + "tasks!";
         }
 
-        String displayCurrentState() {
-            // TODO
-            return "";
+        private String getTaskName(long selection) {
+            switch ((int)selection) {
+                case (int)SMALL_TASK_SELECTION_ID:
+                    return details.smallTaskName;
+                case (int)MEDIUM_TASK_SELECTION_ID:
+                    return details.mediumTaskName;
+                case (int)BIG_TASK_SELECTION_ID:
+                    return details.bigTaskName;
+                default:
+                    return "";
+            }
+        }
+
+        private String progressTask(long selection, int roll) {
+            long payoutIncrease = 0;
+            if (selection == SMALL_TASK_SELECTION_ID) {
+                if (details.smallTaskProgress < SMALL_TASK_GOAL
+                        && details.smallTaskProgress + roll >= SMALL_TASK_GOAL) {
+                    payoutIncrease = SMALL_TASK_REWARD;
+                }
+                details.smallTaskProgress = Math.min(details.smallTaskProgress + roll,
+                    SMALL_TASK_GOAL);
+            } else if (selection == MEDIUM_TASK_SELECTION_ID) {
+                if (details.mediumTaskProgress < MEDIUM_TASK_GOAL
+                        && details.mediumTaskProgress + roll >= MEDIUM_TASK_GOAL) {
+                    payoutIncrease = MEDIUM_TASK_REWARD;
+                }
+                details.mediumTaskProgress = Math.min(details.mediumTaskProgress + roll,
+                    MEDIUM_TASK_GOAL);
+            } else if (selection == BIG_TASK_SELECTION_ID) {
+                if (details.bigTaskProgress < BIG_TASK_GOAL
+                        && details.bigTaskProgress + roll >= BIG_TASK_GOAL) {
+                    payoutIncrease = BIG_TASK_REWARD;
+                }
+                details.bigTaskProgress = Math.min(details.bigTaskProgress + roll,
+                    BIG_TASK_GOAL);
+            }
+            if (payoutIncrease > 0) {
+                return "\nTask completed! +" + payoutIncrease + " coins!";
+            } else {
+                return "";
+            }
         }
 
         @Override
         EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
                 long selection) {
-            // TODO
-            return null;
+            if (selection != SMALL_TASK_SELECTION_ID && selection != MEDIUM_TASK_SELECTION_ID
+                    && selection != BIG_TASK_SELECTION_ID) {
+                return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
+            }
+
+            int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
+            participants.add(new WorkParticipant(user.getUid(), user.getNickname(),
+                character.getId(), getStat(character), (int)selection));
+
+            StringBuilder builder = new StringBuilder();
+            appendJoinMessage(builder, user, character);
+
+            builder.append("\n\nSelected task : '").append(getTaskName(selection))
+                .append("'\nRoll: `").append(roll).append('`');
+
+            builder.append(progressTask(selection, roll));
+            builder.append("\n\n");
+            displayCurrentState(builder);
+            return createEmbedResponse(builder.toString());
         }
 
         @Override
         EmbedResponse createPublicUserRejoinMessage(Casino.User user,
                 Gacha.GachaCharacter character, long selection) {
-            // TODO
-            return null;
+            return createErrorResponse(INVALID_SELECTION_PREFIX
+                + "You already joined this work event!");
         }
 
         @Override
         EmbedResponse createReminderMessage() {
-            // TODO
-            return null;
+            StringBuilder builder = new StringBuilder();
+            builder.append("Ending in ").append(EVENT_ENDING_REMINDER_WINDOW.toMinutes())
+                .append(" minutes!\n\nCurrent Tasks:");
+            displayCurrentState(builder);
+            return createEmbedResponse(builder.toString());
         }
 
         @Override
         Queue<EmbedResponse> createResolutionMessages() {
-            // TODO
-            return null;
+            Queue<EmbedResponse> messageFrames = new LinkedList<>();
+            createResolutionCountdown(messageFrames);
+
+            StringBuilder builder = new StringBuilder();
+            StringBuilder statusBuilder = new StringBuilder();
+            builder.append(RANDOM_WORKERS).append(" extra workers pitch in to help:");
+            displayCurrentState(statusBuilder);
+            messageFrames.add(createEmbedResponse(builder.toString() + "\n\n\n\n"
+                + statusBuilder.toString()));
+
+            int workertask = HBMain.RNG_SOURCE.nextInt(3);
+            builder.append("\nBill joins '").append(getTaskName(workertask))
+                .append("' and rolls ");
+            messageFrames.add(createEmbedResponse(builder.toString() + "`??`\n\n\n"
+                + statusBuilder.toString()));
+            int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
+            progressTask(workertask, roll);
+            statusBuilder = new StringBuilder();
+            displayCurrentState(statusBuilder);
+            messageFrames.add(createEmbedResponse(builder.toString() + "\n\n\n"
+                + statusBuilder.toString()));
+
+            workertask = HBMain.RNG_SOURCE.nextInt(3);
+            builder.append("\nCoin joins '").append(getTaskName(workertask))
+                .append("' and rolls ");
+            messageFrames.add(createEmbedResponse(builder.toString() + "`??`\n\n"
+                + statusBuilder.toString()));
+            roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
+            progressTask(workertask, roll);
+            builder.append("\n\n");
+            displayCurrentState(builder);
+            messageFrames.add(createEmbedResponse(builder.toString()));
+
+            for (WorkParticipant participant : participants) {
+                // TODO: Log to DB
+            }
+
+            // TODO: Log event to DB
+            return messageFrames;
         }
     }
 
