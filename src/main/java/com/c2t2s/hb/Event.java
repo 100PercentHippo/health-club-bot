@@ -28,26 +28,56 @@ import com.c2t2s.hb.HBMain.EmbedResponse.InlineBlock;
 
 abstract class Event {
 
+    static class PastEventStatus {
+        EventType eventType;
+        int eventId;
+        boolean completed;
+
+        PastEventStatus(int eventType, int eventId, boolean completed) {
+            this.eventType = EventType.fromId(eventType);
+            this.eventId = eventId;
+            this.completed = completed;
+        }
+    }
+
     static class EventFactory {
 
         // Hide default constructor
         private EventFactory() {}
 
-        static Event createEvent(long server, EventType type) {
-            // if (type == EventType.WORK) {
-            //     return new WorkEvent(server, Duration.ofMinutes(2));
-            // } else if (type == EventType.FISH) {
-            //     return new FishEvent(server, Duration.ofMinutes(2));
-            // } else if (type == EventType.PICKPOCKET) {
-            //     return new PickEvent(server, Duration.ofMinutes(2));
-            // } else if (type == EventType.ROB) {
-            //     return new RobEvent(server, Duration.ofMinutes(2));
-            // } else if (type == EventType.SUPER_SLOTS) {
-            //     return new SlotsEvent(server, Duration.ofMinutes(2));
-            // } else if (type == EventType.GIVEAWAY) {
-            //     return new GiveawayEvent(server, Duration.ofMinutes(2));
-            // }
-            return new RobEvent(server, Duration.ofMinutes(2));
+        static Event createEvent(long server, Duration timeUntilResolution) {
+            PastEventStatus lastEvent = fetchServerEventStatus(server);
+
+            if (lastEvent == null) {
+                // Hopefully this is the first event for this server
+                return new FishEvent(server, timeUntilResolution);
+            }
+
+            if (!lastEvent.completed) {
+                // Continue an ongoing event
+                switch (lastEvent.eventType) {
+                    case WORK:
+                        return new WorkEvent(server, timeUntilResolution, lastEvent.eventId);
+                }
+                // TODO
+            }
+
+            EventType nextType = EventType.getNextEventType(lastEvent.eventType);
+            switch (nextType) {
+                case WORK:
+                    return new WorkEvent(server, timeUntilResolution);
+                default:
+                case FISH:
+                    return new FishEvent(server, timeUntilResolution);
+                case PICKPOCKET:
+                    return new PickEvent(server, timeUntilResolution);
+                case ROB:
+                    return new RobEvent(server, timeUntilResolution);
+                case SUPER_SLOTS:
+                    return new SlotsEvent(server, timeUntilResolution);
+                case GIVEAWAY:
+                    return new GiveawayEvent(server, timeUntilResolution);
+            }
         }
     }
 
@@ -56,8 +86,8 @@ abstract class Event {
     static final int EVENTTYPE_ID_ROB = 1;
     static final int EVENTTYPE_ID_WORK = 2;
     static final int EVENTTYPE_ID_PICKPOCKET = 3;
-    static final int EVENTTYPE_ID_AVERAGE = 4;
-    static final int EVENTTYPE_ID_SUPER_GUESS = 5;
+    //static final int EVENTTYPE_ID_AVERAGE = 4;
+    //static final int EVENTTYPE_ID_SUPER_GUESS = 5;
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
     static final int EVENTTYPE_ID_GIVEAWAY = 7;
     static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
@@ -68,8 +98,8 @@ abstract class Event {
         ROB(EVENTTYPE_ID_ROB, GachaItems.ITEM_STAT.ROB, new Color(255, 213, 0)), // Gold
         WORK(EVENTTYPE_ID_WORK, GachaItems.ITEM_STAT.WORK, new Color(91, 41, 3)), // Brown
         PICKPOCKET(EVENTTYPE_ID_PICKPOCKET, GachaItems.ITEM_STAT.PICK, new Color(0, 136, 50)), // Money Green
-        AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
-        SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
+        //AVERAGE(EVENTTYPE_ID_AVERAGE, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
+        //SUPER_GUESS(EVENTTYPE_ID_SUPER_GUESS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
         SUPER_SLOTS(EVENTTYPE_ID_SUPER_SLOTS, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR),
         GIVEAWAY(EVENTTYPE_ID_GIVEAWAY, GachaItems.ITEM_STAT.MISC, MISC_EVENT_COLOR);
 
@@ -91,10 +121,10 @@ abstract class Event {
                     return WORK;
                 case EVENTTYPE_ID_PICKPOCKET:
                     return PICKPOCKET;
-                case EVENTTYPE_ID_AVERAGE:
-                    return AVERAGE;
-                case EVENTTYPE_ID_SUPER_GUESS:
-                    return SUPER_GUESS;
+                // case EVENTTYPE_ID_AVERAGE:
+                //     return AVERAGE;
+                // case EVENTTYPE_ID_SUPER_GUESS:
+                //     return SUPER_GUESS;
                 case EVENTTYPE_ID_SUPER_SLOTS:
                     return SUPER_SLOTS;
                 case EVENTTYPE_ID_FISH:
@@ -358,6 +388,12 @@ abstract class Event {
         return output.toString();
     }
 
+    // Used when resuming an ongoing event after a server restart
+    void silentUserJoin(Participant participant) {
+        totalPayoutMultiplier += participant.characterMultiplier;
+        participatingUsers.add(participant.uid);
+    }
+
     void createResolutionCountdown(Queue<EmbedResponse> messageFrames) {
         for (int seconds = COUNTDOWN_SECONDS; seconds > 0; seconds--) {
             messageFrames.add(createEmbedResponse("Starting in " + seconds
@@ -429,12 +465,14 @@ abstract class Event {
 
         static class WorkParticipant extends Participant {
             int task;
+            int roll;
             boolean successful = false;
 
             WorkParticipant(long uid, String nickname, long cid, int characterMultiplier,
-                    int task) {
+                    int task, int roll) {
                 super(uid, nickname, cid, characterMultiplier);
                 this.task = task;
+                this.roll = roll;
             }
         }
 
@@ -443,11 +481,27 @@ abstract class Event {
 
         WorkEvent(long server, Duration timeUntilResolution) {
             super(EventType.WORK, server, timeUntilResolution);
-            details = fetchWorkEventDetails();
+            details = fetchNewWorkEventDetails(server);
             setJoinSelections(Map.ofEntries(
                 entry(SMALL_TASK_SELECTION_ID, details.smallTaskName),
                 entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName),
                 entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
+        }
+
+        WorkEvent(long server, Duration timeUntilResolution, int existingEventId) {
+            super(EventType.WORK, server, timeUntilResolution);
+            details = fetchExistingWorkEventDetails(server, existingEventId);
+            setJoinSelections(Map.ofEntries(
+                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName),
+                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName),
+                entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
+
+            List<WorkParticipant> existingParticipants
+                = fetchExistingWorkEventParticipants(server, existingEventId);
+            if (existingParticipants == null) { return; }
+            for (WorkParticipant participant : existingParticipants) {
+                silentUserJoin(participant);
+            }
         }
 
         @Override
@@ -570,7 +624,7 @@ abstract class Event {
 
             int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
             participants.add(new WorkParticipant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character), (int)selection));
+                character.getId(), getStat(character), (int)selection, roll));
 
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
@@ -582,6 +636,17 @@ abstract class Event {
             builder.append("\n\n");
             displayCurrentState(builder);
             return createEmbedResponse(builder.toString());
+        }
+
+        @Override
+        void silentUserJoin(Participant participant) {
+            if (!(participant instanceof WorkParticipant)) {
+                return;
+            }
+            super.silentUserJoin(participant);
+
+            WorkParticipant workParticipant = (WorkParticipant)participant;
+            progressTask(workParticipant.task, workParticipant.roll);
         }
 
         @Override
@@ -2209,16 +2274,88 @@ abstract class Event {
 
     // CREATE TABLE IF NOT EXISTS event (
     //  server bigint NOT NULL,
-    //  eventId integer NOT NULL,
+    //  eventId SERIAL PRIMARY KEY,
     //  type integer NOT NULL,
-    //  theme integer NOT NULL,
     //  completed boolean NOT NULL DEFAULT FALSE,
-    //  PRIMARY KEY(server, eventId),
     //  CONSTRAINT event_server_id FOREIGN KEY(server) REFERENCES casino_server(server_id)
     // );
 
-    static WorkEvent.WorkEventDetails fetchWorkEventDetails() {
-        return new WorkEvent.WorkEventDetails("Test Land", "Test Task 1", "Test Task 2", "Test Task 3");
+    // CREATE TABLE IF NOT EXISTS work_event_location (
+    //  wlid SERIAL PRIMARY KEY,
+    //  location VARCHAR(50) NOT NULL
+    // );
+
+    // CREATE TABLE IF NOT EXISTS work_event_task (
+    //  wtid SERIAL,
+    //  wlid integer NOT NULL,
+    //  task VARCHAR(100) NOT NULL,
+    //  PRIMARY KEY(wlid, wtid),
+    //  CONSTRAINT work_event_task_wlid FOREIGN KEY(wlid) REFERENCES work_event_location(wlid)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS work_event (
+    //  eventId integer NOT NULL,
+    //  location integer NOT NULL,
+    //  small_task integer NOT NULL,
+    //  med_task integer NOT NULL,
+    //  large_task integer NOT NULL,
+    //  PRIMARY KEY(eventId),
+    //  CONSTRAINT work_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
+    //  CONSTRAINT work_event_location FOREIGN KEY(location) REFERENCES work_event_location(wlid),
+    //  CONSTRAINT work_event_small_task FOREIGN KEY(location, small_task) REFERENCES work_event_task(wlid, wtid),
+    //  CONSTRAINT work_event_med_task FOREIGN KEY(location, med_task) REFERENCES work_event_task(wlid, wtid),
+    //  CONSTRAINT work_event_large_task FOREIGN KEY(location, large_task) REFERENCES work_event_task(wlid, wtid)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS work_participant (
+    //  uid bigint NOT NULL,
+    //  eventId integer NOT NULL,
+    //  selection bigint NOT NULL,
+    //  cid bigint NOT NULL,
+    //  foil integer NOT NULL,
+    //  PRIMARY KEY(uid, eventId),
+    //  CONSTRAINT work_participant_eventId FOREIGN KEY(eventId) REFERENCES work_event(eventId),
+    //  CONSTRAINT work_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
+    // );
+
+    static PastEventStatus fetchServerEventStatus(long server) {
+        String query = "SELECT type, eventId, completed FROM event WHERE server = " + server
+            + " ORDER BY eventId DESC LIMIT 1;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new PastEventStatus(results.getInt(1), results.getInt(2),
+                    results.getBoolean(3));
+            }
+            return null;
+        }, null);
+    }
+
+    static WorkEvent.WorkEventDetails fetchNewWorkEventDetails(long server) {
+        String query =
+            "WITH destination AS (SELECT wlid, location FROM work_event_location ORDER BY RANDOM() LIMIT 1),"
+            + "tasks AS (SELECT location, wlid, wtid, task FROM work_event_task NATURAL JOIN destination ORDER BY RANDOM() LIMIT 3),"
+            + "inserted_event AS (INSERT INTO event (server, type) VALUES (" + server + ", " + EVENTTYPE_ID_WORK + ") RETURNING eventId),"
+            + "inserted_work_event AS (INSERT INTO work_event (eventId, location, small_task, med_task, large_task) SELECT (ARRAY_AGG(eventId))[1], (ARRAY_AGG(tasks.wlid))[1], (ARRAY_AGG(tasks.wtid))[1], (ARRAY_AGG(tasks.wtid))[2], (ARRAY_AGG(tasks.wtid))[3] FROM tasks CROSS JOIN inserted_event)"
+            + "SELECT (ARRAY_AGG(tasks.location))[1] AS location, (ARRAY_AGG(tasks.task))[1] AS task1, (ARRAY_AGG(tasks.task))[2] AS task2, (ARRAY_AGG(tasks.task))[3] AS task3 FROM tasks;";
+        final WorkEvent.WorkEventDetails defaultDetails = new WorkEvent.WorkEventDetails("?", "?", "?", "?");
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new WorkEvent.WorkEventDetails(results.getString(1), results.getString(2),
+                    results.getString(3), results.getString(4));
+            }
+            return defaultDetails;
+        }, defaultDetails);
+    }
+
+    static WorkEvent.WorkEventDetails fetchExistingWorkEventDetails(long server, int eventId) {
+        // TODO
+        final WorkEvent.WorkEventDetails defaultDetails = new WorkEvent.WorkEventDetails("?", "?", "?", "?");
+        return defaultDetails;
+    }
+
+    static List<WorkEvent.WorkParticipant> fetchExistingWorkEventParticipants(long server, int eventId) {
+        // TODO
+        return null;
     }
 
     static FishEvent.FishEventDetails fetchFishEventDetails() {
