@@ -22,7 +22,10 @@ import java.util.stream.Collectors;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 
+import com.c2t2s.hb.Casino.User;
 import com.c2t2s.hb.Gacha.GachaCharacter;
+import com.c2t2s.hb.Gacha.SHINY_TYPE;
+import com.c2t2s.hb.GachaItems.ITEM_STAT;
 import com.c2t2s.hb.HBMain.EmbedResponse;
 import com.c2t2s.hb.HBMain.EmbedResponse.InlineBlock;
 
@@ -58,8 +61,17 @@ abstract class Event {
                 switch (lastEvent.eventType) {
                     case WORK:
                         return new WorkEvent(server, timeUntilResolution, lastEvent.eventId);
+                    // case FISH:
+                    //     return new FishEvent(server, timeUntilResolution, lastEvent.eventId);
+                    // case PICKPOCKET:
+                    //     return new PickEvent(server, timeUntilResolution, lastEvent.eventId);
+                    // case ROB:
+                    //     return new RobEvent(server, timeUntilResolution, lastEvent.eventId);
+                    // case SUPER_SLOTS:
+                    //     return new SlotsEvent(server, timeUntilResolution, lastEvent.eventId);
+                    // case GIVEAWAY:
+                    //     return new GiveawayEvent(server, timeUntilResolution, lastEvent.eventId);
                 }
-                // TODO
             }
 
             EventType nextType = EventType.getNextEventType(lastEvent.eventType);
@@ -162,13 +174,15 @@ abstract class Event {
         long uid;
         String nickname;
         long cid;
+        int foil;
         int characterMultiplier;
         long payout = 0;
 
-        Participant(long uid, String nickname, long cid, int characterMultiplier) {
-            this.uid = uid;
-            this.nickname = nickname;
-            this.cid = cid;
+        Participant(User user, GachaCharacter character, int characterMultiplier) {
+            this.uid = user.getUid();
+            this.nickname = user.getNickname();
+            this.cid = character.getId();
+            this.foil = character.getShiny().getId();
             this.characterMultiplier = characterMultiplier;
         }
 
@@ -187,11 +201,12 @@ abstract class Event {
 
     protected EventType type;
     protected long server;
+    protected int eventId;
     protected Duration timeUntilResolution;
     private Map<Long, String> joinSelections;
     private List<HBMain.AutocompleteIdOption> options = new ArrayList<>();
 
-    protected Set<Long> participatingUsers = new HashSet<>();
+    protected Map<Long, Participant> participatingUsers = new HashMap<>();
     private boolean complete = false;
     protected int totalPayoutMultiplier = 0;
     protected boolean supportsUserSelections = false;
@@ -206,6 +221,7 @@ abstract class Event {
     static final NumberFormat ONE_DECIMAL = new DecimalFormat("0.0");
     static final InlineBlock EMPTY_INLINE_BLOCK
         = new InlineBlock("\u200B", "\u200B");
+    static final int EVENT_ID_NOT_FOUND = -1;
 
     protected Event(EventType type, long server, Duration timeUntilResolution,
             Map<Long, String> joinSelections) {
@@ -221,6 +237,13 @@ abstract class Event {
         this.server = server;
         this.timeUntilResolution = timeUntilResolution;
         // options and joinSelections will be empty
+    }
+
+    protected Event(EventType type, long server, Duration timeUntilResolution, int eventId) {
+        this.type = type;
+        this.server = server;
+        this.timeUntilResolution = timeUntilResolution;
+        this.eventId = eventId;
     }
 
     protected void setJoinSelections(Map<Long, String> joinSelections) {
@@ -243,11 +266,11 @@ abstract class Event {
 
     abstract String createAboutMessage();
 
-    abstract EmbedResponse createPublicUserJoinMessage(Casino.User user,
-        Gacha.GachaCharacter character, long selection);
+    abstract EmbedResponse createPublicUserJoinMessage(User user,
+        GachaCharacter character, long selection);
 
-    abstract EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-        Gacha.GachaCharacter character, long selection);
+    abstract EmbedResponse createPublicUserRejoinMessage(User user,
+        GachaCharacter character, long selection);
 
     abstract EmbedResponse createReminderMessage();
 
@@ -327,7 +350,6 @@ abstract class Event {
         }, NEW_EVENT_DELAY);
 
         Queue<EmbedResponse> messages = createResolutionMessages();
-        // TODO: Log event output
         CasinoServerManager.sendMultipartEventMessage(server, messages);
         return null;
     }
@@ -336,7 +358,7 @@ abstract class Event {
         return options;
     }
 
-    String handleUserJoin(long uid, Gacha.GachaCharacter character, long selection) {
+    String handleUserJoin(long uid, GachaCharacter character, long selection) {
         if (complete) {
             return "Unable to join event: Event has ended";
         } else if (!CasinoServerManager.hasEvent(server)) {
@@ -344,32 +366,50 @@ abstract class Event {
         } else if (!supportsUserSelections && !joinSelections.containsKey(selection)) {
             // If options was empty, any user input is valid
             return "Unable to join event: Unrecognized selection " + selection;
-        } else  if (participatingUsers.contains(uid) && !canUsersRejoin()) {
+        } else if (participatingUsers.containsKey(uid) && !canUsersRejoin()) {
             return "Unable to join event: You are already participating in this event!";
         } else if (getStat(character) < 0) {
             return "Unable to join event: Cannot join events with characters whose bonus is negative ("
                 + character.getDisplayName() + " has a " + type.assocatedStat.getStatName()
                 + " bonus of " + getStat(character);
         }
-        Casino.User user = Casino.getUser(uid);
+        User user = Casino.getUser(uid);
         if (user == null) {
             return Casino.USER_NOT_FOUND_MESSAGE;
         }
-        // TODO: Check if the user is participating in an event on another server
-
-        if (participatingUsers.contains(uid)) {
-            // Change selection
-            return null;
+        int existingEvent = isUserAlreadyInEvent(eventId, uid);
+        if (existingEvent != EVENT_ID_NOT_FOUND) {
+            return "Unable to join event: You are already participanting in an ongoing event "
+                + "in another server (" + existingEvent + ")";
         }
 
-        totalPayoutMultiplier += getStat(character);
-        participatingUsers.add(uid);
-
-        EmbedResponse joinMessage = createPublicUserJoinMessage(user, character, selection);
-        if (joinMessage.getMessage().startsWith(INVALID_SELECTION_PREFIX)) {
-            totalPayoutMultiplier -= getStat(character);
-            participatingUsers.remove(uid);
-            return joinMessage.getMessage();
+        Participant participant = new Participant(user, character, getStat(character));
+        EmbedResponse joinMessage;
+        if (participatingUsers.containsKey(uid)) {
+            // Update existing entry
+            Participant oldParticipant = participatingUsers.remove(uid);
+            totalPayoutMultiplier -= oldParticipant.characterMultiplier;
+            totalPayoutMultiplier += getStat(character);
+            participatingUsers.put(uid, participant);
+            joinMessage = createPublicUserRejoinMessage(user, character, selection);
+            if (joinMessage.getMessage().startsWith(INVALID_SELECTION_PREFIX)) {
+                // We weren't successful, restore previous state
+                participatingUsers.remove(uid);
+                totalPayoutMultiplier -= getStat(character);
+                totalPayoutMultiplier += oldParticipant.characterMultiplier;
+                participatingUsers.put(uid, oldParticipant);
+                return joinMessage.getMessage();
+            }
+        } else {
+            // New entry
+            totalPayoutMultiplier += getStat(character);
+            participatingUsers.put(uid, participant);
+            joinMessage = createPublicUserJoinMessage(user, character, selection);
+            if (joinMessage.getMessage().startsWith(INVALID_SELECTION_PREFIX)) {
+                totalPayoutMultiplier -= getStat(character);
+                participatingUsers.remove(uid);
+                return joinMessage.getMessage();
+            }
         }
 
         CasinoServerManager.sendEventMessage(server, joinMessage);
@@ -391,7 +431,7 @@ abstract class Event {
     // Used when resuming an ongoing event after a server restart
     void silentUserJoin(Participant participant) {
         totalPayoutMultiplier += participant.characterMultiplier;
-        participatingUsers.add(participant.uid);
+        participatingUsers.put(participant.uid, participant);
     }
 
     void createResolutionCountdown(Queue<EmbedResponse> messageFrames) {
@@ -406,13 +446,13 @@ abstract class Event {
             + type.name().replace('_', ' ').toLowerCase() + " events work?"));
     }
 
-    void appendJoinMessage(StringBuilder builder, Casino.User user,
-            Gacha.GachaCharacter character) {
+    void appendJoinMessage(StringBuilder builder, User user,
+            GachaCharacter character) {
         appendJoinMessage(builder, user, character, false);
     }
 
-    void appendJoinMessage(StringBuilder builder, Casino.User user,
-            Gacha.GachaCharacter character,boolean rejoining) {
+    void appendJoinMessage(StringBuilder builder, User user,
+            GachaCharacter character,boolean rejoining) {
         builder.append(user.getNickname());
         builder.append(" ");
         if (rejoining) {
@@ -428,7 +468,11 @@ abstract class Event {
     }
 
     int getStat(GachaCharacter character) {
-        return character.getCharacterStats().getStat(type.assocatedStat);
+        return getStat(character, type.assocatedStat);
+    }
+
+    static int getStat(GachaCharacter character, GachaItems.ITEM_STAT stat) {
+        return character.getCharacterStats().getStat(stat);
     }
 
     private static class WorkEvent extends Event {
@@ -466,11 +510,10 @@ abstract class Event {
         static class WorkParticipant extends Participant {
             int task;
             int roll;
-            boolean successful = false;
 
-            WorkParticipant(long uid, String nickname, long cid, int characterMultiplier,
+            WorkParticipant(User user, GachaCharacter character, int characterMultiplier,
                     int task, int roll) {
-                super(uid, nickname, cid, characterMultiplier);
+                super(user, character, characterMultiplier);
                 this.task = task;
                 this.roll = roll;
             }
@@ -489,19 +532,23 @@ abstract class Event {
         }
 
         WorkEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.WORK, server, timeUntilResolution);
-            details = fetchExistingWorkEventDetails(server, existingEventId);
+            super(EventType.WORK, server, timeUntilResolution, existingEventId);
+            details = fetchExistingWorkEventDetails(existingEventId);
             setJoinSelections(Map.ofEntries(
                 entry(SMALL_TASK_SELECTION_ID, details.smallTaskName),
                 entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName),
                 entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
 
             List<WorkParticipant> existingParticipants
-                = fetchExistingWorkEventParticipants(server, existingEventId);
-            if (existingParticipants == null) { return; }
+                = fetchExistingWorkEventParticipants(existingEventId);
             for (WorkParticipant participant : existingParticipants) {
                 silentUserJoin(participant);
             }
+        }
+
+        @Override
+        boolean canUsersRejoin() {
+            return false;
         }
 
         @Override
@@ -615,7 +662,7 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        EmbedResponse createPublicUserJoinMessage(User user, GachaCharacter character,
                 long selection) {
             if (selection != SMALL_TASK_SELECTION_ID && selection != MEDIUM_TASK_SELECTION_ID
                     && selection != BIG_TASK_SELECTION_ID) {
@@ -623,8 +670,10 @@ abstract class Event {
             }
 
             int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
-            participants.add(new WorkParticipant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character), (int)selection, roll));
+            WorkParticipant participant = new WorkParticipant(user, character, getStat(character),
+                (int)selection, roll);
+            participants.add(participant);
+            logWorkEventParticipant(participant, eventId);
 
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
@@ -650,8 +699,8 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserRejoinMessage(User user,
+                GachaCharacter character, long selection) {
             return createErrorResponse(INVALID_SELECTION_PREFIX
                 + "You already joined this work event!");
         }
@@ -700,11 +749,9 @@ abstract class Event {
             displayCurrentState(builder);
             messageFrames.add(createEmbedResponse(builder.toString()));
 
-            for (WorkParticipant participant : participants) {
-                // TODO: Log to DB
-            }
-
-            // TODO: Log event to DB
+            logWorkEventCompletion(eventId, details.smallTaskProgress >= SMALL_TASK_GOAL,
+                details.mediumTaskProgress >= MEDIUM_TASK_GOAL,
+                details.bigTaskProgress >= BIG_TASK_GOAL);
             return messageFrames;
         }
     }
@@ -744,8 +791,8 @@ abstract class Event {
             boolean gotUncommon = false;
             boolean gotRare = false;
 
-            FishParticipant(long uid, String nickname, long cid, int characterMultiplier) {
-                super(uid, nickname, cid, characterMultiplier);
+            FishParticipant(User user, GachaCharacter character, int characterMultiplier) {
+                super(user, character, characterMultiplier);
             }
         }
 
@@ -886,10 +933,9 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        EmbedResponse createPublicUserJoinMessage(User user, GachaCharacter character,
                 long selection) {
-            FishParticipant participant = new FishParticipant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character));
+            FishParticipant participant = new FishParticipant(user, character, getStat(character));
             if (selection == BOAT_1_VALUE) {
                 boat1Users.add(participant);
             } else if (selection == BOAT_2_VALUE) {
@@ -908,8 +954,8 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserRejoinMessage(User user,
+                GachaCharacter character, long selection) {
             // TODO
             return null;
         }
@@ -1053,9 +1099,9 @@ abstract class Event {
             int successfulTargets = 0;
             int joinOrder;
 
-            PickParticipant(long uid, String nickname, long cid, int characterMultiplier,
+            PickParticipant(User user, GachaCharacter character, int characterMultiplier,
                     int targets, int joinOrder) {
-                super(uid, nickname, cid, characterMultiplier);
+                super(user, character, characterMultiplier);
                 this.targets = targets;
                 this.joinOrder = joinOrder;
             }
@@ -1147,14 +1193,14 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        EmbedResponse createPublicUserJoinMessage(User user, GachaCharacter character,
                 long selection) {
             if (selection < 1 || selection > 99) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX
                     + "Number of targets must be 1-99");
             }
-            PickParticipant participant = new PickParticipant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character), (int)selection, participants.size());
+            PickParticipant participant = new PickParticipant(user, character, getStat(character),
+                (int)selection, participants.size());
             participants.add(participant);
 
             StringBuilder builder = new StringBuilder();
@@ -1164,8 +1210,8 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserRejoinMessage(User user,
+                GachaCharacter character, long selection) {
             // TODO
             return null;
         }
@@ -1340,9 +1386,9 @@ abstract class Event {
         static class RobParticipant extends Participant {
             boolean isQuiet;
 
-            RobParticipant(long uid, String nickname, long cid, int characterMultiplier,
+            RobParticipant(User user, GachaCharacter character, int characterMultiplier,
                     boolean isQuiet) {
-                super(uid, nickname, cid, characterMultiplier);
+                super(user, character, characterMultiplier);
                 this.isQuiet = isQuiet;
             }
         }
@@ -1357,9 +1403,6 @@ abstract class Event {
                     "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
                     + "as nobody else goes loud")));
             details = fetchRobEventDetails();
-            // TODO: Remove Test Players after testing
-            participants.add(new RobParticipant(0, "Test Player 1", 0, 10, true));
-            participants.add(new RobParticipant(0, "Test Player 2", 0, 10, true));
         }
 
         @Override
@@ -1439,13 +1482,13 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserJoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserJoinMessage(User user,
+                GachaCharacter character, long selection) {
             if (!(selection == QUIET_SELECTION_ID || selection == LOUD_SELECTION_ID)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
             }
-            RobParticipant participant = new RobParticipant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character), selection == QUIET_SELECTION_ID);
+            RobParticipant participant = new RobParticipant(user, character,
+                getStat(character), selection == QUIET_SELECTION_ID);
             participants.add(participant);
 
             StringBuilder builder = new StringBuilder();
@@ -1458,10 +1501,10 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
-            RobParticipant newParticipant = new RobParticipant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character), selection == QUIET_SELECTION_ID);
+        EmbedResponse createPublicUserRejoinMessage(User user,
+                GachaCharacter character, long selection) {
+            RobParticipant newParticipant = new RobParticipant(user, character,
+                getStat(character), selection == QUIET_SELECTION_ID);
             if (!(selection == QUIET_SELECTION_ID || selection == LOUD_SELECTION_ID)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
             } else if (!participants.contains(newParticipant)) {
@@ -1769,14 +1812,13 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserJoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserJoinMessage(User user,
+                GachaCharacter character, long selection) {
             if (!teams.containsKey(selection)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
             }
             SlotsTeam team = teams.get(selection);
-            team.members.add(new Participant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character)));
+            team.members.add(new Participant(user, character, getStat(character)));
 
             StringBuilder builder = new StringBuilder();
             builder.append(user.getNickname());
@@ -1792,16 +1834,15 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserRejoinMessage(User user,
+                GachaCharacter character, long selection) {
             if (!teams.containsKey(selection)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX + "Unrecognized selection");
             }
 
             Participant oldParticipant = null;
             long oldTeam = -1;
-            Participant newParticipant = new Participant(user.getUid(), user.getNickname(),
-                character.getId(), getStat(character));
+            Participant newParticipant = new Participant(user, character, getStat(character));
             for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
                 List<Participant> members = entry.getValue().members;
                 if (members.contains(newParticipant)) {
@@ -1985,9 +2026,9 @@ abstract class Event {
             int roll = -1;
             String rollString = "";
 
-            GiveawayParticipant(long uid, String nickname, long cid, int characterMultiplier,
+            GiveawayParticipant(User user, GachaCharacter character, int characterMultiplier,
                     long selection) {
-                super(uid, nickname, cid, characterMultiplier);
+                super(user, character, characterMultiplier);
                 this.selection = selection;
             }
         }
@@ -2056,14 +2097,14 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserJoinMessage(Casino.User user, Gacha.GachaCharacter character,
+        EmbedResponse createPublicUserJoinMessage(User user, GachaCharacter character,
                 long selection) {
             if (!prizeSelections.containsKey(selection)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX);
             }
 
-            prizeSelections.get(selection).add(new GiveawayParticipant(user.getUid(),
-                user.getNickname(), character.getId(), getStat(character), selection));
+            prizeSelections.get(selection).add(new GiveawayParticipant(user, character,
+                getStat(character), selection));
 
             return createEmbedResponse(user.getNickname() + " joined with "
                 + character.getDisplayName() + ". There are now " + participatingUsers.size()
@@ -2071,16 +2112,16 @@ abstract class Event {
         }
 
         @Override
-        EmbedResponse createPublicUserRejoinMessage(Casino.User user,
-                Gacha.GachaCharacter character, long selection) {
+        EmbedResponse createPublicUserRejoinMessage(User user,
+                GachaCharacter character, long selection) {
             if (!prizeSelections.containsKey(selection)) {
                 return createErrorResponse(INVALID_SELECTION_PREFIX);
             }
 
             GiveawayParticipant oldParticipant = null;
             long oldSelection = -1;
-            GiveawayParticipant newParticipant = new GiveawayParticipant(user.getUid(),
-                user.getNickname(), character.getId(), getStat(character), selection);
+            GiveawayParticipant newParticipant = new GiveawayParticipant(user, character,
+                getStat(character), selection);
             for (Map.Entry<Long, List<GiveawayParticipant>> entry : prizeSelections.entrySet()) {
                 if (entry.getValue().contains(newParticipant)) {
                     oldSelection = entry.getKey();
@@ -2311,8 +2352,10 @@ abstract class Event {
     //  uid bigint NOT NULL,
     //  eventId integer NOT NULL,
     //  selection bigint NOT NULL,
+    //  roll integer NOT NULL,
     //  cid bigint NOT NULL,
     //  foil integer NOT NULL,
+    //  task_successful boolean NOT NULL DEFAULT false,
     //  PRIMARY KEY(uid, eventId),
     //  CONSTRAINT work_participant_eventId FOREIGN KEY(eventId) REFERENCES work_event(eventId),
     //  CONSTRAINT work_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
@@ -2328,6 +2371,18 @@ abstract class Event {
             }
             return null;
         }, null);
+    }
+
+    static int isUserAlreadyInEvent(int eventId, long uid) {
+        String query = "WITH ongoing_work AS (SELECT eventId FROM event NATURAL JOIN work_event NATURAL JOIN work_participant "
+            + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
+            + "SELECT eventId FROM ongoing_work LIMIT 1;"; // TODO: Add UNION with other event types
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return results.getInt(1);
+            }
+            return EVENT_ID_NOT_FOUND;
+        }, EVENT_ID_NOT_FOUND);
     }
 
     static WorkEvent.WorkEventDetails fetchNewWorkEventDetails(long server) {
@@ -2347,15 +2402,77 @@ abstract class Event {
         }, defaultDetails);
     }
 
-    static WorkEvent.WorkEventDetails fetchExistingWorkEventDetails(long server, int eventId) {
-        // TODO
-        final WorkEvent.WorkEventDetails defaultDetails = new WorkEvent.WorkEventDetails("?", "?", "?", "?");
-        return defaultDetails;
+    static WorkEvent.WorkEventDetails fetchExistingWorkEventDetails(int eventId) {
+        String query =
+            "WITH ids AS (SELECT * FROM work_event WHERE eventId = " + eventId + ") "
+            + "SELECT work_event_location.location, n1.task AS task1, n2.task AS task2, n3.task AS task3 FROM "
+            + "ids LEFT JOIN work_event_location ON ids.location = work_event_location.wlid "
+            + "LEFT JOIN work_event_task n1 ON ids.small_task = n1.wtid "
+            + "LEFT JOIN work_event_task n2 ON ids.med_task = n2.wtid "
+            + "LEFT JOIN work_event_task n3 ON ids.large_task = n3.wtid;";
+            final WorkEvent.WorkEventDetails defaultDetails = new WorkEvent.WorkEventDetails("?", "?", "?", "?");
+            return CasinoDB.executeQueryWithReturn(query, results -> {
+                if (results.next()) {
+                    return new WorkEvent.WorkEventDetails(results.getString(1), results.getString(2),
+                        results.getString(3), results.getString(4));
+                }
+                return defaultDetails;
+            }, defaultDetails);
     }
 
-    static List<WorkEvent.WorkParticipant> fetchExistingWorkEventParticipants(long server, int eventId) {
-        // TODO
-        return null;
+    static class DBWorkParticipant {
+        long uid;
+        int selection;
+        int roll;
+        long cid;
+        int foil;
+
+        DBWorkParticipant(long uid, int selection, int roll, long cid, int foil) {
+            this.uid = uid;
+            this.selection = selection;
+            this.roll = roll;
+            this.cid = cid;
+            this.foil = foil;
+        }
+    }
+
+    static List<WorkEvent.WorkParticipant> fetchExistingWorkEventParticipants(int eventId) {
+        String query = "SELECT uid, selection, roll, cid, foil FROM work_participant WHERE eventid = " + eventId + ";";
+        List<DBWorkParticipant> dbParticipants = CasinoDB.executeQueryWithReturn(query, results -> {
+            List<DBWorkParticipant> participants = new ArrayList<>();
+            while (results.next()) {
+                participants.add(new DBWorkParticipant(results.getLong(1), results.getInt(2),
+                    results.getInt(3), results.getInt(4), results.getInt(5)));
+            }
+            return participants;
+        }, new ArrayList<DBWorkParticipant>());
+        List<WorkEvent.WorkParticipant> participants = new ArrayList<>();
+        for (DBWorkParticipant participant : dbParticipants) {
+            User user = Casino.getUser(participant.uid);
+            GachaCharacter character = Gacha.getCharacter(participant.uid, participant.cid,
+                SHINY_TYPE.fromId(participant.foil));
+            participants.add(new WorkEvent.WorkParticipant(user, character,
+                getStat(character, ITEM_STAT.WORK), participant.selection, participant.roll));
+        }
+        return participants;
+    }
+
+    static void logWorkEventParticipant(WorkEvent.WorkParticipant participant, int eventId) {
+        String query = "INSERT INTO work_participant (uid, eventId, selection, roll, cid, foil) VALUES ("
+            + participant.uid + ", " + eventId + ", " + participant.task + ", "
+            + participant.roll + ", " + participant.cid + ", " + participant.foil + ");";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logWorkEventCompletion(int eventId, boolean smallTaskComplete,
+            boolean mediumTaskComplete, boolean bigTaskComplete) {
+        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = " + eventId + ") "
+            + "UPDATE work_participant SET task_successful = CASE "
+            + "WHEN selection = " + WorkEvent.SMALL_TASK_SELECTION_ID + " THEN " + smallTaskComplete + " "
+            + "WHEN selection = " + WorkEvent.MEDIUM_TASK_SELECTION_ID + " THEN " + mediumTaskComplete + " "
+            + "WHEN selection = " + WorkEvent.BIG_TASK_SELECTION_ID + " THEN " + bigTaskComplete + " END "
+            + "WHERE eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
     }
 
     static FishEvent.FishEventDetails fetchFishEventDetails() {

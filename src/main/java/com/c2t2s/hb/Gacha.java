@@ -254,6 +254,8 @@ class Gacha {
 
         long getId() { return id; }
 
+        Gacha.SHINY_TYPE getShiny() { return shiny; }
+
         private static SHINY_TYPE parseUniqueIdShiny(String uniqueId) {
             try {
                 int index = uniqueId.indexOf(UNIQUE_ID_SEPARATOR);
@@ -1264,7 +1266,7 @@ class Gacha {
         }, null);
     }
 
-    private static GachaCharacter getCharacter(long uid, long cid, SHINY_TYPE shiny) {
+    static GachaCharacter getCharacter(long uid, long cid, SHINY_TYPE shiny) {
         String query = getPartialCharacterQuery(uid) + " WHERE uid = " + uid + " AND cid = " + cid
                 + " AND foil = " + shiny.getId() + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
