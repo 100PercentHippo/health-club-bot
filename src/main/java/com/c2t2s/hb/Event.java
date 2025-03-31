@@ -59,8 +59,8 @@ abstract class Event {
                 switch (lastEvent.eventType) {
                     case WORK:
                         return new WorkEvent(server, timeUntilResolution, lastEvent.eventId);
-                    // case FISH:
-                    //     return new FishEvent(server, timeUntilResolution, lastEvent.eventId);
+                    case FISH:
+                        return new FishEvent(server, timeUntilResolution, lastEvent.eventId);
                     // case PICKPOCKET:
                     //     return new PickEvent(server, timeUntilResolution, lastEvent.eventId);
                     // case ROB:
@@ -171,22 +171,28 @@ abstract class Event {
     static class Participant {
         long uid;
         String nickname;
-        long cid;
-        int foil;
+        GachaCharacter character;
         int characterMultiplier;
 
         Participant(User user, GachaCharacter character, int characterMultiplier) {
             this.uid = user.getUid();
             this.nickname = user.getNickname();
-            this.cid = character.getId();
-            this.foil = character.getShiny().getId();
+            this.character = character;
             this.characterMultiplier = characterMultiplier;
         }
 
         String getNickname() { return nickname; }
 
         boolean isSameCharacter(Participant other) {
-            return cid == other.cid && foil == other.foil;
+            return getCid() == other.getCid() && getFoil() == other.getFoil();
+        }
+
+        long getCid() {
+            return character.getId();
+        }
+
+        int getFoil() {
+            return character.getShiny().getId();
         }
 
         @Override
@@ -219,6 +225,7 @@ abstract class Event {
     private boolean complete = false;
     protected int totalPayoutMultiplier = 0;
     protected boolean supportsUserSelections = false;
+    protected boolean canUsersRejoin = true;
 
     static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(1);
     static final Duration EVENT_LOCK_DURATION = Duration.ofSeconds(15);
@@ -231,6 +238,8 @@ abstract class Event {
     static final InlineBlock EMPTY_INLINE_BLOCK
         = new InlineBlock("\u200B", "\u200B");
     static final int EVENT_ID_NOT_FOUND = -1;
+    static final int BASE_XP_GAIN = 50;
+    static final int TYPE_MATCH_XP_GAIN = 100;
 
     protected Event(EventType type, long server, Duration timeUntilResolution,
             Map<Long, String> joinSelections) {
@@ -278,8 +287,6 @@ abstract class Event {
 
     abstract Queue<EmbedResponse> createResolutionMessages();
 
-    boolean canUsersRejoin() { return true; }
-
     double getPayoutBonusPercent() {
         return totalPayoutMultiplier / 10.0;
     }
@@ -288,8 +295,30 @@ abstract class Event {
         return 1.0 + (totalPayoutMultiplier / 1000.0);
     }
 
-    void awardCharacterXp() {
-        // TODO
+    String awardCharacterXp() {
+        StringBuilder builder = new StringBuilder();
+        for (Participant participant : participatingUsers.values()) {
+            if (builder.length() != 0) { builder.append('\n'); }
+            builder.append(participant.nickname);
+            builder.append("'s ");
+            builder.append(participant.character.getDisplayName());
+            builder.append(":\n\t");
+            participant.character.appendLevelString(builder);
+            if (!participant.character.isMaxLevel()) {
+                int oldLevel = participant.character.getLevel();
+                int xpEarned = BASE_XP_GAIN;
+                if (type.assocatedStat == participant.character.getType()) {
+                    xpEarned = TYPE_MATCH_XP_GAIN;
+                }
+                participant.character.addXp(participant.uid, xpEarned);
+                builder.append(" -> ");
+                participant.character.appendLevelString(builder);
+                if (participant.character.getLevel() != oldLevel) {
+                    builder.append("  ↑Level Up!↑");
+                }
+            }
+        }
+        return builder.toString();
     }
 
     EmbedResponse createEmbedResponse(String message) {
@@ -369,7 +398,7 @@ abstract class Event {
         } else if (!supportsUserSelections && !joinSelections.containsKey(selection)) {
             // If options was empty, any user input is valid
             return "Unable to join event: Unrecognized selection " + selection;
-        } else if (participatingUsers.containsKey(uid) && !canUsersRejoin()) {
+        } else if (participatingUsers.containsKey(uid) && !canUsersRejoin) {
             return "Unable to join event: You are already participating in this event!";
         } else if (getStat(character) < 0) {
             return "Unable to join event: Cannot join events with characters whose bonus is negative ("
@@ -415,6 +444,7 @@ abstract class Event {
             }
         }
 
+        joinMessage.setFooter(JOIN_COMMAND_PROMPT);
         CasinoServerManager.sendEventMessage(server, joinMessage);
 
         StringBuilder output = new StringBuilder("Successfully joined ");
@@ -425,7 +455,7 @@ abstract class Event {
         output.append(character.getCharacterStats().printStat(type.assocatedStat));
         output.append("\nYour selection was: ");
         output.append(joinSelections.get(selection));
-        if (canUsersRejoin()) {
+        if (canUsersRejoin) {
             output.append("\nTo change your character or selection, join the event again");
         }
         return output.toString();
@@ -528,6 +558,7 @@ abstract class Event {
 
         WorkEvent(long server, Duration timeUntilResolution) {
             super(EventType.WORK, server, timeUntilResolution);
+            canUsersRejoin = false;
             details = fetchNewWorkEventDetails(server);
             baseDetails = details;
             setJoinSelections(Map.ofEntries(
@@ -538,6 +569,7 @@ abstract class Event {
 
         WorkEvent(long server, Duration timeUntilResolution, int existingEventId) {
             super(EventType.WORK, server, timeUntilResolution);
+            canUsersRejoin = false;
             details = fetchExistingWorkEventDetails(existingEventId);
             baseDetails = details;
             setJoinSelections(Map.ofEntries(
@@ -550,11 +582,6 @@ abstract class Event {
             for (WorkParticipant participant : existingParticipants) {
                 silentUserJoin(participant);
             }
-        }
-
-        @Override
-        boolean canUsersRejoin() {
-            return false;
         }
 
         @Override
@@ -987,8 +1014,7 @@ abstract class Event {
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
             builder.append("\n\nFishing fleet is now:");
-            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         @Override
@@ -1052,8 +1078,7 @@ abstract class Event {
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character, true);
             builder.append("\n\nFishing fleet is now:");
-            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         @Override
@@ -1182,13 +1207,14 @@ abstract class Event {
         static final int AVERAGE_PICK_TARGETS = 40;
         static final int PICK_TARGETS_STD_DEV = 10;
         private static final int POT_PER_PLAYER = 200;
-        private static final long DEFAULT_SELECTION_FILLER = -10;
 
-        static class PickEventDetails {
+        static class PickEventDetails extends EventDetails {
             int totalTargets;
             String destination;
+            boolean targetsExceeded = false;
 
-            PickEventDetails(int totalTargets, String destination) {
+            PickEventDetails(int totalTargets, String destination, int eventId) {
+                super(eventId);
                 this.totalTargets = totalTargets;
                 this.destination = destination;
             }
@@ -1212,9 +1238,25 @@ abstract class Event {
         List<PickParticipant> participants = new ArrayList<>();
 
         PickEvent(long server, Duration timeUntilResolution) {
-            super(EventType.PICKPOCKET, server, timeUntilResolution, new HashMap<>());
+            super(EventType.PICKPOCKET, server, timeUntilResolution);
             supportsUserSelections = true;
-            details = fetchPickEventDetails();
+            int totalTargets = HBMain.generateBoundedNormal(AVERAGE_PICK_TARGETS,
+                PICK_TARGETS_STD_DEV, MIN_PICK_TARGETS);
+            details = fetchNewPickEventDetails(server, totalTargets);
+            baseDetails = details;
+        }
+
+        PickEvent(long server, Duration timeUntilResolution, int existingEventId) {
+            super(EventType.PICKPOCKET, server, timeUntilResolution);
+            supportsUserSelections = true;
+            details = fetchExistingPickEventDetails(existingEventId);
+            baseDetails = details;
+
+            List<PickParticipant> existingParticipants
+                = fetchExistingPickEventParticipants(existingEventId);
+            for (PickParticipant participant : existingParticipants) {
+                silentUserJoin(participant);
+            }
         }
 
         int currentCoinsPerTarget() {
@@ -1303,17 +1345,49 @@ abstract class Event {
                 (int)selection, participants.size());
             participants.add(participant);
 
+            logPickEventParticipant(participant, details.eventId);
+
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
-            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
+        }
+
+        @Override
+        void silentUserJoin(Participant participant) {
+            if (!(participant instanceof PickParticipant)) {
+                return;
+            }
+            super.silentUserJoin(participant);
+
+            PickParticipant pickParticipant = (PickParticipant)participant;
+            participants.add(pickParticipant);
         }
 
         @Override
         EmbedResponse createPublicUserRejoinMessage(User user,
                 GachaCharacter character, long selection) {
-            // TODO
-            return null;
+            if (selection < 1 || selection > 99) {
+                return createErrorResponse("Number of targets must be between 1 and 99");
+            }
+
+            PickParticipant newParticipant = new PickParticipant(user, character, getStat(character),
+                (int)selection, participants.size());
+            if (!participants.contains(newParticipant)) {
+                return createErrorResponse("Unable to find previous entry");
+            }
+            PickParticipant oldParticipant = participants.get(participants.indexOf(newParticipant));
+            if (oldParticipant.targets == newParticipant.targets
+                    && oldParticipant.isSameCharacter(newParticipant)) {
+                return createErrorResponse("You already selected that many targets and that character");
+            }
+
+            participants.remove(oldParticipant);
+            participants.add(newParticipant);
+            updatePickEventParticipant(newParticipant, details.eventId);
+
+            StringBuilder builder = new StringBuilder();
+            appendJoinMessage(builder, user, character, true);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         @Override
@@ -1381,6 +1455,7 @@ abstract class Event {
                             + (details.totalTargets / 2) + ". Too many pockets picked! Half the "
                             + "targets ran away\nCoins per target: " + coinsPerTarget;
                         details.totalTargets /= 2;
+                        details.targetsExceeded = true;
                     }
                     column2 = new InlineBlock("Targets Hit:",
                         userTargets + '`' + totalTargetsSelected + '`');
@@ -1446,7 +1521,7 @@ abstract class Event {
                     finalPayoutBuilder.append(" = ");
                     finalPayoutBuilder.append(participant.payout);
 
-                    // TODO: Pay coins and log result
+                    logCompletePickEventParticipant(participant, details.eventId);
                 }
             }
             column3 = new InlineBlock("Payout:",
@@ -1458,7 +1533,7 @@ abstract class Event {
             messageFrames.add(createEmbedResponse(description,
                 new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
 
-            // TODO: Log event completion
+            logPickEventCompletion(details.eventId, details);
 
             return messageFrames;
         }
@@ -1596,8 +1671,7 @@ abstract class Event {
             builder.append("\n\nTotal heist value is now: ");
             builder.append(getHeistTake());
             addMoreParticipantsNeededMessage(builder);
-            return createEmbedResponse(builder.toString(), printParticipants(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), printParticipants());
         }
 
         @Override
@@ -1629,8 +1703,7 @@ abstract class Event {
             addMoreParticipantsNeededMessage(builder);
             builder.append("\n\nTotal heist value is now: ");
             builder.append(getHeistTake());
-            return createEmbedResponse(builder.toString(), printParticipants(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), printParticipants());
         }
 
         @Override
@@ -1927,8 +2000,7 @@ abstract class Event {
             builder.append("!\nTotal payout bonus is now +");
             builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
             builder.append("%");
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         @Override
@@ -1979,8 +2051,7 @@ abstract class Event {
                     builder.append('%');
                 }
             }
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         @Override
@@ -2204,7 +2275,7 @@ abstract class Event {
 
             return createEmbedResponse(user.getNickname() + " joined with "
                 + character.getDisplayName() + ". There are now " + participatingUsers.size()
-                + " players participating in the giveaway.").setFooter(JOIN_COMMAND_PROMPT);
+                + " players participating in the giveaway.");
         }
 
         @Override
@@ -2248,7 +2319,7 @@ abstract class Event {
             if (newParticipant.selection != oldParticipant.selection) {
                 builder.append(" changed their selection");
             }
-            return createEmbedResponse(builder.toString()).setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString());
         }
 
         @Override
@@ -2364,7 +2435,7 @@ abstract class Event {
                     // Apply special giveaway character ability
                     List<Integer> priorityWinners = new ArrayList<>();
                     for (int index : eligibleWinners) {
-                        if (participants.get(index).cid == GIVEAWAY_CHARACTER_CID) {
+                        if (participants.get(index).getCid() == GIVEAWAY_CHARACTER_CID) {
                             priorityWinners.add(index);
                         }
                     }
@@ -2417,13 +2488,15 @@ abstract class Event {
 
     // CREATE TABLE IF NOT EXISTS work_event_location (
     //  wlid SERIAL PRIMARY KEY,
-    //  location VARCHAR(50) NOT NULL
+    //  location VARCHAR(50) NOT NULL,
+    //  enabled boolean NOT NULL DEFAULT true
     // );
 
     // CREATE TABLE IF NOT EXISTS work_event_task (
     //  wtid SERIAL,
     //  wlid integer NOT NULL,
     //  task VARCHAR(100) NOT NULL,
+    //  enabled boolean NOT NULL DEFAULT true,
     //  PRIMARY KEY(wlid, wtid),
     //  CONSTRAINT work_event_task_wlid FOREIGN KEY(wlid) REFERENCES work_event_location(wlid)
     // );
@@ -2462,7 +2535,8 @@ abstract class Event {
 
     // CREATE TABLE IF NOT EXISTS fish_event_location (
     //  flid SERIAL PRIMARY KEY,
-    //  location VARCHAR(50) NOT NULL
+    //  location VARCHAR(50) NOT NULL,
+    //  enabled boolean NOT NULL DEFAULT true
     // );
 
     // CREATE TABLE IF NOT EXISTS fish_event_fish (
@@ -2470,6 +2544,7 @@ abstract class Event {
     //  flid integer NOT NULL,
     //  fish VARCHAR(100) NOT NULL,
     //  size integer NOT NULL,
+    //  enabled boolean NOT NULL DEFAULT true,
     //  PRIMARY KEY(ffid, flid),
     //  CONSTRAINT fish_event_fish_flid FOREIGN KEY(flid) REFERENCES fish_event_location(flid)
     // );
@@ -2511,6 +2586,35 @@ abstract class Event {
     //  CONSTRAINT fish_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
     // );
 
+    // CREATE TABLE IF NOT EXISTS pick_event_location (
+    //  plid SERIAL PRIMARY KEY,
+    //  location VARCHAR(50) NOT NULL,
+    //  enabled boolean NOT NULL DEFAULT true
+    // );
+
+    // CREATE TABLE IF NOT EXISTS pick_event (
+    //  eventId integer NOT NULL,
+    //  plid integer NOT NULL,
+    //  total_targets integer NOT NULL,
+    //  targets_exceeded boolean NOT NULL DEFAULT false,
+    //  PRIMARY KEY(eventId),
+    //  CONSTRAINT pick_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
+    //  CONSTRAINT pick_event_plid FOREIGN KEY(plid) REFERENCES pick_event_location(plid)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS pick_participant (
+    //  uid bigint NOT NULL,
+    //  eventId integer NOT NULL,
+    //  targets integer NOT NULL,
+    //  cid bigint NOT NULL,
+    //  foil integer NOT NULL,
+    //  successful_targets integer NOT NULL DEFAULT 0,
+    //  payout bigint NOT NULL DEFAULT 0,
+    //  PRIMARY KEY(uid, eventId),
+    //  CONSTRAINT pick_participant_eventId FOREIGN KEY(eventId) REFERENCES pick_event(eventId),
+    //  CONSTRAINT pick_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
+    // );
+
     static PastEventStatus fetchServerEventStatus(long server) {
         String query = "SELECT type, eventId, completed FROM event WHERE server = " + server
             + " ORDER BY eventId DESC LIMIT 1;";
@@ -2537,8 +2641,8 @@ abstract class Event {
 
     static WorkEvent.WorkEventDetails fetchNewWorkEventDetails(long server) {
         String query =
-            "WITH destination AS (SELECT wlid, location FROM work_event_location ORDER BY RANDOM() LIMIT 1), "
-            + "tasks AS (SELECT location, wlid, wtid, task FROM work_event_task NATURAL JOIN destination ORDER BY RANDOM() LIMIT 3), "
+            "WITH destination AS (SELECT wlid, location FROM work_event_location WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
+            + "tasks AS (SELECT location, wlid, wtid, task FROM work_event_task NATURAL JOIN destination WHERE enabled = true ORDER BY RANDOM() LIMIT 3), "
             + "inserted_event AS (INSERT INTO event (server, type) VALUES (" + server + ", " + EVENTTYPE_ID_WORK + ") RETURNING eventId), "
             + "inserted_work_event AS (INSERT INTO work_event (eventId, location, small_task, med_task, large_task) "
                 + "SELECT (ARRAY_AGG(eventId))[1], (ARRAY_AGG(tasks.wlid))[1], (ARRAY_AGG(tasks.wtid))[1], (ARRAY_AGG(tasks.wtid))[2], (ARRAY_AGG(tasks.wtid))[3] FROM tasks CROSS JOIN inserted_event) "
@@ -2618,7 +2722,7 @@ abstract class Event {
     static void logWorkEventParticipant(WorkEvent.WorkParticipant participant, int eventId) {
         String query = "INSERT INTO work_participant (uid, eventId, selection, roll, cid, foil) VALUES ("
             + participant.uid + ", " + eventId + ", " + participant.task + ", "
-            + participant.roll + ", " + participant.cid + ", " + participant.foil + ");";
+            + participant.roll + ", " + participant.getCid() + ", " + participant.getFoil() + ");";
         CasinoDB.executeUpdate(query);
     }
 
@@ -2637,15 +2741,15 @@ abstract class Event {
 
     static FishEvent.FishEventDetails fetchNewFishEventDetails(long server) {
         String query =
-            "WITH loc AS (SELECT * FROM fish_event_location ORDER BY RANDOM() LIMIT 1), "
+            "WITH loc AS (SELECT * FROM fish_event_location WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
             + "common AS (SELECT ffid AS common_id, fish AS common_name FROM fish_event_fish NATURAL JOIN loc "
-                + "WHERE size = " + FishEvent.COMMON_FISH_DB_SIZE + " ORDER BY RANDOM() LIMIT 1), "
+                + "WHERE size = " + FishEvent.COMMON_FISH_DB_SIZE + " WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
             + "uncommon1 AS (SELECT ffid AS uncommon1_id, fish AS uncommon1_name FROM fish_event_fish NATURAL JOIN loc "
-                + "WHERE size = " + FishEvent.UNCOMMON_FISH_DB_SIZE + " ORDER BY RANDOM() LIMIT 1), "
+                + "WHERE size = " + FishEvent.UNCOMMON_FISH_DB_SIZE + " WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
             + "uncommon2 AS (SELECT ffid AS uncommon2_id, fish AS uncommon2_name FROM fish_event_fish NATURAL JOIN loc "
-                + "WHERE size = " + FishEvent.UNCOMMON_FISH_DB_SIZE + " ORDER BY RANDOM() LIMIT 1), "
+                + "WHERE size = " + FishEvent.UNCOMMON_FISH_DB_SIZE + " WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
             + "rare AS (SELECT ffid AS rare_id, fish AS rare_name FROM fish_event_fish NATURAL JOIN loc "
-                + "WHERE size = " + FishEvent.RARE_FISH_DB_SIZE + " ORDER BY RANDOM() LIMIT 1), "
+                + "WHERE size = " + FishEvent.RARE_FISH_DB_SIZE + " WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
             + "inserted_event AS (INSERT INTO event (server, type) VALUES (" + server + ", "
                 + EVENTTYPE_ID_FISH + ") RETURNING eventId), "
             + "all_values AS (SELECT * FROM loc CROSS JOIN common CROSS JOIN uncommon1 CROSS JOIN uncommon2 "
@@ -2706,13 +2810,13 @@ abstract class Event {
     static void logFishEventParticipant(FishEvent.FishParticipant participant, int eventId) {
         String query = "INSERT INTO fish_participant (uid, eventId, selection, cid, foil) VALUES ("
             + participant.uid + ", " + eventId + ", " + participant.selection + ", "
-            + participant.cid + ", " + participant.foil + ");";
+            + participant.getCid() + ", " + participant.getFoil() + ");";
         CasinoDB.executeUpdate(query);
     }
 
     static void updateFishEventParticipant(FishEvent.FishParticipant participant, int eventId) {
         String query = "UPDATE fish_participant SET (selection, cid, foil) = ("
-            + participant.selection + ", " + participant.cid + ", " + participant.foil
+            + participant.selection + ", " + participant.getCid() + ", " + participant.getFoil()
             + ") WHERE eventId = " + eventId + " AND uid = " + participant.uid + ";";
         CasinoDB.executeUpdate(query);
     }
@@ -2727,16 +2831,92 @@ abstract class Event {
     }
 
     static void logFishEventCompletion(int eventId, FishEvent.FishEventDetails details) {
-        String query = "UPDATE fish_event SET (boat_1_roll, boat_2_roll, boat_3_roll, payout) = ("
+        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = " + eventId + "), "
+            + "UPDATE fish_event SET (boat_1_roll, boat_2_roll, boat_3_roll, payout) = ("
             + details.boat1Roll + ", " + details.boat2Roll + ", " + details.boat3Roll
             + ", " + details.payout + ") WHERE eventId = " + eventId + ";";
         CasinoDB.executeUpdate(query);
     }
 
-    static PickEvent.PickEventDetails fetchPickEventDetails() {
-        return new PickEvent.PickEventDetails(HBMain.generateBoundedNormal(
-            PickEvent.AVERAGE_PICK_TARGETS, PickEvent.PICK_TARGETS_STD_DEV,
-            PickEvent.MIN_PICK_TARGETS), "Test Land");
+    static PickEvent.PickEventDetails fetchNewPickEventDetails(long server, int totalTargets) {
+        String query = "WITH loc AS (SELECT * FROM pick_event_location WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
+            + "inserted_event AS (INSERT INTO event (server, type) VALUES (" + server + ", "
+                + EVENTTYPE_ID_PICKPOCKET + ") RETURNING eventId), "
+            + "inserted_pick_event AS (INSERT INTO pick_event (eventId, plid, total_targets) "
+                + "SELECT eventId, plid, " + totalTargets + " FROM inserted_event CROSS JOIN loc) "
+            + "SELECT location, eventId FROM inserted_event CROSS JOIN loc;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new PickEvent.PickEventDetails(totalTargets, results.getString(1),
+                    results.getInt(2));
+            }
+            return null;
+        }, null);
+    }
+
+    static PickEvent.PickEventDetails fetchExistingPickEventDetails(int eventId) {
+        String query = "WITH ids AS (SELECT * FROM pick_event WHERE eventId = " + eventId + ") "
+            + "SELECT total_targets, location FROM ids LEFT JOIN pick_event_location ON ids.plid = pick_event_location.plid;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new PickEvent.PickEventDetails(results.getInt(1), results.getString(2),
+                    eventId);
+            }
+            return null;
+        }, null);
+    }
+
+    static List<PickEvent.PickParticipant> fetchExistingPickEventParticipants(int eventId) {
+        String query = "SELECT uid, targets, cid, foil FROM pick_participant WHERE eventId = "
+            + eventId + ";";
+        List<DBParticipant> dbParticipants = CasinoDB.executeQueryWithReturn(query, results -> {
+            List<DBParticipant> participants = new ArrayList<>();
+            while (results.next()) {
+                participants.add(new DBParticipant(results.getLong(1), results.getInt(2),
+                    results.getInt(3), results.getInt(4)));
+            }
+            return participants;
+        }, new ArrayList<DBParticipant>());
+        List<PickEvent.PickParticipant> participants = new ArrayList<>();
+        int insertOrder = 0;
+        for (DBParticipant participant : dbParticipants) {
+            User user = Casino.getUser(participant.uid);
+            GachaCharacter character = Gacha.getCharacter(participant.uid, participant.cid,
+                SHINY_TYPE.fromId(participant.foil));
+            participants.add(new PickEvent.PickParticipant(user, character,
+                getStat(character, ITEM_STAT.PICK), participant.selection, insertOrder));
+            insertOrder++;
+        }
+        return participants;
+    }
+
+    static void logPickEventParticipant(PickEvent.PickParticipant participant, int eventId) {
+        String query = "INSERT INTO pick_participant (uid, eventId, targets, cid, foil) VALUES ("
+            + participant.uid + ", " + eventId + ", " + participant.targets + ", "
+            + participant.getCid() + ", " + participant.getFoil() + ");";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void updatePickEventParticipant(PickEvent.PickParticipant participant, int eventId) {
+        String query = "UPDATE pick_participant SET (targets, cid, foil) = ("
+            + participant.targets + ", " + participant.getCid() + ", " + participant.getFoil()
+            + ") WHERE uid = " + participant.uid + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logCompletePickEventParticipant(PickEvent.PickParticipant participant, int eventId) {
+        String query = "UPDATE pick_participant SET (successful_targets, payout) = ("
+            + participant.successfulTargets + ", " + participant.payout + ") WHERE uid = "
+            + participant.uid + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logPickEventCompletion(int eventId, PickEvent.PickEventDetails details) {
+        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = "
+                + eventId + ") "
+            + "UPDATE pick_event SET (targets_exceeded) = (" + details.targetsExceeded
+                + ") WHERE eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
     }
 
     static RobEvent.RobEventDetails fetchRobEventDetails() {

@@ -62,9 +62,11 @@ class Gacha {
         private String name;
         private int rarity;
         private SHINY_TYPE shiny;
-        private String type;
+        private GachaItems.ITEM_STAT type;
+        private int totalXp;
         private int level;
         private int xp;
+        private int xpToLevel;
         private int duplicates;
         private String description;
         private String pictureUrl;
@@ -81,17 +83,18 @@ class Gacha {
         private static final String PICTURE_REPLACEMENT = ".";
         private static final String UNIQUE_ID_SEPARATOR = "|";
 
-        private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny, String type, int level,
-                int xp, int duplicates, String description, String pictureUrl, String shinyUrl,
-                String prismaticUrl, double workBonus, double fishBonus, double pickBonus, double robBonus,
-                double miscBonus, GachaItems.Item item) {
+        private GachaCharacter(long id, String name, int rarity, SHINY_TYPE shiny,
+                GachaItems.ITEM_STAT type, int xp, int duplicates, String description,
+                String pictureUrl, String shinyUrl, String prismaticUrl, double workBonus,
+                double fishBonus, double pickBonus, double robBonus, double miscBonus,
+                GachaItems.Item item) {
             this.id = id;
             this.name = name;
             this.rarity = rarity;
             this.shiny = shiny;
             this.type = type;
-            this.level = level;
-            this.xp = xp;
+            this.totalXp = xp;
+            setLevel();
             this.duplicates = duplicates;
             this.description = description;
             this.pictureUrl = pictureUrl;
@@ -134,6 +137,10 @@ class Gacha {
 
         GachaItems.Item getItem() { return item; }
 
+        GachaItems.ITEM_STAT getType() { return type; }
+
+        int getLevel() { return level; }
+
         @Override
         public String toString() {
             return toString(false);
@@ -149,7 +156,7 @@ class Gacha {
             display.append(" (");
             display.append(rarity);
             display.append(" Star ");
-            display.append(type);
+            display.append(type.getStatName());
             display.append(')');
             if (compact) {
                 display.append(" - ");
@@ -160,17 +167,7 @@ class Gacha {
                 display.append(getPictureLink());
                 display.append(")\n\t");
             }
-            display.append("Level ");
-            display.append(level);
-            if (level >= MAX_CHARACTER_LEVEL) {
-                display.append(" [Max Level]");
-            } else {
-                display.append(" [");
-                display.append(xp);
-                display.append('/');
-                display.append(getXpToLevel());
-                display.append(']');
-            }
+            appendLevelString(display);
             display.append("\n\t");
             if (item != null) {
                 GachaItems.StatArray stats = item.getModifiers();
@@ -210,14 +207,41 @@ class Gacha {
                     + (duplicates > 1 ? " +" + (duplicates - 1) : "")
                     + " -> " + getDisplayName() + " +" + duplicates;
             }
-            return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star " + type + ")["
-                + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")" + duplicateString;
+            return stars + " " + getDisplayName() + " " + stars + " (" + rarity + " Star "
+                + type.getStatName() + ")[" + PICTURE_REPLACEMENT + "](" + getPictureLink() + ")"
+                + duplicateString;
         }
 
-        private int getXpToLevel() {
+        void appendLevelString(StringBuilder display) {
+            display.append("Level ");
+            display.append(level);
+            if (isMaxLevel()) {
+                display.append(" [Max Level]");
+            } else {
+                display.append(" [");
+                display.append(xp);
+                display.append('/');
+                display.append(xpToLevel);
+                display.append(']');
+            }
+        }
+
+        private void setLevel() {
             // Level 0 -> Level 1: 100 xp
             // Every level beyond doubles previous level
-            return 50 * (int)Math.pow(2, level + 1);
+            level = (int)Math.log((totalXp + 100) / 100);
+            level = Math.min(level, MAX_CHARACTER_LEVEL);
+            xp = totalXp - (100 * (int)Math.pow(2, level)) + 100;
+            xpToLevel = 50 * (int)Math.pow(2, level + 1);
+        }
+
+        void addXp(long uid, int amount) {
+            totalXp = awardCharacterXp(uid, id, shiny, amount);
+            setLevel();
+        }
+
+        boolean isMaxLevel() {
+            return level >= MAX_CHARACTER_LEVEL;
         }
 
         private int getBaseBuffAmount() {
@@ -473,17 +497,18 @@ class Gacha {
     private static class GachaBannerCharacter {
         private String name;
         private int rarity;
-        private String type;
+        private GachaItems.ITEM_STAT type;
         private int shiny = -1;
         private int duplicates = -1;
 
-        GachaBannerCharacter(String name, int rarity, String type) {
+        GachaBannerCharacter(String name, int rarity, GachaItems.ITEM_STAT type) {
             this.name = name;
             this.rarity = rarity;
             this.type = type;
         }
 
-        GachaBannerCharacter(String name, int rarity, String type, int shiny, int duplicates) {
+        GachaBannerCharacter(String name, int rarity, GachaItems.ITEM_STAT type, int shiny,
+                int duplicates) {
             this.name = name;
             this.rarity = rarity;
             this.type = type;
@@ -508,7 +533,7 @@ class Gacha {
         }
 
         String getDisplayString() {
-            return name + " - " + rarity + " Star " + type;
+            return name + " - " + rarity + " Star " + type.getStatName();
         }
 
         String getOwnedString() {
@@ -1099,7 +1124,7 @@ class Gacha {
     //   cid SERIAL PRIMARY KEY,
     //   name varchar(40) NOT NULL,
     //   rarity integer NOT NULL DEFAULT 1,
-    //   type varchar(40) NOT NULL,
+    //   type integer NOT NULL,
     //   rob_bonus float8 NOT NULL DEFAULT 1.0,
     //   pick_bonus float8 NOT NULL DEFAULT 1.0,
     //   fish_bonus float8 NOT NULL DEFAULT 1.0,
@@ -1146,7 +1171,6 @@ class Gacha {
     //   cid bigint,
     //   foil integer DEFAULT 0,
     //   duplicates integer NOT NULL DEFAULT 0,
-    //   level integer NOT NULL DEFAULT 0,
     //   xp integer NOT NULL DEFAULT 0,
     //   iid bigint DEFAULT NULL,
     //   PRIMARY KEY(uid, cid, foil),
@@ -1191,7 +1215,7 @@ class Gacha {
     static final String GACHA_USER_BANNER_COLUMNS = "times_pulled, one_star_pity, two_star_pity, three_star_pity, four_star_pity, five_star_pity";
 
     private static String getPartialCharacterQuery(long uid) {
-        return "SELECT cid, name, rarity, foil, type, level, xp, duplicates, description, "
+        return "SELECT cid, name, rarity, foil, type, xp, duplicates, description, "
         + "COALESCE(alternate_art, picture_url) AS picture_url, COALESCE(alternate_shiny_art, shiny_picture_url) AS shiny_picture_url, "
         + "COALESCE(alternate_prismatic_art, prismatic_picture_url) AS prismatic_picture_url, work_bonus, fish_bonus, pick_bonus, "
         + "rob_bonus, misc_bonus, iid FROM gacha_user_character NATURAL JOIN gacha_character NATURAL LEFT JOIN (SELECT cid, CASE "
@@ -1276,10 +1300,10 @@ class Gacha {
                     item = GachaItems.fetchItem(uid, results.getLong(18));
                 }
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
-                        results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
-                        results.getString(9), results.getString(10), results.getString(11), results.getString(12),
-                        results.getLong(13), results.getLong(14), results.getLong(15), results.getLong(16),
-                        results.getLong(17), item);
+                        GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
+                        results.getString(8), results.getString(9), results.getString(10), results.getString(11),
+                        results.getLong(12), results.getLong(13), results.getLong(14), results.getLong(15),
+                        results.getLong(16), item);
             }
             return null;
         }, null);
@@ -1294,10 +1318,10 @@ class Gacha {
                     item = GachaItems.fetchItem(uid, results.getLong(18));
                 }
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
-                        results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
-                        results.getString(9), results.getString(10), results.getString(11), results.getString(12),
-                        results.getLong(13), results.getLong(14), results.getLong(15), results.getLong(16),
-                        results.getLong(17), item);
+                        GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
+                        results.getString(8), results.getString(9), results.getString(10), results.getString(11),
+                        results.getLong(12), results.getLong(13), results.getLong(14), results.getLong(15),
+                        results.getLong(16), item);
             }
             return null;
         }, null);
@@ -1327,10 +1351,10 @@ class Gacha {
                     item = GachaItems.fetchItem(uid, results.getLong(18));
                 }
                 output.add(new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
-                        results.getString(5), results.getInt(6), results.getInt(7), results.getInt(8),
-                        results.getString(9), results.getString(10), results.getString(11), results.getString(12),
-                        results.getLong(13), results.getLong(14), results.getLong(15), results.getLong(16),
-                        results.getLong(17), item));
+                        GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
+                        results.getString(8), results.getString(9), results.getString(10), results.getString(11),
+                        results.getLong(12), results.getLong(13), results.getLong(14), results.getLong(15),
+                        results.getLong(16), item));
             }
             return output;
         }, new ArrayList<>(), substring);
@@ -1374,6 +1398,12 @@ class Gacha {
 
     private static long awardMaxedCharacter(long uid, long coinEquivalent) {
         return Casino.addMoney(uid, coinEquivalent);
+    }
+
+    private static int awardCharacterXp(long uid, long cid, SHINY_TYPE shiny, int amount) {
+        return CasinoDB.executeIntQuery("UPDATE gacha_user_character SET xp = xp + "
+            + amount + " WHERE uid = " + uid + " AND cid = " + cid + " AND foil = " + shiny.getId()
+            + " RETURNING xp;");
     }
 
     static long getPullCount(long uid) {
@@ -1477,10 +1507,12 @@ class Gacha {
                     // Have to call this for wasNull() to work
                     results.getInt(4);
                     if (results.wasNull()) {
-                        output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2), results.getString(3)));
+                        output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2),
+                            GachaItems.ITEM_STAT.fromIndex(results.getInt(3))));
                     } else {
-                        output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2), results.getString(3),
-                            results.getInt(4), results.getInt(5)));
+                        output.add(new GachaBannerCharacter(results.getString(1), results.getInt(2),
+                            GachaItems.ITEM_STAT.fromIndex(results.getInt(3)), results.getInt(4),
+                            results.getInt(5)));
                     }
                 }
                 return output;
