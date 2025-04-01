@@ -61,10 +61,10 @@ abstract class Event {
                         return new WorkEvent(server, timeUntilResolution, lastEvent.eventId);
                     case FISH:
                         return new FishEvent(server, timeUntilResolution, lastEvent.eventId);
-                    // case PICKPOCKET:
-                    //     return new PickEvent(server, timeUntilResolution, lastEvent.eventId);
-                    // case ROB:
-                    //     return new RobEvent(server, timeUntilResolution, lastEvent.eventId);
+                    case PICKPOCKET:
+                        return new PickEvent(server, timeUntilResolution, lastEvent.eventId);
+                    case ROB:
+                        return new RobEvent(server, timeUntilResolution, lastEvent.eventId);
                     // case SUPER_SLOTS:
                     //     return new SlotsEvent(server, timeUntilResolution, lastEvent.eventId);
                     // case GIVEAWAY:
@@ -229,7 +229,7 @@ abstract class Event {
 
     static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(1);
     static final Duration EVENT_LOCK_DURATION = Duration.ofSeconds(15);
-    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(1);
+    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(2);
     static final int COUNTDOWN_SECONDS = 10;
     static final String JOIN_COMMAND_PROMPT = "\n\nJoin with `/gacha event join` for coins, pulls, and character xp!";
     static final String INVALID_SELECTION_PREFIX = "Invalid selection: ";
@@ -295,10 +295,22 @@ abstract class Event {
         return 1.0 + (totalPayoutMultiplier / 1000.0);
     }
 
-    String awardCharacterXp() {
+    EmbedResponse awardXpAndPulls() {
+        if (participatingUsers.isEmpty()) {
+            return null;
+        }
+
         StringBuilder builder = new StringBuilder();
+        builder.append("**Character XP:**");
+        awardCharacterXp(builder);
+        builder.append("\n\n**Pulls:**");
+        awardPulls(builder);
+        return createEmbedResponse(builder.toString()).setFooter("Next event starting soon");
+    }
+
+    void awardCharacterXp(StringBuilder builder) {
         for (Participant participant : participatingUsers.values()) {
-            if (builder.length() != 0) { builder.append('\n'); }
+            builder.append('\n');
             builder.append(participant.nickname);
             builder.append("'s ");
             builder.append(participant.character.getDisplayName());
@@ -318,7 +330,15 @@ abstract class Event {
                 }
             }
         }
-        return builder.toString();
+    }
+
+    void awardPulls(StringBuilder builder) {
+        for (Participant participant : participatingUsers.values()) {
+            builder.append('\n');
+            builder.append(participant.nickname);
+            builder.append("'s ");
+
+        }
     }
 
     EmbedResponse createEmbedResponse(String message) {
@@ -381,8 +401,8 @@ abstract class Event {
         }, NEW_EVENT_DELAY);
 
         Queue<EmbedResponse> messages = createResolutionMessages();
-        awardCharacterXp();
-        CasinoServerManager.sendMultipartEventMessage(server, messages);
+        EmbedResponse rewardMessage = awardXpAndPulls();
+        CasinoServerManager.sendMultipartEventMessage(server, messages, rewardMessage);
         return null;
     }
 
@@ -1131,7 +1151,7 @@ abstract class Event {
                     logCompleteFishEventParticipant(participant, details.eventId, details.payout);
                 }
             }
-            logFishEventCompletion(details.eventId, details);
+            logFishEventCompletion(details);
 
             return messageFrames;
         }
@@ -1521,6 +1541,7 @@ abstract class Event {
                     finalPayoutBuilder.append(" = ");
                     finalPayoutBuilder.append(participant.payout);
 
+                    Casino.addMoney(participant.uid, participant.payout);
                     logCompletePickEventParticipant(participant, details.eventId);
                 }
             }
@@ -1533,7 +1554,7 @@ abstract class Event {
             messageFrames.add(createEmbedResponse(description,
                 new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
 
-            logPickEventCompletion(details.eventId, details);
+            logPickEventCompletion(details);
 
             return messageFrames;
         }
@@ -1548,11 +1569,14 @@ abstract class Event {
         private static final long QUIET_SELECTION_ID = 0;
         private static final long LOUD_SELECTION_ID = 1;
 
-        static class RobEventDetails {
+        static class RobEventDetails extends EventDetails {
             String destination;
             String target;
+            boolean tooFewParticipants = false;
+            boolean stealthSuccess = false;
 
-            RobEventDetails(String destination, String target) {
+            RobEventDetails(String destination, String target, int eventId) {
+                super(eventId);
                 this.destination = destination;
                 this.target = target;
             }
@@ -1560,6 +1584,7 @@ abstract class Event {
 
         static class RobParticipant extends Participant {
             boolean isQuiet;
+            long payout = 0;
 
             RobParticipant(User user, GachaCharacter character, int characterMultiplier,
                     boolean isQuiet) {
@@ -1577,7 +1602,20 @@ abstract class Event {
                     + "bonus if everybody else is quiet as well"), entry(LOUD_SELECTION_ID,
                     "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
                     + "as nobody else goes loud")));
-            details = fetchRobEventDetails();
+            details = fetchNewRobEventDetails(server);
+            baseDetails = details;
+        }
+
+        RobEvent(long server, Duration timeUntilResolution, int existingEventId) {
+            super(EventType.ROB, server, timeUntilResolution);
+            details = fetchExistingRobEventDetails(existingEventId);
+            baseDetails = details;
+
+            List<RobParticipant> existingParticipants
+                = fetchExistingRobEventParticipants(existingEventId);
+            for (RobParticipant participant : existingParticipants) {
+                silentUserJoin(participant);
+            }
         }
 
         @Override
@@ -1601,8 +1639,7 @@ abstract class Event {
             builder.append("people go loud, and the bonus is pretty tempting, so this time ");
             builder.append("you're sticking to the plan.\n\n-# unless?\n\n");
 
-            EmbedResponse response = createEmbedResponse(builder.toString());
-            return response;
+            return createEmbedResponse(builder.toString());
         }
 
         @Override
@@ -1666,12 +1703,25 @@ abstract class Event {
                 getStat(character), selection == QUIET_SELECTION_ID);
             participants.add(participant);
 
+            logRobEventParticipant(participant, details.eventId);
+
             StringBuilder builder = new StringBuilder();
             appendJoinMessage(builder, user, character);
             builder.append("\n\nTotal heist value is now: ");
             builder.append(getHeistTake());
             addMoreParticipantsNeededMessage(builder);
             return createEmbedResponse(builder.toString(), printParticipants());
+        }
+
+        @Override
+        void silentUserJoin(Participant participant) {
+            if (!(participant instanceof RobParticipant)) {
+                return;
+            }
+            super.silentUserJoin(participant);
+
+            RobParticipant robParticipant = (RobParticipant)participant;
+            participants.add(robParticipant);
         }
 
         @Override
@@ -1692,6 +1742,7 @@ abstract class Event {
 
             participants.remove(oldParticipant);
             participants.add(newParticipant);
+            updateRobEventParticipant(newParticipant, details.eventId);
 
             StringBuilder builder = new StringBuilder();
             if (oldParticipant.isSameCharacter(newParticipant)) {
@@ -1722,7 +1773,7 @@ abstract class Event {
         Queue<EmbedResponse> createResolutionMessages() {
             Queue<EmbedResponse> messageFrames = new LinkedList<>();
             StringBuilder builder = new StringBuilder();
-            String robert = "Robert is monitoring the heist :neutral_face:";
+            InlineBlock robertBlock = new InlineBlock("Robert is monitoring the heist :neutral_face:", "");
             createResolutionCountdown(messageFrames);
 
             if (participants.size() < MINIMUM_PARTICIPANTS) {
@@ -1730,28 +1781,40 @@ abstract class Event {
                 builder.append("who tried to join ");
                 builder.append(TOO_FEW_PLAYERS_PAYOUT);
                 builder.append(" coins.");
-                robert = "Robert is sad :slight_frown:";
+                robertBlock.setTitle("Robert is sad :slight_frown:");
 
-                // TODO: Log event and payout
+                details.tooFewParticipants = true;
+                logRobEventCompletion(details);
 
-                Queue<InlineBlock> crewBlock = printParticipants();
-                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
-                    .addInlineBlock("Payout:", "").setFooter(robert));
+                Queue<InlineBlock> blocks = printParticipants();
+                InlineBlock payoutBlock = new InlineBlock("Payout:", "");
+                blocks.add(payoutBlock);
+                blocks.add(EMPTY_INLINE_BLOCK);
+                blocks.add(robertBlock);
+
+                messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
                 StringBuilder payoutString = new StringBuilder(
                     Integer.toString(TOO_FEW_PLAYERS_PAYOUT));
-                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
-                    .addInlineBlock("Payout:", Casino.repeatString(payoutString.toString(),
-                        participants.size())).setFooter(robert));
+                payoutBlock.setBody(Casino.repeatString(payoutString.toString(),
+                    participants.size()));
+                messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
                 payoutString.append(" x ");
                 payoutString.append(Stats.twoDecimals.format(getPayoutMultiplier()));
-                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
-                    .addInlineBlock("Payout:", Casino.repeatString(payoutString.toString(),
-                        participants.size())).setFooter(robert));
+                payoutBlock.setBody(Casino.repeatString(payoutString.toString(),
+                    participants.size()));
+                messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
                 payoutString.append(" = ");
-                payoutString.append((int)(TOO_FEW_PLAYERS_PAYOUT * getPayoutMultiplier()));
-                messageFrames.add(createEmbedResponse(builder.toString(), crewBlock, true)
-                    .addInlineBlock("Payout:", Casino.repeatString(payoutString.toString(),
-                        participants.size())).setFooter(robert));
+                long finalPayout = (long)(TOO_FEW_PLAYERS_PAYOUT * getPayoutMultiplier());
+                payoutString.append(finalPayout);
+                payoutBlock.setBody(Casino.repeatString(payoutString.toString(),
+                    participants.size()));
+                messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
+
+                for (RobParticipant participant : participants) {
+                    participant.payout = finalPayout;
+                    Casino.addMoney(participant.uid, finalPayout);
+                    logCompleteRobEventParticipant(participant, details.eventId);
+                }
                 return messageFrames;
             }
 
@@ -1766,12 +1829,15 @@ abstract class Event {
             }
 
             builder.append("Total heist take: ");
-            messageFrames.add(createEmbedResponse(builder.toString()).setFooter(robert));
+            messageFrames.add(createEmbedResponse(builder.toString())
+                .addInlineBlock(robertBlock.title, ""));
             builder.append(POT_PER_PLAYER * participants.size());
-            messageFrames.add(createEmbedResponse(builder.toString()).setFooter(robert));
+            messageFrames.add(createEmbedResponse(builder.toString())
+                .addInlineBlock(robertBlock.title, ""));
             builder.append(" x ");
             builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
-            messageFrames.add(createEmbedResponse(builder.toString()).setFooter(robert));
+            messageFrames.add(createEmbedResponse(builder.toString())
+                .addInlineBlock(robertBlock.title, ""));
             builder.append(" = ");
             int totalPayout = getHeistTake();
             builder.append(totalPayout);
@@ -1780,41 +1846,43 @@ abstract class Event {
             InlineBlock quietBlock = new InlineBlock("Quiet Crew:", "");
             InlineBlock quietPayout = new InlineBlock("Quiet Payout: " + totalPayout, "");
             builder = new StringBuilder();
-            Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(quietBlock, quietPayout,
-                EMPTY_INLINE_BLOCK));
-            messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+            Deque<InlineBlock> blocks = new LinkedList<>(Arrays.asList(quietBlock, quietPayout,
+                EMPTY_INLINE_BLOCK, robertBlock));
+            messageFrames.add(createEmbedResponse(description, blocks, true));
 
             if (quietParticipants.isEmpty()) {
-                robert = "Robert is furious :rage:";
+                robertBlock.setTitle("Robert is furious :rage:");
                 quietBlock.setBody("[Empty]");
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
             } else {
                 for (RobParticipant participant : quietParticipants) {
                     if (builder.length() != 0) { builder.append('\n'); }
                     builder.append(participant.getNickname());
                     quietBlock.setBody(builder.toString());
-                    messageFrames.add(createEmbedResponse(description, blocks, true,
-                        robert));
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
             }
 
             InlineBlock loudBlock = new InlineBlock("Loud Crew:", "");
             InlineBlock loudPayout = new InlineBlock("Loud Payout: ", "");
             builder = new StringBuilder();
+            blocks.pollLast();
             blocks.add(loudBlock);
             blocks.add(loudPayout);
             blocks.add(EMPTY_INLINE_BLOCK);
+            blocks.add(robertBlock);
             int loudCut = 0;
-            messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+            messageFrames.add(createEmbedResponse(description, blocks, true));
 
             if (loudParticipants.isEmpty()) {
-                robert = "Robert is pleased :slight_smile:";
+                details.stealthSuccess = true;
+                robertBlock.setTitle("Robert is pleased :slight_smile:");
                 loudBlock.setBody("[Empty]");
                 loudPayout.setTitle("Loud Payout: 0");
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
             } else {
                 if (!quietParticipants.isEmpty()) {
-                    robert = "Robert is upset :angry:";
+                    robertBlock.setTitle("Robert is upset :angry:");
                 }
                 loudCut = (int)(totalPayout * LOUD_PLAYER_PORTION);
                 totalPayout -= loudCut;
@@ -1824,8 +1892,7 @@ abstract class Event {
                     if (builder.length() != 0) { builder.append('\n'); }
                     builder.append(participant.getNickname());
                     loudBlock.setBody(builder.toString());
-                    messageFrames.add(createEmbedResponse(description, blocks, true,
-                        robert));
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
             }
 
@@ -1834,24 +1901,36 @@ abstract class Event {
                 builder = new StringBuilder(Integer.toString(quietCut));
                 quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
                     quietParticipants.size()));
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
+
+                if (loudParticipants.isEmpty()) {
+                    int quietBonus = (int)(quietCut * ALL_QUIET_BONUS);
+                    builder.append(" + ");
+                    builder.append(quietBonus);
+                    builder.append(" (bonus)");
+                    quietCut += quietBonus;
+                    quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
+                        quietParticipants.size()));
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
+                }
+
                 builder.append(" x ");
                 builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
                 quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
                     quietParticipants.size()));
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
                 quietCut *= getPayoutMultiplier();
                 builder.append(" = ");
                 builder.append(quietCut);
                 quietPayout.setBody(Casino.repeatString(builder.toString() + '\n',
                     quietParticipants.size()));
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
 
-                if (loudParticipants.isEmpty()) {
-                    // TODO: Add 20%
+                for (RobParticipant participant : quietParticipants) {
+                    participant.payout = quietCut;
+                    Casino.addMoney(participant.uid, quietCut);
+                    logCompleteRobEventParticipant(participant, details.eventId);
                 }
-
-                // TODO: Log player outcomes
             }
 
             if (!loudParticipants.isEmpty()) {
@@ -1859,23 +1938,27 @@ abstract class Event {
                 builder = new StringBuilder(Integer.toString(loudCut));
                 loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
                     loudParticipants.size()));
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
                 builder.append(" x ");
                 builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
                 loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
                     loudParticipants.size()));
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
                 loudCut *= getPayoutMultiplier();
                 builder.append(" = ");
                 builder.append(loudCut);
                 loudPayout.setBody(Casino.repeatString(builder.toString() + '\n',
                     loudParticipants.size()));
-                messageFrames.add(createEmbedResponse(description, blocks, true, robert));
+                messageFrames.add(createEmbedResponse(description, blocks, true));
 
-                // TODO: Log player outcomes
+                for (RobParticipant participant : loudParticipants) {
+                    participant.payout = loudCut;
+                    Casino.addMoney(participant.uid, loudCut);
+                    logCompleteRobEventParticipant(participant, details.eventId);
+                }
             }
 
-            // TODO: Log event
+            logRobEventCompletion(details);
 
             return messageFrames;
         }
@@ -2615,6 +2698,35 @@ abstract class Event {
     //  CONSTRAINT pick_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
     // );
 
+    // CREATE TABLE IF NOT EXISTS rob_event_target (
+    //  rtid SERIAL PRIMARY KEY,
+    //  location VARCHAR(50) NOT NULL,
+    //  target VARCHAR(50) NOT NULL,
+    //  enabled boolean NOT NULL DEFAULT true
+    // );
+
+    // CREATE TABLE IF NOT EXISTS rob_event (
+    //  eventId integer NOT NULL,
+    //  rtid integer NOT NULL,
+    //  too_few_participants boolean NOT NULL DEFAULT false,
+    //  stealth_success boolean NOT NULL DEFAULT false,
+    //  PRIMARY KEY(eventId),
+    //  CONSTRAINT rob_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
+    //  CONSTRAINT rob_event_rtid FOREIGN KEY(rtid) REFERENCES rob_event_target(rtid)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS rob_participant (
+    //  uid bigint NOT NULL,
+    //  eventId integer NOT NULL,
+    //  quiet boolean NOT NULL,
+    //  cid bigint NOT NULL,
+    //  foil integer NOT NULL,
+    //  payout bigint NOT NULL DEFAULT 0,
+    //  PRIMARY KEY(uid, eventId),
+    //  CONSTRAINT rob_participant_event_id FOREIGN KEY(eventId) REFERENCES rob_event(eventId),
+    //  CONSTRAINT rob_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
+    // );
+
     static PastEventStatus fetchServerEventStatus(long server) {
         String query = "SELECT type, eventId, completed FROM event WHERE server = " + server
             + " ORDER BY eventId DESC LIMIT 1;";
@@ -2830,11 +2942,12 @@ abstract class Event {
         CasinoDB.executeUpdate(query);
     }
 
-    static void logFishEventCompletion(int eventId, FishEvent.FishEventDetails details) {
-        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = " + eventId + "), "
+    static void logFishEventCompletion(FishEvent.FishEventDetails details) {
+        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = "
+                + details.eventId + "), "
             + "UPDATE fish_event SET (boat_1_roll, boat_2_roll, boat_3_roll, payout) = ("
             + details.boat1Roll + ", " + details.boat2Roll + ", " + details.boat3Roll
-            + ", " + details.payout + ") WHERE eventId = " + eventId + ";";
+            + ", " + details.payout + ") WHERE eventId = " + details.eventId + ";";
         CasinoDB.executeUpdate(query);
     }
 
@@ -2911,16 +3024,98 @@ abstract class Event {
         CasinoDB.executeUpdate(query);
     }
 
-    static void logPickEventCompletion(int eventId, PickEvent.PickEventDetails details) {
+    static void logPickEventCompletion(PickEvent.PickEventDetails details) {
         String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = "
-                + eventId + ") "
+                + details.eventId + ") "
             + "UPDATE pick_event SET (targets_exceeded) = (" + details.targetsExceeded
-                + ") WHERE eventId = " + eventId + ";";
+                + ") WHERE eventId = " + details.eventId + ";";
         CasinoDB.executeUpdate(query);
     }
 
-    static RobEvent.RobEventDetails fetchRobEventDetails() {
-        return new RobEvent.RobEventDetails("Test Land", "Test Prize");
+    static RobEvent.RobEventDetails fetchNewRobEventDetails(long server) {
+        String query = "WITH loc AS (SELECT * FROM rob_event_target WHERE enabled = true ORDER BY RANDOM() LIMIT 1), "
+            + "inserted_event AS (INSERT INTO event (server, type) VALUES (" + server + ", "
+                + EVENTTYPE_ID_ROB + ") RETURNING eventId), "
+            + "inserted_rob_event AS (INSERT INTO rob_event (eventId, rtid) "
+                + "SELECT eventId, rtid FROM inserted_event CROSS JOIN loc) "
+            + "SELECT location, target, eventId FROM inserted_event CROSS JOIN loc;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new RobEvent.RobEventDetails(results.getString(1), results.getString(2),
+                    results.getInt(3));
+            }
+            return null;
+        }, null);
+    }
+
+    static RobEvent.RobEventDetails fetchExistingRobEventDetails(int eventId) {
+        String query = "SELECT location, target FROM rob_event NATURAL JOIN rob_event_target WHERE eventId = "
+            + eventId + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new RobEvent.RobEventDetails(results.getString(1), results.getString(2),
+                    eventId);
+            }
+            return null;
+        }, null);
+    }
+
+    static class DBRobParticipant extends DBParticipant {
+        boolean quiet;
+
+        DBRobParticipant(long uid, boolean quiet, long cid, int foil) {
+            super(uid, 0, cid, foil);
+            this.quiet = quiet;
+        }
+    }
+
+    static List<RobEvent.RobParticipant> fetchExistingRobEventParticipants(int eventId) {
+        String query = "SELECT uid, quiet, cid, foil FROM rob_participant WHERE eventId = "
+            + eventId + ";";
+        List<DBRobParticipant> dbParticipants = CasinoDB.executeQueryWithReturn(query, results -> {
+            List<DBRobParticipant> participants = new ArrayList<>();
+            while (results.next()) {
+                participants.add(new DBRobParticipant(results.getLong(1), results.getBoolean(2),
+                    results.getInt(3), results.getInt(4)));
+            }
+            return participants;
+        }, new ArrayList<DBRobParticipant>());
+        List<RobEvent.RobParticipant> participants = new ArrayList<>();
+        for (DBRobParticipant participant : dbParticipants) {
+            User user = Casino.getUser(participant.uid);
+            GachaCharacter character = Gacha.getCharacter(participant.uid, participant.cid,
+                SHINY_TYPE.fromId(participant.foil));
+            participants.add(new RobEvent.RobParticipant(user, character,
+                getStat(character, ITEM_STAT.ROB), participant.quiet));
+        }
+        return participants;
+    }
+
+    static void logRobEventParticipant(RobEvent.RobParticipant participant, int eventId) {
+        String query = "INSERT INTO rob_participant (uid, eventId, quiet, cid, foil) VALUES ("
+            + participant.uid + ", " + eventId + ", " + participant.isQuiet + ", "
+            + participant.getCid() + ", " + participant.getFoil() + ");";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void updateRobEventParticipant(RobEvent.RobParticipant participant, int eventId) {
+        String query = "UPDATE rob_participant SET (quiet, cid, foil) = ("
+            + participant.isQuiet + ", " + participant.getCid() + ", " + participant.getFoil()
+            + ") WHERE uid = " + participant.uid + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logCompleteRobEventParticipant(RobEvent.RobParticipant participant, int eventId) {
+        String query = "UPDATE rob_participant SET payout = " + participant.payout
+            + " WHERE uid = " + participant.uid + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logRobEventCompletion(RobEvent.RobEventDetails details) {
+        String query = "UPDATE rob_event SET (too_few_participants, stealth_success) = ("
+            + details.tooFewParticipants + " , " + details.stealthSuccess + ") WHERE eventId = "
+            + details.eventId + ";";
+        CasinoDB.executeUpdate(query);
     }
 
     static GiveawayEvent.GiveawayEventDetails fetchGiveawayEventDetails() {

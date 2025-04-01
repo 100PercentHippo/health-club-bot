@@ -22,7 +22,6 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 
-import com.c2t2s.hb.Event.EventType;
 import com.c2t2s.hb.Gacha.GachaCharacter;
 import com.c2t2s.hb.HBMain.CasinoCommand;
 
@@ -77,7 +76,7 @@ public class CasinoServerManager {
                 for (ServerTextChannel channel : casinioChannels) {
                     channel.sendMessage(message);
                 }
-                return null;
+                return new ArrayList<>();
             }
 
             List<Message> sentMessages = new ArrayList<>();
@@ -397,19 +396,37 @@ public class CasinoServerManager {
     }
 
     static void sendMultipartEventMessage(long server, Queue<HBMain.EmbedResponse> responses) {
+        sendMultipartEventMessage(server, responses, null);
+    }
+
+    static void sendMultipartEventMessage(long server, Queue<HBMain.EmbedResponse> responses,
+            HBMain.EmbedResponse followup) {
         if (!servers.containsKey(server) || responses.isEmpty()) { return; }
         HBMain.EmbedResponse response = responses.poll();
         Message message = servers.get(server).sendEventEmbed(response.toEmbedBuilder(),
             response.getButtons(), false);
         if (!responses.isEmpty()) {
-            schedule(() -> updateEmbed(message, responses), Duration.ofSeconds(1));
+            schedule(() -> updateEmbed(server, message, responses, followup),
+                Duration.ofSeconds(1));
+        } else if (followup != null) {
+            schedule(() -> { sendEventMessage(server, followup); return null; },
+                Duration.ofMinutes(1));
         }
     }
 
-    static Void updateEmbed(Message message, Queue<HBMain.EmbedResponse> responses) {
+    static Void updateEmbed(long server, Message message, Queue<HBMain.EmbedResponse> responses) {
+        return updateEmbed(server, message, responses, null);
+    }
+
+    static Void updateEmbed(long server, Message message, Queue<HBMain.EmbedResponse> responses,
+            HBMain.EmbedResponse followup) {
         message.edit(responses.poll().toEmbedBuilder());
         if (!responses.isEmpty()) {
-            schedule(() -> updateEmbed(message, responses), Duration.ofSeconds(1));
+            schedule(() -> updateEmbed(server, message, responses, followup),
+                Duration.ofSeconds(1));
+        } else if (followup != null) {
+            schedule(() -> { sendEventMessage(server, followup); return null; },
+                Duration.ofMinutes(1));
         }
         return null;
     }
