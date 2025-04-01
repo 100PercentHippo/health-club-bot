@@ -65,8 +65,8 @@ abstract class Event {
                         return new PickEvent(server, timeUntilResolution, lastEvent.eventId);
                     case ROB:
                         return new RobEvent(server, timeUntilResolution, lastEvent.eventId);
-                    // case SUPER_SLOTS:
-                    //     return new SlotsEvent(server, timeUntilResolution, lastEvent.eventId);
+                    case SUPER_SLOTS:
+                        return new SlotsEvent(server, timeUntilResolution, lastEvent.eventId);
                     // case GIVEAWAY:
                     //     return new GiveawayEvent(server, timeUntilResolution, lastEvent.eventId);
                 }
@@ -1985,6 +1985,12 @@ abstract class Event {
         private static final String TEAM_GRAPE_NAME = "Team Grape";
         private static final String PLACEHOLDER = ":black_large_square:";
         private static final String EMPTY_ROW = "\n" + Casino.repeatString(PLACEHOLDER, COLUMNS);
+        private static final Map<Long, String> selectionMap = Map.ofEntries(
+            entry(CHERRY_ID, TEAM_CHERRY_NAME),
+            entry(ORANGE_ID, TEAM_ORANGE_NAME),
+            entry(LEMON_ID, TEAM_LEMON_NAME),
+            entry(BLUEBERRY_ID, TEAM_BLUEBERRY_NAME),
+            entry(GRAPE_ID, TEAM_GRAPE_NAME));
 
         private Map<Long, SlotsTeam> teams = Map.ofEntries(
             entry(CHERRY_ID, new SlotsTeam(TEAM_CHERRY_NAME, ":cherries:")),
@@ -1997,7 +2003,7 @@ abstract class Event {
             String teamName;
             String emote;
             List<Participant> members = new ArrayList<>();
-            long payout = 0;
+            int payout = 0;
 
             SlotsTeam(String teamName, String emote) {
                 this.teamName = teamName;
@@ -2009,13 +2015,30 @@ abstract class Event {
             }
         }
 
+        static class SlotsParticipant extends Participant {
+            long team;
+
+            SlotsParticipant(User user, GachaCharacter character, int characterMultiplier,
+                    long team) {
+                super(user, character, characterMultiplier);
+                this.team = team;
+            }
+        }
+
         SlotsEvent(long server, Duration timeUntilResolution) {
-            super(EventType.SUPER_SLOTS, server, timeUntilResolution,
-                Map.ofEntries(entry(CHERRY_ID, TEAM_CHERRY_NAME),
-                              entry(ORANGE_ID, TEAM_ORANGE_NAME),
-                              entry(LEMON_ID, TEAM_LEMON_NAME),
-                              entry(BLUEBERRY_ID, TEAM_BLUEBERRY_NAME),
-                              entry(GRAPE_ID, TEAM_GRAPE_NAME)));
+            super(EventType.SUPER_SLOTS, server, timeUntilResolution, selectionMap);
+            baseDetails = fetchNewSlotEventDetails(server);
+        }
+
+        SlotsEvent(long server, Duration timeUntilResolution, int existingEventId) {
+            super(EventType.SUPER_SLOTS, server, timeUntilResolution, selectionMap);
+            baseDetails = new EventDetails(existingEventId);
+
+            List<SlotsParticipant> participants
+                = fetchExistingSlotsEventParticipants(existingEventId);
+            for (Participant participant : participants) {
+                silentUserJoin(participant);
+            }
         }
 
         @Override
@@ -2084,6 +2107,20 @@ abstract class Event {
             builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
             builder.append("%");
             return createEmbedResponse(builder.toString(), displayCurrentState());
+        }
+
+        @Override
+        void silentUserJoin(Participant participant) {
+            if (!(participant instanceof SlotsParticipant)) {
+                return;
+            }
+            SlotsParticipant slotsParticipant = (SlotsParticipant)participant;
+            if (!teams.containsKey(slotsParticipant.team)) {
+                return;
+            }
+
+            super.silentUserJoin(slotsParticipant);
+            teams.get(slotsParticipant.team).members.add(slotsParticipant);
         }
 
         @Override
@@ -2217,10 +2254,15 @@ abstract class Event {
             builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
             for (Map.Entry<Long, SlotsTeam> entries : teams.entrySet()) {
                 entries.getValue().payout *= getPayoutMultiplier();
+                for (Participant participant : entries.getValue().members) {
+                    Casino.addMoney(participant.uid, entries.getValue().payout);
+                }
             }
             messageFrames.add(createEmbedResponse(builder.toString(), displayCurrentState(true)));
 
-            // TODO: Log results and pay coins
+            logSlotsEventCompletion(teams.get(CHERRY_ID).payout, teams.get(ORANGE_ID).payout,
+                teams.get(LEMON_ID).payout, teams.get(BLUEBERRY_ID).payout,
+                teams.get(GRAPE_ID).payout, baseDetails.eventId, totalPayoutMultiplier);
 
             return messageFrames;
         }
@@ -2585,7 +2627,7 @@ abstract class Event {
     // );
 
     // CREATE TABLE IF NOT EXISTS work_event (
-    //  eventId integer NOT NULL,
+    //  eventId integer PRIMARY KEY,
     //  location integer NOT NULL,
     //  small_task integer NOT NULL,
     //  med_task integer NOT NULL,
@@ -2594,7 +2636,6 @@ abstract class Event {
     //  med_task_complete boolean NOT NULL DEFAULT false,
     //  big_task_complete boolean NOT NULL DEFAULT false,
     //  payout bigint NOT NULL DEFAULT 0,
-    //  PRIMARY KEY(eventId),
     //  CONSTRAINT work_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
     //  CONSTRAINT work_event_location FOREIGN KEY(location) REFERENCES work_event_location(wlid),
     //  CONSTRAINT work_event_small_task FOREIGN KEY(location, small_task) REFERENCES work_event_task(wlid, wtid),
@@ -2633,7 +2674,7 @@ abstract class Event {
     // );
 
     // CREATE TABLE IF NOT EXISTS fish_event (
-    //  eventId integer NOT NULL,
+    //  eventId integer PRIMARY KEY,
     //  flid integer NOT NULL,
     //  shallow_common integer NOT NULL,
     //  shallow_uncommon integer NOT NULL,
@@ -2643,7 +2684,6 @@ abstract class Event {
     //  boat_2_roll integer NOT NULL DEFAULT 0,
     //  boat_3_roll integer NOT NULL DEFAULT 0,
     //  payout bigint NOT NULL DEFAULT 0,
-    //  PRIMARY KEY(eventId),
     //  CONSTRAINT fish_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
     //  CONSTRAINT fish_event_location FOREIGN KEY(flid) REFERENCES fish_event_location(flid),
     //  CONSTRAINT fish_event_shallow_common FOREIGN KEY(flid, shallow_common) REFERENCES fish_event_fish(flid, ffid),
@@ -2676,11 +2716,10 @@ abstract class Event {
     // );
 
     // CREATE TABLE IF NOT EXISTS pick_event (
-    //  eventId integer NOT NULL,
+    //  eventId integer PRIMARY KEY,
     //  plid integer NOT NULL,
     //  total_targets integer NOT NULL,
     //  targets_exceeded boolean NOT NULL DEFAULT false,
-    //  PRIMARY KEY(eventId),
     //  CONSTRAINT pick_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
     //  CONSTRAINT pick_event_plid FOREIGN KEY(plid) REFERENCES pick_event_location(plid)
     // );
@@ -2706,11 +2745,10 @@ abstract class Event {
     // );
 
     // CREATE TABLE IF NOT EXISTS rob_event (
-    //  eventId integer NOT NULL,
+    //  eventId integer PRIMARY KEY,
     //  rtid integer NOT NULL,
     //  too_few_participants boolean NOT NULL DEFAULT false,
     //  stealth_success boolean NOT NULL DEFAULT false,
-    //  PRIMARY KEY(eventId),
     //  CONSTRAINT rob_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId),
     //  CONSTRAINT rob_event_rtid FOREIGN KEY(rtid) REFERENCES rob_event_target(rtid)
     // );
@@ -2725,6 +2763,25 @@ abstract class Event {
     //  PRIMARY KEY(uid, eventId),
     //  CONSTRAINT rob_participant_event_id FOREIGN KEY(eventId) REFERENCES rob_event(eventId),
     //  CONSTRAINT rob_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS slots_event (
+    //  eventId integer PRIMARY KEY,
+    //  cherry integer NOT NULL DEFAULT 0,
+    //  orange integer NOT NULL DEFAULT 0,
+    //  lemon integer NOT NULL DEFAULT 0,
+    //  blueberry integer NOT NULL DEFAULT 0,
+    //  grape integer NOT NULL DEFAULT 0,
+    //  multiplier integer NOT NULL DEFAULT 0,
+    //  CONSTRAINT slots_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS slots_participant (
+    //  uid bigint NOT NULL,
+    //  eventId integer NOT NULL,
+    //  team integer NOT NULL,
+    //  cid bigint NOT NULL,
+    //  foil integer NOT NULL
     // );
 
     static PastEventStatus fetchServerEventStatus(long server) {
@@ -3115,6 +3172,62 @@ abstract class Event {
         String query = "UPDATE rob_event SET (too_few_participants, stealth_success) = ("
             + details.tooFewParticipants + " , " + details.stealthSuccess + ") WHERE eventId = "
             + details.eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static EventDetails fetchNewSlotEventDetails(long server) {
+        String query = "WITH inserted_event AS (INSERT INTO event (server, type) VALUES ("
+                + server + ", " + EVENTTYPE_ID_SUPER_SLOTS + ") RETURNING eventId) "
+            + "INSERT INTO slots_event (eventId) SELECT eventId FROM inserted_event RETURNING eventId;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new EventDetails(results.getInt(1));
+            }
+            return null;
+        }, null);
+    }
+
+    static List<SlotsEvent.SlotsParticipant> fetchExistingSlotsEventParticipants(int eventId) {
+        String query = "SELECT uid, team, cid, foil FROM slots_participant WHERE eventId = "
+            + eventId + ";";
+        List<DBParticipant> dbParticipants = CasinoDB.executeQueryWithReturn(query, results -> {
+            List<DBParticipant> participants = new ArrayList<>();
+            while (results.next()) {
+                participants.add(new DBParticipant(results.getLong(1), results.getInt(2),
+                    results.getInt(3), results.getInt(4)));
+            }
+            return participants;
+        }, new ArrayList<DBParticipant>());
+        List<SlotsEvent.SlotsParticipant> participants = new ArrayList<>();
+        for (DBParticipant participant : dbParticipants) {
+            User user = Casino.getUser(participant.uid);
+            GachaCharacter character = Gacha.getCharacter(participant.uid, participant.cid,
+                SHINY_TYPE.fromId(participant.foil));
+            participants.add(new SlotsEvent.SlotsParticipant(user, character,
+                getStat(character, ITEM_STAT.MISC), participant.selection));
+        }
+        return participants;
+    }
+
+    static void logSlotsEventParticipant(SlotsEvent.SlotsParticipant participant, int eventId) {
+        String query = "INSERT INTO slots_participant (uid, eventId, team, cid, foil) VALUES ("
+            + participant.uid + ", " + eventId + ", " + participant.team + ", "
+            + participant.getCid() + ", " + participant.getFoil() + ");";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void updateSlotsEventParticipant(SlotsEvent.SlotsParticipant participant, int eventId) {
+        String query = "UPDATE slots_participant SET (team, cid, foil) = ("
+            + participant.team + ", " + participant.getCid() + ", " + participant.getFoil()
+            + ") WHERE uid = " + participant.uid + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logSlotsEventCompletion(int cherry, int orange, int lemon, int blueberry,
+            int grape, int eventId, int multiplier) {
+        String query = "UPDATE slots_event SET (cherry, orange, lemon, blueberry, grape, multiplier) = ("
+            + cherry + ", " + orange + ", " + lemon + ", " + blueberry + ", " + grape
+            + ", " + multiplier + ") WHERE eventId = " + eventId + ";";
         CasinoDB.executeUpdate(query);
     }
 
