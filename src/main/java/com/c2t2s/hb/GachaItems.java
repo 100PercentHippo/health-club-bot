@@ -1079,8 +1079,8 @@ public class GachaItems {
             + "initial_misc, positive_tendency, negative_tendency, bonus_stat, initial_additions, initial_subtractions, "
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
-            + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid
-            + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false ORDER BY iid DESC LIMIT 25;";
+            + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false "
+            + "ORDER BY (initial_additions + gem_additions - initial_subtractions - gem_subtractions) DESC LIMIT 25;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
                 items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),

@@ -972,12 +972,12 @@ class Gacha {
     }
 
     static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring,
-            Event.EventType eventType) {
-        // TODO: Sort by event stat
-        return getCharacters(uid, substring, false);
+            boolean withItems) {
+        return getCharacters(uid, substring, withItems, null);
     }
 
-    static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring, boolean withItems) {
+    static List<HBMain.AutocompleteStringOption> getCharacters(long uid, String substring,
+            boolean withItems, GachaItems.ITEM_STAT orderBy) {
         int shiny = -1;
         if (substring.toLowerCase().startsWith(SHINY_TYPE.SHINY.getAdjective().toLowerCase())) {
             shiny = 1;
@@ -987,8 +987,12 @@ class Gacha {
             substring = substring.substring(SHINY_TYPE.PRISMATIC.getAdjective().length());
         }
         // Remove leading space so you can use "Foil Test"
-        if (substring.startsWith(" ")) { substring = substring.substring(1); }
+        substring = substring.trim();
         List<GachaCharacter> characters = queryCharacters(uid, substring, withItems, shiny);
+        if (orderBy != null) {
+            characters.sort((c1, c2) -> c1.getCharacterStats().getStat(orderBy)
+                - c2.getCharacterStats().getStat(orderBy));
+        }
         List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
         characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));
         return output;

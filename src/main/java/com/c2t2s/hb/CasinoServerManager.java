@@ -349,7 +349,8 @@ public class CasinoServerManager {
         if (servers.get(server).activeEvent == null) {
             return Gacha.getCharacters(uid, partialName);
         }
-        return Gacha.getCharacters(uid, partialName, servers.get(server).activeEvent.getType());
+        return Gacha.getCharacters(uid, partialName, false,
+            servers.get(server).activeEvent.getType().assocatedStat);
     }
 
     static List<HBMain.AutocompleteIdOption> handleEventSelectionAutocomplete(long server) {
