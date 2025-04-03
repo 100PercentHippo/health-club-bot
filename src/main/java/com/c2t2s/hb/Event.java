@@ -239,7 +239,7 @@ abstract class Event {
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
     static final NumberFormat ONE_DECIMAL = new DecimalFormat("0.0");
     static final InlineBlock EMPTY_INLINE_BLOCK
-        = new InlineBlock("\u200B", "\u200B");
+        = new InlineBlock(EmbedResponse.EMPTY_BLOCK, EmbedResponse.EMPTY_BLOCK);
     static final int EVENT_ID_NOT_FOUND = -1;
     static final int BASE_XP_GAIN = 50;
     static final int TYPE_MATCH_XP_GAIN = 100;
@@ -370,7 +370,7 @@ abstract class Event {
 
     Void initialize() {
         Duration timeUntilResolution
-            = Duration.ofMillis(endTimeEpochSec - (System.currentTimeMillis() / 1000));
+            = Duration.ofSeconds(endTimeEpochSec - (System.currentTimeMillis() / 1000));
 
         if (timeUntilResolution.compareTo(EVENT_ENDING_REMINDER_WINDOW) < 0) {
             CasinoServerManager.schedule(this::lockEvent, timeUntilResolution);

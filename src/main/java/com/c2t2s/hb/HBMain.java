@@ -190,6 +190,8 @@ public class HBMain {
             }
         }
 
+        static final String EMPTY_BLOCK = "\u200B";
+
         private String title;
         private String message;
         private String footer;
@@ -265,8 +267,9 @@ public class HBMain {
                 embedBuilder.addInlineField(block.title, block.body);
             }
             if (footer != null && !footer.isEmpty()) {
-                // TODO: Restore this to addFooter()
-                embedBuilder.addField(footer, footer);
+                // This notably isn't a footer, but it allows for formatting
+                // such as timestamps and code blocks
+                embedBuilder.addField(EmbedResponse.EMPTY_BLOCK, footer);
             }
             return embedBuilder;
         }
@@ -576,10 +579,19 @@ public class HBMain {
 
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction interaction = event.getSlashCommandInteraction();
-            System.out.println(interaction.getUser().getName() + " used "
+            System.out.println(interaction.getUser().getName() + " used /"
                 + interaction.getFullCommandName() + "  " + interaction.getArguments().stream()
-                    .map(a -> { return a.getStringValue().orElse(""); })
-                    .collect(Collectors.joining("  ")));
+                    .map(a -> {
+                        if (!a.getStringValue().isEmpty()) {
+                            return a.getStringValue().get();
+                        } else if (!a.getLongValue().isEmpty()) {
+                            return Long.toString(a.getLongValue().get());
+                        } else if (!a.getUserValue().isEmpty()) {
+                            return a.getUserValue().get().getName();
+                        } else {
+                            return "[?]";
+                        }
+                    }).collect(Collectors.joining("  ")));
             CasinoCommand command = commands.get(interaction.getFullCommandName());
 
             if (command == null) {
