@@ -11,7 +11,6 @@ class EventUser {
         GUESS, HUGEGUESS, SLOTS, MINISLOTS, OVERUNDER, BLACKJACK, ALLORNOTHING;
 
         static DailyGame getDailyGame(long resetTime) {
-            System.out.println("[DEBUG] resetTime: " + resetTime + " becomes: " + (int)(resetTime % 7));
             switch ((int)(resetTime % 7)) {
                 case 0:
                     return GUESS;
@@ -51,14 +50,14 @@ class EventUser {
         long timeRemaining = reset.getTime() - System.currentTimeMillis();
         if (timeRemaining < 1000) { timeRemaining = 1000; }
         String remainingTime = Casino.formatTime(timeRemaining);
-        if (dailyGamesToday < 1 || eventsToday < MAX_DAILY_EVENT_PULLS) {
+        if (dailyGamesToday < 1 || eventsToday < MAX_DAILY_EVENT_REWARDS) {
             StringBuilder output = new StringBuilder("You can still earn pulls today through the following means:");
             if (dailyGamesToday < 1) {
                 output.append("\n\tPlay ");
                 output.append(DailyGame.getDailyGame(reset.getTime()).toString());
                 output.append(" once today");
             }
-            int remainingEvents = MAX_DAILY_EVENT_PULLS - eventsToday;
+            int remainingEvents = MAX_DAILY_EVENT_REWARDS - eventsToday;
             if (remainingEvents > 0) {
                 output.append("\n\tJoin gacha events (up to ");
                 output.append(remainingEvents);
@@ -91,7 +90,7 @@ class EventUser {
             + pulls + " pull" + (pulls != 1 ? "s" : "");
     }
 
-    private static final int MAX_DAILY_EVENT_PULLS = 2;
+    private static final int MAX_DAILY_EVENT_REWARDS = 2;
     private static final int FIRST_EVENT_PULL_REWARD = 2;
     private static final int SUBSEQUENT_EVENT_PULL_REWARD = 1;
 
@@ -103,8 +102,14 @@ class EventUser {
             return;
         }
 
-        int pullsAwarded = user.eventsToday == 0 ? FIRST_EVENT_PULL_REWARD
-            : SUBSEQUENT_EVENT_PULL_REWARD;
+        int pullsAwarded;
+        if (user.eventsToday == 0) {
+            pullsAwarded = FIRST_EVENT_PULL_REWARD;
+        } else if (user.eventsToday >= MAX_DAILY_EVENT_REWARDS) {
+            pullsAwarded = 0;
+        } else {
+            pullsAwarded = SUBSEQUENT_EVENT_PULL_REWARD;
+        }
         long totalPulls = awardEventBonus(uid, pullsAwarded);
 
         builder.append('\n');

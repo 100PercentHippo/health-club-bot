@@ -314,7 +314,7 @@ abstract class Event {
             builder.append(participant.nickname);
             builder.append("'s ");
             builder.append(participant.character.getDisplayName());
-            builder.append(":\n\t");
+            builder.append(":\n    ");
             participant.character.appendLevelString(builder);
             if (!participant.character.isMaxLevel()) {
                 int oldLevel = participant.character.getLevel();
@@ -471,7 +471,11 @@ abstract class Event {
         output.append(' ');
         output.append(character.getCharacterStats().printStat(type.assocatedStat));
         output.append("\nYour selection was: ");
-        output.append(joinSelections.get(selection));
+        if (supportsUserSelections) {
+            output.append(joinSelections.get(selection));
+        } else {
+            output.append(selection);
+        }
         if (canUsersRejoin) {
             output.append("\nTo change your character or selection, join the event again");
         }
@@ -783,6 +787,9 @@ abstract class Event {
                 + statusBuilder.toString()));
             int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
             progressTask(workertask, roll);
+            builder.append('`');
+            builder.append(roll);
+            builder.append('`');
             statusBuilder = new StringBuilder();
             displayCurrentState(statusBuilder);
             messageFrames.add(createEmbedResponse(builder.toString() + "\n\n\n"
@@ -795,6 +802,9 @@ abstract class Event {
                 + statusBuilder.toString()));
             roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
             progressTask(workertask, roll);
+            builder.append('`');
+            builder.append(roll);
+            builder.append('`');
             builder.append("\n\n");
             displayCurrentState(builder);
             messageFrames.add(createEmbedResponse(builder.toString()));
@@ -980,19 +990,6 @@ abstract class Event {
             String hardFishRarity = deep ? "Rare" : "Uncommon";
 
             StringBuilder builder = new StringBuilder();
-            if (participants.isEmpty()) {
-                builder.append("[Empty]");
-            } else {
-                builder.append(participants.size());
-                builder.append(" participant");
-                builder.append(Casino.getPluralSuffix(participants.size()));
-                builder.append(':');
-                for (FishParticipant participant : participants) {
-                    builder.append('\n');
-                    builder.append(participant.nickname);
-                }
-            }
-            builder.append("\n\n");
             builder.append(easyFishRarity);
             builder.append(" (");
             builder.append(easyFishValue);
@@ -1007,6 +1004,19 @@ abstract class Event {
             builder.append(highRoll);
             if (highRoll < 100) {
                 builder.append('+');
+            }
+            builder.append("\n\n");
+            if (participants.isEmpty()) {
+                builder.append("[Empty]");
+            } else {
+                builder.append(participants.size());
+                builder.append(" participant");
+                builder.append(Casino.getPluralSuffix(participants.size()));
+                builder.append(':');
+                for (FishParticipant participant : participants) {
+                    builder.append('\n');
+                    builder.append(participant.nickname);
+                }
             }
             return builder.toString();
         }
@@ -3307,7 +3317,7 @@ abstract class Event {
         SHINY_TYPE foil = Gacha.GachaBanner.generateShinyType(GiveawayEvent.SHINY_CHANCE,
             GiveawayEvent.PRISMATIC_CHANCE);
         String query = "WITH inserted_event AS (INSERT INTO event (server, type) VALUES ("
-                + server +", " + EVENTTYPE_ID_GIVEAWAY + " RETURNING eventId) "
+                + server +", " + EVENTTYPE_ID_GIVEAWAY + ") RETURNING eventId) "
             + "INSERT INTO giveaway_event (eventId, cid_foil) "
                 + "SELECT eventId, " + foil.getId() + " FROM inserted_event RETURNING eventId;";
         return CasinoDB.executeQueryWithReturn(query, results -> {

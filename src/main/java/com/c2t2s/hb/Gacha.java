@@ -226,10 +226,12 @@ class Gacha {
             }
         }
 
+        private static final double LN_TWO = Math.log(2);
+
         private void setLevel() {
             // Level 0 -> Level 1: 100 xp
             // Every level beyond doubles previous level
-            level = (int)Math.log((totalXp + 100) / 100);
+            level = (int)(Math.log((totalXp + 100) / (double)100) / LN_TWO);
             level = Math.min(level, MAX_CHARACTER_LEVEL);
             xp = totalXp - (100 * (int)Math.pow(2, level)) + 100;
             xpToLevel = 50 * (int)Math.pow(2, level + 1);
