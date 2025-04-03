@@ -4,8 +4,6 @@ import java.sql.Timestamp;
 
 class EventUser {
     private int eventsToday = 0;
-    private int robsToday = 0;
-    private int picksToday = 0;
     private int dailyGamesToday = 0;
     private Timestamp reset;
 
@@ -13,6 +11,7 @@ class EventUser {
         GUESS, HUGEGUESS, SLOTS, MINISLOTS, OVERUNDER, BLACKJACK, ALLORNOTHING;
 
         static DailyGame getDailyGame(long resetTime) {
+            System.out.println("[DEBUG] resetTime: " + resetTime + " becomes: " + (int)resetTime % 7);
             switch ((int)resetTime % 7) {
                 case 0:
                     return GUESS;
@@ -38,15 +37,12 @@ class EventUser {
         }
     }
 
-    private EventUser(long uid, int robsToday, int picksToday, int dailyGamesToday,
-                      int eventsToday, Timestamp reset) {
+    private EventUser(long uid, int dailyGamesToday, int eventsToday, Timestamp reset) {
         if (reset.getTime() - System.currentTimeMillis() < 0) {
             this.reset = resetEventUserDailyLimits(uid);
         } else {
             this.reset = reset;
             this.eventsToday = eventsToday;
-            this.robsToday = robsToday;
-            this.picksToday = picksToday;
             this.dailyGamesToday = dailyGamesToday;
         }
     }
@@ -55,24 +51,21 @@ class EventUser {
         long timeRemaining = reset.getTime() - System.currentTimeMillis();
         if (timeRemaining < 1000) { timeRemaining = 1000; }
         String remainingTime = Casino.formatTime(timeRemaining);
-        if (robsToday < 1 || picksToday < 1 || dailyGamesToday < 1 /* || events_today < MAX_DAILY_EVENT_PULLS */) {
+        if (dailyGamesToday < 1 || eventsToday < MAX_DAILY_EVENT_PULLS) {
             StringBuilder output = new StringBuilder("You can still earn pulls today through the following means:");
-            if (robsToday < 1) {
-                output.append("\n\t`/rob` or `/work` once today");
-            }
-            if (picksToday < 1) {
-                output.append("\n\t`/fish` or `/pickpocket` once today");
-            }
             if (dailyGamesToday < 1) {
                 output.append("\n\tPlay ");
                 output.append(DailyGame.getDailyGame(reset.getTime()).toString());
                 output.append(" once today");
             }
-            // TODO: Readd event check
-            //int remaining_events = MAX_DAILY_EVENT_PULLS - events_today;
-            //if (remaining_events > 0) {
-            //    output += "\n\tJoin events today - earn pulls up to " + remaining_events + " more time" + (remaining_events == 1 ? "" : "s");
-            //}
+            int remainingEvents = MAX_DAILY_EVENT_PULLS - eventsToday;
+            if (remainingEvents > 0) {
+                output.append("\n\tJoin gacha events (up to ");
+                output.append(remainingEvents);
+                output.append(" more time");
+                output.append(Casino.getPluralSuffix(remainingEvents));
+                output.append(" today)");
+            }
 
             output.append("\nYour next reset occurs in ");
             output.append(remainingTime);
@@ -80,40 +73,6 @@ class EventUser {
         } else {
             return "Return in " + remainingTime + " to get more!";
         }
-    }
-
-    private static final int MAX_DAILY_EVENT_PULLS = 3;
-
-    static String checkRobBonus(long uid, String command) {
-        EventUser user = getEventUser(uid);
-        if (user == null) {
-            return "\nUnable to fetch user for daily bonus. If you are new run `/claim` to start";
-        }
-
-        if (user.robsToday > 0) {
-            return "";
-        }
-
-        long pulls = awardRobBonus(uid);
-
-        return "\nFirst " + command + " of the day: Received 2 Gacha pulls. You now have "
-            + pulls + " pull" + (pulls != 1 ? "s" : "");
-    }
-
-    static String checkPickBonus(long uid, String command) {
-        EventUser user = getEventUser(uid);
-        if (user == null) {
-            return "\nUnable to fetch user for daily bonus. If you are new run `/claim` to start";
-        }
-
-        if (user.picksToday > 0) {
-            return "";
-        }
-
-        long pulls = awardPickBonus(uid);
-
-        return "\nFirst " + command + " of the day: Received 2 Gacha pulls. You now have "
-            + pulls + " pull" + (pulls != 1 ? "s" : "");
     }
 
     static String checkGameBonus(long uid, DailyGame game) {
@@ -130,15 +89,52 @@ class EventUser {
 
         return "\nFirst " + game.toString() + " of the day: Received 1 Gacha pull. You now have "
             + pulls + " pull" + (pulls != 1 ? "s" : "");
+    }
 
+    private static final int MAX_DAILY_EVENT_PULLS = 2;
+    private static final int FIRST_EVENT_PULL_REWARD = 2;
+    private static final int SUBSEQUENT_EVENT_PULL_REWARD = 1;
+
+    static void logEventBonus(StringBuilder builder, String name, long uid) {
+        EventUser user = getEventUser(uid);
+        if (user == null) {
+            System.out.println("Unable to find EventUser for " + name + " (" + uid
+                + ") when paying out event");
+            return;
+        }
+
+        int pullsAwarded = user.eventsToday == 0 ? FIRST_EVENT_PULL_REWARD
+            : SUBSEQUENT_EVENT_PULL_REWARD;
+        long totalPulls = awardEventBonus(uid, pullsAwarded);
+
+        builder.append('\n');
+        builder.append(name);
+        builder.append("'s ");
+        if (user.eventsToday == 0) {
+            builder.append("1st");
+        } else if (user.eventsToday == 1) {
+            builder.append("2nd");
+        } else if (user.eventsToday == 2) {
+            builder.append("3rd");
+        } else {
+            // Assumes no user will participant in 10 or more events in one day
+            builder.append(user.eventsToday + 1);
+            builder.append("th");
+        }
+        builder.append(" event of the day: +");
+        builder.append(pullsAwarded);
+        builder.append(" pull");
+        builder.append(Casino.getPluralSuffix(pullsAwarded));
+        builder.append(", new balance ");
+        builder.append(totalPulls);
+        builder.append(" pull");
+        builder.append(Casino.getPluralSuffix(totalPulls));
     }
 
     //////////////////////////////////////////////////////////
 
     // CREATE TABLE IF NOT EXISTS event_user (
     //   uid bigint PRIMARY KEY,
-    //   robs_today integer DEFAULT 0,
-    //   picks_today integer DEFAULT 0,
     //   events_today integer DEFAULT 0,
     //   daily_games_today integer DEFAULT 0,
     //   next_reset timestamp DEFAULT '2021-01-01 00:00:00',
@@ -165,34 +161,24 @@ class EventUser {
     // );
 
     static EventUser getEventUser(long uid) {
-        String query = "SELECT robs_today, picks_today, events_today, daily_games_today, next_reset FROM event_user WHERE uid = " + uid + ";";
+        String query = "SELECT daily_games_today, events_today, next_reset FROM event_user WHERE uid = " + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                int robs = results.getInt(1);
-                int picks = results.getInt(2);
-                int events = results.getInt(3);
-                int dailyGames = results.getInt(4);
-                Timestamp reset = results.getTimestamp(5);
-
-                return new EventUser(uid, robs, picks, dailyGames, events, reset);
+                return new EventUser(uid, results.getInt(1), results.getInt(2),
+                    results.getTimestamp(3));
             }
             return null;
         }, null);
     }
 
-    private static long awardRobBonus(long uid) {
-        CasinoDB.executeUpdate("UPDATE event_user SET (robs_today) = (robs_today + 1) WHERE uid = " + uid + ";");
-        return Gacha.addPulls(uid, 2);
-    }
-
-    private static long awardPickBonus(long uid) {
-        CasinoDB.executeUpdate("UPDATE event_user SET (picks_today) = (picks_today + 1) WHERE uid = " + uid + ";");
-        return Gacha.addPulls(uid, 2);
-    }
-
     private static long awardDailyGameBonus(long uid) {
-        CasinoDB.executeUpdate("UPDATE event_user SET (daily_games_today) = (daily_games_today + 1) WHERE uid = " + uid + ";");
+        CasinoDB.executeUpdate("UPDATE event_user SET daily_games_today = daily_games_today + 1 WHERE uid = " + uid + ";");
         return Gacha.addPulls(uid, 1);
+    }
+
+    private static long awardEventBonus(long uid, int pulls) {
+        CasinoDB.executeUpdate("UPDATE event_user SET events_today = events_today + 1 WHERE uid = " + uid + ";");
+        return Gacha.addPulls(uid, pulls);
     }
 
     private static Timestamp resetEventUserDailyLimits(long uid) {

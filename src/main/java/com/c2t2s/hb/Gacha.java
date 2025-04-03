@@ -438,6 +438,10 @@ class Gacha {
         }
 
         SHINY_TYPE generateShinyType() {
+            return generateShinyType(shinyChance, prismaticChance);
+        }
+
+        static SHINY_TYPE generateShinyType(double shinyChance, double prismaticChance) {
             if (HBMain.RNG_SOURCE.nextDouble() <= prismaticChance) {
                 return SHINY_TYPE.PRISMATIC;
             } else if (HBMain.RNG_SOURCE.nextDouble() <= shinyChance) {

@@ -67,8 +67,8 @@ abstract class Event {
                         return new RobEvent(server, timeUntilResolution, lastEvent.eventId);
                     case SUPER_SLOTS:
                         return new SlotsEvent(server, timeUntilResolution, lastEvent.eventId);
-                    // case GIVEAWAY:
-                    //     return new GiveawayEvent(server, timeUntilResolution, lastEvent.eventId);
+                    case GIVEAWAY:
+                        return new GiveawayEvent(server, timeUntilResolution, lastEvent.eventId);
                 }
             }
 
@@ -101,7 +101,7 @@ abstract class Event {
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
     static final int EVENTTYPE_ID_GIVEAWAY = 7;
     static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
-    static final double GIVEAWAY_EVENT_CHANCE = 1; // TODO: Reduce to 0.2
+    static final double GIVEAWAY_EVENT_CHANCE = 0.5; // TODO: Reduce to 0.2
 
     enum EventType {
         FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, new Color(91, 170, 255)), // Light Blue
@@ -334,10 +334,7 @@ abstract class Event {
 
     void awardPulls(StringBuilder builder) {
         for (Participant participant : participatingUsers.values()) {
-            builder.append('\n');
-            builder.append(participant.nickname);
-            builder.append("'s ");
-
+            EventUser.logEventBonus(builder, participant.nickname, participant.uid);
         }
     }
 
@@ -2279,6 +2276,8 @@ abstract class Event {
         static final long ITEM_SELECTION_ID = 2;
         static final long GEM_SELECTION_ID = 3;
         static final long CHARACTER_SELECTION_ID = 4;
+        static final double SHINY_CHANCE = 0.1;
+        static final double PRISMATIC_CHANCE = 0.0001;
 
         enum GiveawayPrize {
             COIN_1(COIN_1_SELECTION_ID, Integer.toString(COIN_AMOUNT_1) + " coins"),
@@ -2325,10 +2324,11 @@ abstract class Event {
             }
         }
 
-        static class GiveawayEventDetails {
+        static class GiveawayEventDetails extends EventDetails {
             Gacha.SHINY_TYPE shiny;
 
-            GiveawayEventDetails(Gacha.SHINY_TYPE shiny) {
+            GiveawayEventDetails(Gacha.SHINY_TYPE shiny, int eventId) {
+                super(eventId);
                 this.shiny = shiny;
             }
 
@@ -2346,8 +2346,30 @@ abstract class Event {
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 prizeSelections.put(prize.id, new ArrayList<>());
             }
-            details = fetchGiveawayEventDetails();
+            details = fetchNewGiveawayEventDetails(server);
+            baseDetails = details;
 
+            setJoinSelections(getSelections());
+        }
+
+        GiveawayEvent(long server, Duration timeUntilResolution, int existingEventId) {
+            super(EventType.GIVEAWAY, server, timeUntilResolution);
+            for (GiveawayPrize prize : GiveawayPrize.values()) {
+                prizeSelections.put(prize.id, new ArrayList<>());
+            }
+            details = fetchExistingGiveawayEventDetails(existingEventId);
+            baseDetails = details;
+
+            setJoinSelections(getSelections());
+
+            List<GiveawayParticipant> participants
+                = fetchExistingGiveawayEventParticipants(existingEventId);
+            for (Participant participant : participants) {
+                silentUserJoin(participant);
+            }
+        }
+
+        private Map<Long, String> getSelections() {
             Map<Long, String> joinSelections = new TreeMap<>();
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 if (prize == GiveawayPrize.CHARACTER) {
@@ -2357,7 +2379,7 @@ abstract class Event {
                     joinSelections.put(prize.id, prize.description);
                 }
             }
-            setJoinSelections(joinSelections);
+            return joinSelections;
         }
 
         @Override
@@ -2395,12 +2417,27 @@ abstract class Event {
                 return createErrorResponse("Unrecognized selection " + selection);
             }
 
-            prizeSelections.get(selection).add(new GiveawayParticipant(user, character,
-                getStat(character), selection));
+            GiveawayParticipant participant = new GiveawayParticipant(user, character,
+                getStat(character), selection);
+            prizeSelections.get(selection).add(participant);
+            logGiveawayEventParticipant(participant, details.eventId);
 
             return createEmbedResponse(user.getNickname() + " joined with "
                 + character.getDisplayName() + ". There are now " + participatingUsers.size()
                 + " players participating in the giveaway.");
+        }
+
+        @Override
+        void silentUserJoin(Participant participant) {
+            if (!(participant instanceof GiveawayParticipant)) {
+                return;
+            }
+            GiveawayParticipant giveawayParticipant = (GiveawayParticipant)participant;
+            if (!prizeSelections.containsKey(giveawayParticipant.selection)) {
+                return;
+            }
+
+            prizeSelections.get(giveawayParticipant.selection).add(giveawayParticipant);
         }
 
         @Override
@@ -2431,6 +2468,7 @@ abstract class Event {
 
             prizeSelections.get(oldSelection).remove(oldParticipant);
             prizeSelections.get(selection).add(newParticipant);
+            updateGiveawayEventParticipant(newParticipant, details.eventId);
 
             StringBuilder builder = new StringBuilder();
             builder.append(user.getNickname());
@@ -2590,13 +2628,14 @@ abstract class Event {
                         givePrize(participant.uid, prize);
                         messageFrames.add(createEmbedResponse(description, blocks, true));
                     }
-
-                    // TODO: Log all participants to DB
                 } while (eligibleWinners.size() > 1);
+
+                for (GiveawayParticipant participant : participants) {
+                    logCompleteGiveawayEventParticipant(participant, details.eventId);
+                }
             }
 
-            // TODO: Log event result to DB
-
+            logGiveawayEventCompletion(details);
             return messageFrames;
         }
     }
@@ -2781,7 +2820,27 @@ abstract class Event {
     //  eventId integer NOT NULL,
     //  team integer NOT NULL,
     //  cid bigint NOT NULL,
-    //  foil integer NOT NULL
+    //  foil integer NOT NULL,
+    //  CONSTRAINT slots_participant_event_id FOREIGN KEY(eventId) REFERENCES slots_event(eventId),
+    //  CONSTRAINT slots_participant_character FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS giveaway_event (
+    //  eventId integer NOT NULL PRIMARY KEY,
+    //  cid_foil integer NOT NULL,
+    //  CONSTRAINT giveaway_event_event_id FOREIGN KEY(eventId) REFERENCES event(eventId)
+    // );
+
+    // CREATE TABLE IF NOT EXISTS giveaway_participant (
+    //  uid bigint NOT NULL,
+    //  eventId integer NOT NULL,
+    //  selection bigint NOT NULL,
+    //  cid bigint NOT NULL,
+    //  foil integer NOT NULL,
+    //  won boolean NOT NULL DEFAULT false,
+    //  roll integer NOT NULL DEFAULT -1,
+    //  CONSTRAINT giveaway_participant_event_id FOREIGN KEY(eventId) REFERENCES giveaway_event(eventId),
+    //  CONSTRAINT giveaway_participant_charcter FOREIGN KEY(uid, cid, foil) REFERENCES gacha_user_character(uid, cid, foil)
     // );
 
     static PastEventStatus fetchServerEventStatus(long server) {
@@ -2797,9 +2856,18 @@ abstract class Event {
     }
 
     static int isUserAlreadyInEvent(int eventId, long uid) {
-        String query = "WITH ongoing_work AS (SELECT eventId FROM event NATURAL JOIN work_event NATURAL JOIN work_participant "
-            + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
-            + "SELECT eventId FROM ongoing_work LIMIT 1;"; // TODO: Add UNION with other event types
+        String query = "(SELECT eventId FROM event NATURAL JOIN work_event NATURAL JOIN work_participant "
+                + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
+            + "UNION (SELECT eventId FROM event NATURAL JOIN fish_event NATURAL JOIN fish_participant "
+                + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
+            + "UNION (SELECT eventId FROM event NATURAL JOIN pick_event NATURAL JOIN pick_participant "
+                + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
+            + "UNION (SELECT eventId FROM event NATURAL JOIN rob_event NATURAL JOIN rob_participant "
+                + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
+            + "UNION (SELECT eventId FROM event NATURAL JOIN slots_event NATURAL JOIN slots_participant "
+                + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ") "
+            + "UNION (SELECT eventId FROM event NATURAL JOIN giveaway_event NATURAL JOIN giveaway_participant "
+                + "WHERE completed = false AND eventId != " + eventId + " AND uid = " + uid + ");";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 return results.getInt(1);
@@ -3169,7 +3237,9 @@ abstract class Event {
     }
 
     static void logRobEventCompletion(RobEvent.RobEventDetails details) {
-        String query = "UPDATE rob_event SET (too_few_participants, stealth_success) = ("
+        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = "
+                + details.eventId + ") "
+            + "UPDATE rob_event SET (too_few_participants, stealth_success) = ("
             + details.tooFewParticipants + " , " + details.stealthSuccess + ") WHERE eventId = "
             + details.eventId + ";";
         CasinoDB.executeUpdate(query);
@@ -3225,14 +3295,86 @@ abstract class Event {
 
     static void logSlotsEventCompletion(int cherry, int orange, int lemon, int blueberry,
             int grape, int eventId, int multiplier) {
-        String query = "UPDATE slots_event SET (cherry, orange, lemon, blueberry, grape, multiplier) = ("
+        String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = "
+                + eventId + ") "
+            + "UPDATE slots_event SET (cherry, orange, lemon, blueberry, grape, multiplier) = ("
             + cherry + ", " + orange + ", " + lemon + ", " + blueberry + ", " + grape
             + ", " + multiplier + ") WHERE eventId = " + eventId + ";";
         CasinoDB.executeUpdate(query);
     }
 
-    static GiveawayEvent.GiveawayEventDetails fetchGiveawayEventDetails() {
-        Gacha.SHINY_TYPE shiny = Gacha.getGachaBanner(0).generateShinyType();
-        return new GiveawayEvent.GiveawayEventDetails(shiny);
+    static GiveawayEvent.GiveawayEventDetails fetchNewGiveawayEventDetails(long server) {
+        SHINY_TYPE foil = Gacha.GachaBanner.generateShinyType(GiveawayEvent.SHINY_CHANCE,
+            GiveawayEvent.PRISMATIC_CHANCE);
+        String query = "WITH inserted_event AS (INSERT INTO event (server, type) VALUES ("
+                + server +", " + EVENTTYPE_ID_GIVEAWAY + " RETURNING eventId) "
+            + "INSERT INTO giveaway_event (eventId, cid_foil) "
+                + "SELECT eventId, " + foil.getId() + " FROM inserted_event RETURNING eventId;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new GiveawayEvent.GiveawayEventDetails(foil, results.getInt(1));
+            }
+            return null;
+        }, null);
+    }
+
+    static GiveawayEvent.GiveawayEventDetails fetchExistingGiveawayEventDetails(int eventId) {
+        String query = "SELECT cid_foil, eventId FROM giveaway_event WHERE eventId = "
+            + eventId + ";";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            if (results.next()) {
+                return new GiveawayEvent.GiveawayEventDetails(SHINY_TYPE.fromId(results.getInt(1)),
+                    results.getInt(2));
+            }
+            return null;
+        }, null);
+    }
+
+    static List<GiveawayEvent.GiveawayParticipant> fetchExistingGiveawayEventParticipants(int eventId) {
+        String query = "SELECT uid, selection, cid, foil FROM giveaway_participant WHERE eventId = "
+            + eventId + ";";
+        List<DBParticipant> dbParticipants = CasinoDB.executeQueryWithReturn(query, results -> {
+            List<DBParticipant> participants = new ArrayList<>();
+            while (results.next()) {
+                participants.add(new DBParticipant(results.getLong(1), results.getInt(2),
+                    results.getLong(3), results.getInt(4)));
+            }
+            return participants;
+        }, new ArrayList<DBParticipant>());
+        List<GiveawayEvent.GiveawayParticipant> participants = new ArrayList<>();
+        for (DBParticipant participant : dbParticipants) {
+            User user = Casino.getUser(participant.uid);
+            GachaCharacter character = Gacha.getCharacter(participant.uid, participant.cid,
+                SHINY_TYPE.fromId(participant.foil));
+            participants.add(new GiveawayEvent.GiveawayParticipant(user, character,
+                getStat(character, ITEM_STAT.MISC), participant.selection));
+        }
+        return participants;
+    }
+
+    static void logGiveawayEventParticipant(GiveawayEvent.GiveawayParticipant participant, int eventId) {
+        String query = "INSERT INTO giveaway_participant (uid, eventId, selection, cid, foil) VALUES ("
+            + participant.uid + ", " + eventId + ", " + participant.selection + ", "
+            + participant.getCid() + ", " + participant.getFoil() + ");";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void updateGiveawayEventParticipant(GiveawayEvent.GiveawayParticipant participant, int eventId) {
+        String query = "UPDATE giveaway_participant SET (selection, cid, foil) = ("
+            + participant.selection + ", " + participant.getCid() + ", " + participant.getFoil()
+            + ") WHERE uid = " + participant.uid + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logCompleteGiveawayEventParticipant(GiveawayEvent.GiveawayParticipant participant, int eventId) {
+        String query = "UPDATE giveaway_participant SET (won, roll) = ("
+            + participant.won + ", " + participant.roll + ") WHERE uid = " + participant.uid
+            + " AND eventId = " + eventId + ";";
+        CasinoDB.executeUpdate(query);
+    }
+
+    static void logGiveawayEventCompletion(GiveawayEvent.GiveawayEventDetails details) {
+        String query = "UPDATE event SET completed = true WHERE eventId = " + details.eventId + ";";
+        CasinoDB.executeUpdate(query);
     }
 }

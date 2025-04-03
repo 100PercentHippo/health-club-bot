@@ -176,7 +176,6 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = EventUser.checkRobBonus(uid, "`/work`");
         String output = "";
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 25) {
@@ -202,7 +201,7 @@ class Casino {
         } else {
             output = ":artist: You make an artistic masterpiece and sell it for 250 coins! Your new balance is " + logWork(uid, 250);
         }
-        return output + bonus;
+        return output;
     }
 
 // Payout:
@@ -225,7 +224,6 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = EventUser.checkPickBonus(uid, "`/fish`");
         String output = "";
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 80) {
@@ -253,7 +251,7 @@ class Casino {
                     + logFish(uid, true, 250);
             }
         }
-        return output + bonus;
+        return output;
     }
 
 // Payout:
@@ -278,12 +276,11 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = EventUser.checkRobBonus(uid, "`/rob`");
         String output = "";
         if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             robFailed(uid);
             output = "You were caught! You are dragged off to jail for 2 hours.";
-            return output + bonus;
+            return output;
         }
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 5) {
@@ -316,7 +313,7 @@ class Casino {
             output = ":bank: You rob The Bank and grab 350 coins worth of diamonds! Your new balance is "
                 + logRob(uid, true, 350);
         }
-        return output + bonus;
+        return output;
     }
 
 // Payout:
@@ -341,12 +338,11 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = EventUser.checkPickBonus(uid, "`/pickpocket`");
         String output = "";
         if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             pickFailed(uid);
             output = "You were caught! You are dragged off to jail for 30 minutes.";
-            return output + bonus;
+            return output;
         }
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 10) {
@@ -378,7 +374,7 @@ class Casino {
             output = ":gem: You grab a large diamond worth 250 coins!! Your new balance is "
                 + logPick(uid, true, 250);
         }
-        return output + bonus;
+        return output;
     }
 
     static String handleClaim(long uid, String name) {
