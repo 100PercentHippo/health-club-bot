@@ -1,6 +1,7 @@
 package com.c2t2s.hb;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -113,12 +114,12 @@ public class CasinoServerManager {
 
         void initializeEvent() {
             if (eventChannel == null) { return; }
-            activeEvent = Event.EventFactory.createEvent(serverId, Duration.ofMinutes(5));
+            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(5));
             schedule(activeEvent::initialize, Duration.ofSeconds(15));
         }
 
         void createNewEvent() {
-            activeEvent = Event.EventFactory.createEvent(serverId, Duration.ofMinutes(5));
+            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(5));
             activeEvent.initialize();
         }
     }

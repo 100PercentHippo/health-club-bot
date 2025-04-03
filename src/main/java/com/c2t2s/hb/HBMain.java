@@ -20,6 +20,8 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
+import com.c2t2s.hb.Event.Participant;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +42,7 @@ import java.util.TimerTask;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.Set;
 
 public class HBMain {
@@ -262,7 +265,8 @@ public class HBMain {
                 embedBuilder.addInlineField(block.title, block.body);
             }
             if (footer != null && !footer.isEmpty()) {
-                embedBuilder.setFooter(footer);
+                // TODO: Restore this to addFooter()
+                embedBuilder.addField(footer, footer);
             }
             return embedBuilder;
         }
@@ -572,6 +576,10 @@ public class HBMain {
 
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction interaction = event.getSlashCommandInteraction();
+            System.out.println(interaction.getUser().getName() + " used "
+                + interaction.getFullCommandName() + "  " + interaction.getArguments().stream()
+                    .map(a -> { return a.getStringValue().orElse(""); })
+                    .collect(Collectors.joining("  ")));
             CasinoCommand command = commands.get(interaction.getFullCommandName());
 
             if (command == null) {
@@ -603,6 +611,7 @@ public class HBMain {
         });
         api.addMessageComponentCreateListener(event -> {
             MessageComponentInteraction interaction = event.getMessageComponentInteraction();
+            System.out.println(interaction.getUser().getName() + " pressed " + interaction.getCustomId());
             String prefix = interaction.getCustomId();
             int seperator = prefix.indexOf('.');
             if (seperator > 0) {

@@ -6,6 +6,9 @@ import java.awt.Color;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
@@ -14,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -46,47 +50,47 @@ abstract class Event {
         // Hide default constructor
         private EventFactory() {}
 
-        static Event createEvent(long server, Duration timeUntilResolution) {
+        static Event createEvent(long server, LocalDateTime endTime) {
             PastEventStatus lastEvent = fetchServerEventStatus(server);
 
             if (lastEvent == null) {
                 // Hopefully this is the first event for this server
-                return new FishEvent(server, timeUntilResolution);
+                return new FishEvent(server, endTime);
             }
 
             if (!lastEvent.completed) {
                 // Continue an ongoing event
                 switch (lastEvent.eventType) {
                     case WORK:
-                        return new WorkEvent(server, timeUntilResolution, lastEvent.eventId);
+                        return new WorkEvent(server, endTime, lastEvent.eventId);
                     case FISH:
-                        return new FishEvent(server, timeUntilResolution, lastEvent.eventId);
+                        return new FishEvent(server, endTime, lastEvent.eventId);
                     case PICKPOCKET:
-                        return new PickEvent(server, timeUntilResolution, lastEvent.eventId);
+                        return new PickEvent(server, endTime, lastEvent.eventId);
                     case ROB:
-                        return new RobEvent(server, timeUntilResolution, lastEvent.eventId);
+                        return new RobEvent(server, endTime, lastEvent.eventId);
                     case SUPER_SLOTS:
-                        return new SlotsEvent(server, timeUntilResolution, lastEvent.eventId);
+                        return new SlotsEvent(server, endTime, lastEvent.eventId);
                     case GIVEAWAY:
-                        return new GiveawayEvent(server, timeUntilResolution, lastEvent.eventId);
+                        return new GiveawayEvent(server, endTime, lastEvent.eventId);
                 }
             }
 
             EventType nextType = EventType.getNextEventType(lastEvent.eventType);
             switch (nextType) {
                 case WORK:
-                    return new WorkEvent(server, timeUntilResolution);
+                    return new WorkEvent(server, endTime);
                 default:
                 case FISH:
-                    return new FishEvent(server, timeUntilResolution);
+                    return new FishEvent(server, endTime);
                 case PICKPOCKET:
-                    return new PickEvent(server, timeUntilResolution);
+                    return new PickEvent(server, endTime);
                 case ROB:
-                    return new RobEvent(server, timeUntilResolution);
+                    return new RobEvent(server, endTime);
                 case SUPER_SLOTS:
-                    return new SlotsEvent(server, timeUntilResolution);
+                    return new SlotsEvent(server, endTime);
                 case GIVEAWAY:
-                    return new GiveawayEvent(server, timeUntilResolution);
+                    return new GiveawayEvent(server, endTime);
             }
         }
     }
@@ -216,7 +220,7 @@ abstract class Event {
 
     protected EventType type;
     protected long server;
-    protected Duration timeUntilResolution;
+    private long endTimeEpochSec;
     private Map<Long, String> joinSelections;
     protected EventDetails baseDetails;
     private List<HBMain.AutocompleteIdOption> options = new ArrayList<>();
@@ -231,7 +235,6 @@ abstract class Event {
     static final Duration EVENT_LOCK_DURATION = Duration.ofSeconds(15);
     static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(2);
     static final int COUNTDOWN_SECONDS = 10;
-    static final String JOIN_COMMAND_PROMPT = "\n\nJoin with `/gacha event join` for coins, pulls, and character xp!";
     static final String INVALID_SELECTION_PREFIX = "Invalid selection: ";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
     static final NumberFormat ONE_DECIMAL = new DecimalFormat("0.0");
@@ -241,19 +244,19 @@ abstract class Event {
     static final int BASE_XP_GAIN = 50;
     static final int TYPE_MATCH_XP_GAIN = 100;
 
-    protected Event(EventType type, long server, Duration timeUntilResolution,
+    protected Event(EventType type, long server, LocalDateTime endTime,
             Map<Long, String> joinSelections) {
         this.type = type;
         this.server = server;
-        this.timeUntilResolution = timeUntilResolution;
+        this.endTimeEpochSec = endTime.atZone(ZoneId.systemDefault()).toEpochSecond();
 
         setJoinSelections(joinSelections);
     }
 
-    protected Event(EventType type, long server, Duration timeUntilResolution) {
+    protected Event(EventType type, long server, LocalDateTime endTime) {
         this.type = type;
         this.server = server;
-        this.timeUntilResolution = timeUntilResolution;
+        this.endTimeEpochSec = endTime.atZone(ZoneId.systemDefault()).toEpochSecond();
         // options and joinSelections will be empty
     }
 
@@ -361,7 +364,14 @@ abstract class Event {
         return new EmbedResponse(Color.RED, INVALID_SELECTION_PREFIX + message);
     }
 
+    String getFooter() {
+        return "Event ends <t:" + endTimeEpochSec + ":R>. Join with `/gacha event join` for coins, pulls, and character xp!";
+    }
+
     Void initialize() {
+        Duration timeUntilResolution
+            = Duration.ofMillis(endTimeEpochSec - (System.currentTimeMillis() / 1000));
+
         if (timeUntilResolution.compareTo(EVENT_ENDING_REMINDER_WINDOW) < 0) {
             CasinoServerManager.schedule(this::lockEvent, timeUntilResolution);
         } else {
@@ -370,7 +380,7 @@ abstract class Event {
         }
 
         EmbedResponse response = createInitialMessage();
-        response.setFooter(JOIN_COMMAND_PROMPT);
+        response.setFooter(getFooter());
         response.setButtons(createAboutButton());
         CasinoServerManager.sendEventMessage(server, response);
         return null;
@@ -461,7 +471,7 @@ abstract class Event {
             }
         }
 
-        joinMessage.setFooter(JOIN_COMMAND_PROMPT);
+        joinMessage.setFooter(getFooter());
         CasinoServerManager.sendEventMessage(server, joinMessage);
 
         StringBuilder output = new StringBuilder("Successfully joined ");
@@ -577,8 +587,8 @@ abstract class Event {
         WorkEventDetails details;
         List<WorkParticipant> participants = new ArrayList<>();
 
-        WorkEvent(long server, Duration timeUntilResolution) {
-            super(EventType.WORK, server, timeUntilResolution);
+        WorkEvent(long server, LocalDateTime endTime) {
+            super(EventType.WORK, server, endTime);
             canUsersRejoin = false;
             details = fetchNewWorkEventDetails(server);
             baseDetails = details;
@@ -588,8 +598,8 @@ abstract class Event {
                 entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
         }
 
-        WorkEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.WORK, server, timeUntilResolution);
+        WorkEvent(long server, LocalDateTime endTime, int existingEventId) {
+            super(EventType.WORK, server, endTime);
             canUsersRejoin = false;
             details = fetchExistingWorkEventDetails(existingEventId);
             baseDetails = details;
@@ -880,14 +890,14 @@ abstract class Event {
         List<FishParticipant> boat2Users = new ArrayList<>();
         List<FishParticipant> boat3Users = new ArrayList<>();
 
-        FishEvent(long server, Duration timeUntilResolution) {
-            super(EventType.FISH, server, timeUntilResolution, selectionMap);
+        FishEvent(long server, LocalDateTime endTime) {
+            super(EventType.FISH, server, endTime, selectionMap);
             details = fetchNewFishEventDetails(server);
             baseDetails = details;
         }
 
-        FishEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.FISH, server, timeUntilResolution, selectionMap);
+        FishEvent(long server, LocalDateTime endTime, int existingEventId) {
+            super(EventType.FISH, server, endTime, selectionMap);
             details = fetchExistingFishEventDetails(existingEventId);
             baseDetails = details;
 
@@ -1115,7 +1125,7 @@ abstract class Event {
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
             builder.append(" minutes!\n\nCurrent fishing boat fleet:");
             return createEmbedResponse(builder.toString(), displayCurrentState(), false,
-                JOIN_COMMAND_PROMPT);
+                getFooter());
         }
 
         @Override
@@ -1264,8 +1274,8 @@ abstract class Event {
         PickEventDetails details;
         List<PickParticipant> participants = new ArrayList<>();
 
-        PickEvent(long server, Duration timeUntilResolution) {
-            super(EventType.PICKPOCKET, server, timeUntilResolution);
+        PickEvent(long server, LocalDateTime endTime) {
+            super(EventType.PICKPOCKET, server, endTime);
             supportsUserSelections = true;
             int totalTargets = HBMain.generateBoundedNormal(AVERAGE_PICK_TARGETS,
                 PICK_TARGETS_STD_DEV, MIN_PICK_TARGETS);
@@ -1273,8 +1283,8 @@ abstract class Event {
             baseDetails = details;
         }
 
-        PickEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.PICKPOCKET, server, timeUntilResolution);
+        PickEvent(long server, LocalDateTime endTime, int existingEventId) {
+            super(EventType.PICKPOCKET, server, endTime);
             supportsUserSelections = true;
             details = fetchExistingPickEventDetails(existingEventId);
             baseDetails = details;
@@ -1423,8 +1433,7 @@ abstract class Event {
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
             builder.append(" minutes!\n\nCurrent participants:");
-            return createEmbedResponse(builder.toString(), displayCurrentState(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         @Override
@@ -1603,8 +1612,8 @@ abstract class Event {
         RobEventDetails details;
         List<RobParticipant> participants = new ArrayList<>();
 
-        RobEvent(long server, Duration timeUntilResolution) {
-            super(EventType.ROB, server, timeUntilResolution,
+        RobEvent(long server, LocalDateTime endTime) {
+            super(EventType.ROB, server, endTime,
                 Map.ofEntries(entry(QUIET_SELECTION_ID,"Quiet: Stick to the plan - receive a "
                     + "bonus if everybody else is quiet as well"), entry(LOUD_SELECTION_ID,
                     "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
@@ -1613,8 +1622,8 @@ abstract class Event {
             baseDetails = details;
         }
 
-        RobEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.ROB, server, timeUntilResolution);
+        RobEvent(long server, LocalDateTime endTime, int existingEventId) {
+            super(EventType.ROB, server, endTime);
             details = fetchExistingRobEventDetails(existingEventId);
             baseDetails = details;
 
@@ -1772,8 +1781,7 @@ abstract class Event {
             builder.append(" minutes!\n\nThe total heist value is currently: ");
             builder.append(getHeistTake());
             addMoreParticipantsNeededMessage(builder);
-            return createEmbedResponse(builder.toString(), printParticipants(), false,
-                JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), printParticipants());
         }
 
         @Override
@@ -2032,13 +2040,13 @@ abstract class Event {
             }
         }
 
-        SlotsEvent(long server, Duration timeUntilResolution) {
-            super(EventType.SUPER_SLOTS, server, timeUntilResolution, selectionMap);
+        SlotsEvent(long server, LocalDateTime endTime) {
+            super(EventType.SUPER_SLOTS, server, endTime, selectionMap);
             baseDetails = fetchNewSlotEventDetails(server);
         }
 
-        SlotsEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.SUPER_SLOTS, server, timeUntilResolution, selectionMap);
+        SlotsEvent(long server, LocalDateTime endTime, int existingEventId) {
+            super(EventType.SUPER_SLOTS, server, endTime, selectionMap);
             baseDetails = new EventDetails(existingEventId);
 
             List<SlotsParticipant> participants
@@ -2187,8 +2195,7 @@ abstract class Event {
             builder.append("Ending in ");
             builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
             builder.append(" minutes!\n\nCurrent teams:");
-            return createEmbedResponse(builder.toString(), displayCurrentState())
-                .setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
         private long generateFruit() {
@@ -2351,8 +2358,8 @@ abstract class Event {
         GiveawayEventDetails details;
         Map<Long, List<GiveawayParticipant>> prizeSelections = new HashMap<>();
 
-        GiveawayEvent(long server, Duration timeUntilResolution) {
-            super(EventType.GIVEAWAY, server, timeUntilResolution);
+        GiveawayEvent(long server, LocalDateTime endTime) {
+            super(EventType.GIVEAWAY, server, endTime);
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 prizeSelections.put(prize.id, new ArrayList<>());
             }
@@ -2362,8 +2369,8 @@ abstract class Event {
             setJoinSelections(getSelections());
         }
 
-        GiveawayEvent(long server, Duration timeUntilResolution, int existingEventId) {
-            super(EventType.GIVEAWAY, server, timeUntilResolution);
+        GiveawayEvent(long server, LocalDateTime endTime, int existingEventId) {
+            super(EventType.GIVEAWAY, server, endTime);
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 prizeSelections.put(prize.id, new ArrayList<>());
             }
@@ -2505,7 +2512,7 @@ abstract class Event {
                 builder.append("\n\nRemember the character in this giveaway is ")
                     .append(details.shiny.getAdjective()).append('!');
             }
-            return createEmbedResponse(builder.toString()).setFooter(JOIN_COMMAND_PROMPT);
+            return createEmbedResponse(builder.toString());
         }
 
         String givePrize(long uid, GiveawayPrize prize) {
