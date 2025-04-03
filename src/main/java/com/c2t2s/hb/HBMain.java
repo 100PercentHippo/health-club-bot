@@ -582,11 +582,11 @@ public class HBMain {
             System.out.println(interaction.getUser().getName() + " used /"
                 + interaction.getFullCommandName() + "  " + interaction.getArguments().stream()
                     .map(a -> {
-                        if (!a.getStringValue().isEmpty()) {
+                        if (a.getStringValue().isPresent()) {
                             return a.getStringValue().get();
-                        } else if (!a.getLongValue().isEmpty()) {
+                        } else if (a.getLongValue().isPresent()) {
                             return Long.toString(a.getLongValue().get());
-                        } else if (!a.getUserValue().isEmpty()) {
+                        } else if (a.getUserValue().isPresent()) {
                             return a.getUserValue().get().getName();
                         } else {
                             return "[?]";
