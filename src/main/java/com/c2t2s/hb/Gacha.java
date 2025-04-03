@@ -1304,8 +1304,8 @@ class Gacha {
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 GachaItems.Item item = null;
-                if (results.getString(18) != null) {
-                    item = GachaItems.fetchItem(uid, results.getLong(18));
+                if (results.getString(17) != null) {
+                    item = GachaItems.fetchItem(uid, results.getLong(17));
                 }
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
@@ -1322,8 +1322,8 @@ class Gacha {
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
                 GachaItems.Item item = null;
-                if (results.getString(18) != null) {
-                    item = GachaItems.fetchItem(uid, results.getLong(18));
+                if (results.getString(17) != null) {
+                    item = GachaItems.fetchItem(uid, results.getLong(17));
                 }
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
@@ -1355,8 +1355,8 @@ class Gacha {
             while (results.next()) {
                 // This is inefficient and should be refactored to involve fewer queries
                 GachaItems.Item item = null;
-                if (results.getString(18) != null) {
-                    item = GachaItems.fetchItem(uid, results.getLong(18));
+                if (results.getString(17) != null) {
+                    item = GachaItems.fetchItem(uid, results.getLong(17));
                 }
                 output.add(new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),

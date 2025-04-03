@@ -72,6 +72,7 @@ class CasinoDB {
             AllOrNothing.addUserToCache(uid);
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Query was: " + query);
         } finally {
             try {
                 if (preparedStatement != null) {
@@ -110,6 +111,7 @@ class CasinoDB {
             connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Query was: " + query);
         } finally {
             try {
                 if (statement != null) {
@@ -145,6 +147,7 @@ class CasinoDB {
             connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Query was: " + query);
         } finally {
             try {
                 if (statement != null) {
@@ -180,6 +183,7 @@ class CasinoDB {
             statement.close();
             connection.close();
         } catch (SQLException e) {
+            System.out.println("Query was: " + query);
             e.printStackTrace();
         } finally {
             try {
@@ -218,6 +222,7 @@ class CasinoDB {
             connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Query was: " + query);
         } finally {
             try {
                 if (statement != null) {

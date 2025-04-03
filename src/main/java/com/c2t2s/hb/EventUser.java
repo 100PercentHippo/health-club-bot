@@ -182,7 +182,7 @@ class EventUser {
     }
 
     private static Timestamp resetEventUserDailyLimits(long uid) {
-        return CasinoDB.executeTimestampQuery("UPDATE event_user SET (robs_today, picks_today, daily_games_today, next_reset) = (0, 0, 0, NOW() + INTERVAL '22 hours') WHERE uid = "
+        return CasinoDB.executeTimestampQuery("UPDATE event_user SET (events_today, daily_games_today, next_reset) = (0, 0, NOW() + INTERVAL '22 hours') WHERE uid = "
                 + uid + " RETURNING next_reset;");
     }
 }
