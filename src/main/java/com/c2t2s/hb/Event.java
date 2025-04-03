@@ -418,7 +418,8 @@ abstract class Event {
             return "Unable to join event: Event has ended";
         } else if (!CasinoServerManager.hasEvent(server)) {
             return "Unable to join event: No event found";
-        } else if (!joinSelections.isEmpty() && !joinSelections.containsKey(selection)) {
+        } else if (joinSelections != null && !joinSelections.isEmpty()
+                && !joinSelections.containsKey(selection)) {
             // If options was empty, any user input is valid
             return "Unable to join event: Unrecognized selection " + selection;
         } else if (participatingUsers.containsKey(uid) && !canUsersRejoin) {
@@ -477,7 +478,7 @@ abstract class Event {
         output.append(' ');
         output.append(character.getCharacterStats().printStat(type.assocatedStat));
         output.append("\nYour selection was: ");
-        if (!joinSelections.isEmpty()) {
+        if (joinSelections != null && !joinSelections.isEmpty()) {
             output.append(joinSelections.get(selection));
         } else {
             output.append(selection);
@@ -633,14 +634,19 @@ abstract class Event {
         }
 
         void displayCurrentState(StringBuilder builder) {
+            displayCurrentState(builder, true);
+        }
+
+        void displayCurrentState(StringBuilder builder, boolean showPayout) {
             int smallFilledBars = Math.min(details.smallTaskProgress, SMALL_TASK_GOAL) / 10;
             int smallEmptyBars = (SMALL_TASK_GOAL / 10) - smallFilledBars;
             int mediumFilledBars = Math.min(details.mediumTaskProgress, MEDIUM_TASK_GOAL) / 10;
             int mediumEmptyBars = (MEDIUM_TASK_GOAL / 10) - mediumFilledBars;
             int bigFilledBars = Math.min(details.bigTaskProgress, BIG_TASK_GOAL) / 10;
             int bigEmptyBars = (BIG_TASK_GOAL / 10) - bigFilledBars;
-            builder.append(details.smallTaskName).append(" (").append(SMALL_TASK_REWARD)
-                .append(" coins):\n\t").append(details.smallTaskProgress).append('/')
+            builder.append("\n\n").append(details.smallTaskName).append(" (")
+                .append(SMALL_TASK_REWARD).append(" coins):\n\t")
+                .append(details.smallTaskProgress).append('/')
                 .append(SMALL_TASK_GOAL).append(' ')
                 .append(Casino.repeatString(FULL_LOADING_BAR, smallFilledBars))
                 .append(Casino.repeatString(EMPTY_LOADING_BAR, smallEmptyBars))
@@ -653,15 +659,18 @@ abstract class Event {
                 .append(" coins):\n\t").append(details.bigTaskProgress).append('/')
                 .append(BIG_TASK_GOAL).append(' ')
                 .append(Casino.repeatString(FULL_LOADING_BAR, bigFilledBars))
-                .append(Casino.repeatString(EMPTY_LOADING_BAR, bigEmptyBars))
-                .append("\n\nCurrent wages per person: ").append(getPayout()).append(" coins");
+                .append(Casino.repeatString(EMPTY_LOADING_BAR, bigEmptyBars));
+            if (showPayout) {
+                builder.append("\n\nCurrent wages per person: ")
+                    .append(getPayout()).append(" coins");
+            }
         }
 
         @Override
         EmbedResponse createInitialMessage() {
             StringBuilder builder = new StringBuilder();
             builder.append("A new Work event is starting, destination: ").append(details.location)
-                .append("\n\nThe tasks that need to be done are:\n\n");
+                .append("\n\nThe tasks that need to be done are:");
             displayCurrentState(builder);
             return createEmbedResponse(builder.toString());
         }
@@ -743,7 +752,6 @@ abstract class Event {
                 .append("'\nRoll: `").append(roll).append('`');
 
             builder.append(progressTask(selection, roll));
-            builder.append("\n\n");
             displayCurrentState(builder);
             return createEmbedResponse(builder.toString());
         }
@@ -782,14 +790,14 @@ abstract class Event {
             StringBuilder builder = new StringBuilder();
             StringBuilder statusBuilder = new StringBuilder();
             builder.append(RANDOM_WORKERS).append(" extra workers pitch in to help:");
-            displayCurrentState(statusBuilder);
-            messageFrames.add(createEmbedResponse(builder.toString() + "\n\n\n\n"
+            displayCurrentState(statusBuilder, false);
+            messageFrames.add(createEmbedResponse(builder.toString() + "\n\n"
                 + statusBuilder.toString()));
 
             int workertask = HBMain.RNG_SOURCE.nextInt(3);
             builder.append("\nBill joins '").append(getTaskName(workertask))
                 .append("' and rolls ");
-            messageFrames.add(createEmbedResponse(builder.toString() + "`??`\n\n\n"
+            messageFrames.add(createEmbedResponse(builder.toString() + "`??`\n"
                 + statusBuilder.toString()));
             int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
             progressTask(workertask, roll);
@@ -797,25 +805,31 @@ abstract class Event {
             builder.append(roll);
             builder.append('`');
             statusBuilder = new StringBuilder();
-            displayCurrentState(statusBuilder);
-            messageFrames.add(createEmbedResponse(builder.toString() + "\n\n\n"
+            displayCurrentState(statusBuilder, false);
+            messageFrames.add(createEmbedResponse(builder.toString() + "\n"
                 + statusBuilder.toString()));
 
             workertask = HBMain.RNG_SOURCE.nextInt(3);
             builder.append("\nCoin joins '").append(getTaskName(workertask))
                 .append("' and rolls ");
-            messageFrames.add(createEmbedResponse(builder.toString() + "`??`\n\n"
+            messageFrames.add(createEmbedResponse(builder.toString() + "`??`"
                 + statusBuilder.toString()));
             roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
             progressTask(workertask, roll);
             builder.append('`');
             builder.append(roll);
             builder.append('`');
-            builder.append("\n\n");
-            displayCurrentState(builder);
+            displayCurrentState(builder, false);
+            messageFrames.add(createEmbedResponse(builder.toString()));
+
+            builder.append("\n\nWages per person: ");
             messageFrames.add(createEmbedResponse(builder.toString()));
 
             int payout = getPayout();
+            builder.append(payout);
+            builder.append(" coins");
+            messageFrames.add(createEmbedResponse(builder.toString()));
+
             for (WorkParticipant participant : participants) {
                 Casino.addMoney(participant.uid, payout);
             }
@@ -2435,8 +2449,10 @@ abstract class Event {
             logGiveawayEventParticipant(participant, details.eventId);
 
             return createEmbedResponse(user.getNickname() + " joined with "
-                + character.getDisplayName() + ". There are now " + participatingUsers.size()
-                + " players participating in the giveaway.");
+                + character.getDisplayName() + ". There " + (participatingUsers.size() == 1 ? "is" : "are")
+                + " now " + participatingUsers.size()
+                + " player" + Casino.getPluralSuffix(participatingUsers.size())
+                + " participating in the giveaway.");
         }
 
         @Override
@@ -2500,7 +2516,8 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Ending soon!\n\nThere are currently ").append(participatingUsers.size())
+            builder.append("Ending soon!\n\nThere ").append(participatingUsers.size() == 1 ? "is" : "are")
+                .append(" currently ").append(participatingUsers.size())
                 .append(" participant").append(Casino.getPluralSuffix(participatingUsers.size()));
             if (details.shiny != Gacha.SHINY_TYPE.NORMAL) {
                 builder.append("\n\nRemember the character in this giveaway is ")
