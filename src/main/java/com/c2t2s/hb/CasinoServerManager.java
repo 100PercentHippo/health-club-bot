@@ -114,12 +114,12 @@ public class CasinoServerManager {
 
         void initializeEvent() {
             if (eventChannel == null) { return; }
-            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(5));
+            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(2));
             schedule(activeEvent::initialize, Duration.ofSeconds(15));
         }
 
         void createNewEvent() {
-            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(5));
+            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(2));
             activeEvent.initialize();
         }
     }

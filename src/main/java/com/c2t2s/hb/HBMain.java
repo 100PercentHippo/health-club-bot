@@ -20,8 +20,6 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
-import com.c2t2s.hb.Event.Participant;
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -580,18 +578,18 @@ public class HBMain {
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction interaction = event.getSlashCommandInteraction();
             System.out.println(interaction.getUser().getName() + " used /"
-                + interaction.getFullCommandName() + "  " + interaction.getArguments().stream()
+                + interaction.getFullCommandName() + " " + interaction.getArguments().stream()
                     .map(a -> {
                         if (a.getStringValue().isPresent()) {
-                            return a.getStringValue().get();
+                            return '[' + a.getStringValue().get() + ']';
                         } else if (a.getLongValue().isPresent()) {
-                            return Long.toString(a.getLongValue().get());
+                            return '[' + Long.toString(a.getLongValue().get()) + ']';
                         } else if (a.getUserValue().isPresent()) {
-                            return a.getUserValue().get().getName();
+                            return '[' + a.getUserValue().get().getName() + ']';
                         } else {
                             return "[?]";
                         }
-                    }).collect(Collectors.joining("  ")));
+                    }).collect(Collectors.joining(" ")));
             CasinoCommand command = commands.get(interaction.getFullCommandName());
 
             if (command == null) {

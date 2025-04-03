@@ -8,7 +8,6 @@ import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
@@ -17,7 +16,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -105,7 +103,7 @@ abstract class Event {
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
     static final int EVENTTYPE_ID_GIVEAWAY = 7;
     static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
-    static final double GIVEAWAY_EVENT_CHANCE = 0.5; // TODO: Reduce to 0.2
+    static final double GIVEAWAY_EVENT_CHANCE = 0.5; // TODO: Reduce to 0.25
 
     enum EventType {
         FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, new Color(91, 170, 255)), // Light Blue
@@ -228,12 +226,11 @@ abstract class Event {
     protected Map<Long, Participant> participatingUsers = new HashMap<>();
     private boolean complete = false;
     protected int totalPayoutMultiplier = 0;
-    protected boolean supportsUserSelections = false;
     protected boolean canUsersRejoin = true;
+    protected boolean isInitialMessagePosted = false;
 
     static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(1);
-    static final Duration EVENT_LOCK_DURATION = Duration.ofSeconds(15);
-    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(2);
+    static final Duration NEW_EVENT_DELAY = Duration.ofSeconds(90);
     static final int COUNTDOWN_SECONDS = 10;
     static final String INVALID_SELECTION_PREFIX = "Invalid selection: ";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");
@@ -373,35 +370,34 @@ abstract class Event {
             = Duration.ofSeconds(endTimeEpochSec - (System.currentTimeMillis() / 1000));
 
         if (timeUntilResolution.compareTo(EVENT_ENDING_REMINDER_WINDOW) < 0) {
-            CasinoServerManager.schedule(this::lockEvent, timeUntilResolution);
+            CasinoServerManager.schedule(this::resolve, timeUntilResolution);
         } else {
             CasinoServerManager.schedule(this::postReminder,
                 timeUntilResolution.minus(EVENT_ENDING_REMINDER_WINDOW));
         }
 
-        EmbedResponse response = createInitialMessage();
-        response.setFooter(getFooter());
-        response.setButtons(createAboutButton());
-        CasinoServerManager.sendEventMessage(server, response);
+        if (!isInitialMessagePosted) {
+            isInitialMessagePosted = true;
+            EmbedResponse response = createInitialMessage();
+            response.setFooter(getFooter());
+            response.setButtons(createAboutButton());
+            CasinoServerManager.sendEventMessage(server, response);
+        }
         return null;
     }
 
     Void postReminder() {
         if (!CasinoServerManager.hasEvent(server)) { return null; }
         CasinoServerManager.schedule(this::resolve, EVENT_ENDING_REMINDER_WINDOW);
-        CasinoServerManager.sendEventMessage(server, createReminderMessage());
-        return null;
-    }
-
-    Void lockEvent() {
-        complete = true;
-        CasinoServerManager.schedule(this::resolve, EVENT_LOCK_DURATION);
+        EmbedResponse response = createReminderMessage();
+        response.setFooter(getFooter());
+        CasinoServerManager.sendEventMessage(server, response);
         return null;
     }
 
     Void resolve() {
         if (!CasinoServerManager.hasEvent(server)) { return null; }
-        complete = true; // Redundant, but just in case
+        complete = true;
         CasinoServerManager.schedule(() -> {
             CasinoServerManager.beginNewEvent(server);
             return null;
@@ -422,7 +418,7 @@ abstract class Event {
             return "Unable to join event: Event has ended";
         } else if (!CasinoServerManager.hasEvent(server)) {
             return "Unable to join event: No event found";
-        } else if (!supportsUserSelections && !joinSelections.containsKey(selection)) {
+        } else if (!joinSelections.isEmpty() && !joinSelections.containsKey(selection)) {
             // If options was empty, any user input is valid
             return "Unable to join event: Unrecognized selection " + selection;
         } else if (participatingUsers.containsKey(uid) && !canUsersRejoin) {
@@ -438,7 +434,7 @@ abstract class Event {
         }
         int existingEvent = isUserAlreadyInEvent(baseDetails.eventId, uid);
         if (existingEvent != EVENT_ID_NOT_FOUND) {
-            return "Unable to join event: You are already participanting in an ongoing event "
+            return "Unable to join event: You are already participating in an ongoing event "
                 + "in another server (" + existingEvent + ")";
         }
 
@@ -481,7 +477,7 @@ abstract class Event {
         output.append(' ');
         output.append(character.getCharacterStats().printStat(type.assocatedStat));
         output.append("\nYour selection was: ");
-        if (supportsUserSelections) {
+        if (!joinSelections.isEmpty()) {
             output.append(joinSelections.get(selection));
         } else {
             output.append(selection);
@@ -600,6 +596,7 @@ abstract class Event {
 
         WorkEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.WORK, server, endTime);
+            isInitialMessagePosted = true;
             canUsersRejoin = false;
             details = fetchExistingWorkEventDetails(existingEventId);
             baseDetails = details;
@@ -772,8 +769,7 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Ending in ").append(EVENT_ENDING_REMINDER_WINDOW.toMinutes())
-                .append(" minutes!\n\nCurrent Tasks:");
+            builder.append("Ending soon!\n\nCurrent Tasks:");
             displayCurrentState(builder);
             return createEmbedResponse(builder.toString());
         }
@@ -898,6 +894,7 @@ abstract class Event {
 
         FishEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.FISH, server, endTime, selectionMap);
+            isInitialMessagePosted = true;
             details = fetchExistingFishEventDetails(existingEventId);
             baseDetails = details;
 
@@ -1121,9 +1118,7 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Ending in ");
-            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
-            builder.append(" minutes!\n\nCurrent fishing boat fleet:");
+            builder.append("Ending soon!\n\nCurrent fishing boat fleet:");
             return createEmbedResponse(builder.toString(), displayCurrentState(), false,
                 getFooter());
         }
@@ -1152,11 +1147,11 @@ abstract class Event {
             inlineBlocks.peekLast().setBody(payoutBuilder.toString());
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             details.payout *= getPayoutMultiplier();
-            payoutBuilder.append("\nx");
+            payoutBuilder.append(" x");
             payoutBuilder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
             inlineBlocks.peekLast().setBody(payoutBuilder.toString());
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
-            payoutBuilder.append("\n= ");
+            payoutBuilder.append(" = ");
             payoutBuilder.append(details.payout);
             payoutBuilder.append(" each");
             inlineBlocks.peekLast().setBody(payoutBuilder.toString());
@@ -1276,7 +1271,6 @@ abstract class Event {
 
         PickEvent(long server, LocalDateTime endTime) {
             super(EventType.PICKPOCKET, server, endTime);
-            supportsUserSelections = true;
             int totalTargets = HBMain.generateBoundedNormal(AVERAGE_PICK_TARGETS,
                 PICK_TARGETS_STD_DEV, MIN_PICK_TARGETS);
             details = fetchNewPickEventDetails(server, totalTargets);
@@ -1285,7 +1279,7 @@ abstract class Event {
 
         PickEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.PICKPOCKET, server, endTime);
-            supportsUserSelections = true;
+            isInitialMessagePosted = true;
             details = fetchExistingPickEventDetails(existingEventId);
             baseDetails = details;
 
@@ -1430,9 +1424,7 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Ending in ");
-            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
-            builder.append(" minutes!\n\nCurrent participants:");
+            builder.append("Ending soon!\n\nCurrent participants:");
             return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
@@ -1624,6 +1616,7 @@ abstract class Event {
 
         RobEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.ROB, server, endTime);
+            isInitialMessagePosted = true;
             details = fetchExistingRobEventDetails(existingEventId);
             baseDetails = details;
 
@@ -1776,10 +1769,12 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("The heist is starting in ");
-            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
-            builder.append(" minutes!\n\nThe total heist value is currently: ");
+            builder.append("The heist is starting soon!\n\nThe total heist value is currently ");
             builder.append(getHeistTake());
+            builder.append(" coins to be split between ");
+            builder.append(participatingUsers.size());
+            builder.append(" participant");
+            builder.append(Casino.getPluralSuffix(participatingUsers.size()));
             addMoreParticipantsNeededMessage(builder);
             return createEmbedResponse(builder.toString(), printParticipants());
         }
@@ -2047,6 +2042,7 @@ abstract class Event {
 
         SlotsEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.SUPER_SLOTS, server, endTime, selectionMap);
+            isInitialMessagePosted = true;
             baseDetails = new EventDetails(existingEventId);
 
             List<SlotsParticipant> participants
@@ -2192,9 +2188,7 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Ending in ");
-            builder.append(EVENT_ENDING_REMINDER_WINDOW.toMinutes());
-            builder.append(" minutes!\n\nCurrent teams:");
+            builder.append("Ending soon!\n\nCurrent teams:");
             return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
@@ -2371,6 +2365,7 @@ abstract class Event {
 
         GiveawayEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.GIVEAWAY, server, endTime);
+            isInitialMessagePosted = true;
             for (GiveawayPrize prize : GiveawayPrize.values()) {
                 prizeSelections.put(prize.id, new ArrayList<>());
             }
@@ -2505,9 +2500,8 @@ abstract class Event {
         @Override
         EmbedResponse createReminderMessage() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Ending in ").append(EVENT_ENDING_REMINDER_WINDOW.toMinutes())
-                .append(" minutes! There are currently ").append(participatingUsers.size())
-                .append(" participants");
+            builder.append("Ending soon!\n\nThere are currently ").append(participatingUsers.size())
+                .append(" participant").append(Casino.getPluralSuffix(participatingUsers.size()));
             if (details.shiny != Gacha.SHINY_TYPE.NORMAL) {
                 builder.append("\n\nRemember the character in this giveaway is ")
                     .append(details.shiny.getAdjective()).append('!');
