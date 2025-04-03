@@ -11,8 +11,8 @@ class EventUser {
         GUESS, HUGEGUESS, SLOTS, MINISLOTS, OVERUNDER, BLACKJACK, ALLORNOTHING;
 
         static DailyGame getDailyGame(long resetTime) {
-            System.out.println("[DEBUG] resetTime: " + resetTime + " becomes: " + (int)resetTime % 7);
-            switch ((int)resetTime % 7) {
+            System.out.println("[DEBUG] resetTime: " + resetTime + " becomes: " + (int)(resetTime % 7));
+            switch ((int)(resetTime % 7)) {
                 case 0:
                     return GUESS;
                 case 1:

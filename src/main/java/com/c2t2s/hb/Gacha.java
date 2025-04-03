@@ -990,8 +990,8 @@ class Gacha {
         substring = substring.trim();
         List<GachaCharacter> characters = queryCharacters(uid, substring, withItems, shiny);
         if (orderBy != null) {
-            characters.sort((c1, c2) -> c1.getCharacterStats().getStat(orderBy)
-                - c2.getCharacterStats().getStat(orderBy));
+            characters.sort((c1, c2) -> c2.getCharacterStats().getStat(orderBy)
+                - c1.getCharacterStats().getStat(orderBy));
         }
         List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
         characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));

@@ -3069,7 +3069,7 @@ abstract class Event {
 
     static void logFishEventCompletion(FishEvent.FishEventDetails details) {
         String query = "WITH complete_event AS (UPDATE event SET completed = true WHERE eventId = "
-                + details.eventId + "), "
+                + details.eventId + ") "
             + "UPDATE fish_event SET (boat_1_roll, boat_2_roll, boat_3_roll, payout) = ("
             + details.boat1Roll + ", " + details.boat2Roll + ", " + details.boat3Roll
             + ", " + details.payout + ") WHERE eventId = " + details.eventId + ";";
