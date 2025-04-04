@@ -2,9 +2,12 @@ package com.c2t2s.hb;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -41,18 +44,20 @@ public class CasinoServerManager {
         private long moneyMachinePot;
 
         private ServerTextChannel eventChannel;
+        private Deque<LocalTime> eventTimes;
         private Set<Long> casinoChannelIds;
         private List<ServerTextChannel> casinioChannels;
         private Set<Long> users = new HashSet<>();
 
         private Event activeEvent;
 
-        CasinoServer(long serverId, String serverName, ServerTextChannel eventChannel,
+        CasinoServer(long serverId, String serverName, ServerTextChannel eventChannel, Deque<LocalTime> eventTimes,
                 Set<Long> casinoChannelIds, List<ServerTextChannel> casinoChannels, Set<Long> users,
                 long moneyMachinePot) {
             this.serverId = serverId;
             this.serverName = serverName;
             this.eventChannel = eventChannel;
+            this.eventTimes = eventTimes;
             this.casinoChannelIds = casinoChannelIds;
             this.casinioChannels = casinoChannels;
             this.users = users;
@@ -114,13 +119,29 @@ public class CasinoServerManager {
 
         void initializeEvent() {
             if (eventChannel == null) { return; }
-            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(2));
+            activeEvent = Event.EventFactory.createEvent(serverId, getNextEventTime());
             schedule(activeEvent::initialize, Duration.ofSeconds(15));
         }
 
         void createNewEvent() {
-            activeEvent = Event.EventFactory.createEvent(serverId, LocalDateTime.now().plusMinutes(2));
+            activeEvent = Event.EventFactory.createEvent(serverId, getNextEventTime());
             activeEvent.initialize();
+        }
+
+        private LocalDateTime getNextEventTime() {
+            LocalDateTime now = LocalDateTime.now();
+            LocalTime time = now.toLocalTime();
+            if (time.isAfter(eventTimes.peekFirst()) && time.isAfter(eventTimes.peekLast())) {
+                LocalTime eventTime = eventTimes.poll();
+                eventTimes.add(eventTime);
+                return LocalDateTime.of(now.toLocalDate().plusDays(1), eventTime);
+            }
+            while (time.isAfter(eventTimes.peekFirst())) {
+                eventTimes.add(eventTimes.poll());
+            }
+            LocalTime eventTime = eventTimes.poll();
+            eventTimes.add(eventTime);
+            return LocalDateTime.of(now.toLocalDate(), eventTime);
         }
     }
 
@@ -147,8 +168,10 @@ public class CasinoServerManager {
 
     static void initializeServer(FetchedServer fetchedServer, DiscordApi api) {
         ServerTextChannel eventChannel = null;
+        Deque<LocalTime> eventTimes = null;
         if (fetchedServer.eventChannel > 0) {
             eventChannel = getTextChannel(api, fetchedServer.eventChannel);
+            eventTimes = fetchEventTimes(fetchedServer.serverId);
         }
         Set<Long> casinoChannelIds = fetchCasinoChannels(fetchedServer.serverId);
         Set<Long> users = fetchCasinoUsers(fetchedServer.serverId);
@@ -162,7 +185,7 @@ public class CasinoServerManager {
         }
 
         servers.put(fetchedServer.serverId, new CasinoServer(fetchedServer.serverId,
-            fetchedServer.name, eventChannel, casinoChannelIds, casinoChannels, users,
+            fetchedServer.name, eventChannel, eventTimes, casinoChannelIds, casinoChannels, users,
             fetchedServer.moneyMachinePot));
     }
 
@@ -480,6 +503,13 @@ public class CasinoServerManager {
     //   CONSTRAINT casino_server_user_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
+    // CREATE TABLE IF NOT EXISTS casino_server_event_time (
+    //  server_id bigint NOT NULL,
+    //  event_time time NOT NULL,
+    //  PRIMARY KEY(server_id, event_time),
+    //  CONSTRAINT casino_server_event_time_server_id FOREIGN KEY(server_id) REFERENCES casino_server(server_id)
+    // );
+
     private static Set<Long> fetchAdminUsers() {
         return CasinoDB.executeSetQuery("SELECT uid FROM admin_user;");
     }
@@ -560,5 +590,17 @@ public class CasinoServerManager {
     private static long logIncreaseMoneyMachinePot(long server, long amount) {
         return CasinoDB.executeLongQuery("UPDATE casino_server SET money_machine_pot = money_machine_pot + "
             + amount + " WHERE server_id = " + server + " RETURNING money_machine_pot;");
+    }
+
+    private static Deque<LocalTime> fetchEventTimes(long server) {
+        String query = "SELECT event_time FROM casino_server_event_time WHERE server_id = "
+            + server + " ORDER BY event_time ASC;";
+        return CasinoDB.executeQueryWithReturn(query, results -> {
+            Deque<LocalTime> eventTimes = new LinkedList<>();
+            while (results.next()) {
+                eventTimes.add(results.getTime(1).toLocalTime());
+            }
+            return eventTimes;
+        }, null);
     }
 }

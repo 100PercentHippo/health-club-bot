@@ -139,6 +139,8 @@ abstract class Event {
                 //     return SUPER_GUESS;
                 case EVENTTYPE_ID_SUPER_SLOTS:
                     return SUPER_SLOTS;
+                case EVENTTYPE_ID_GIVEAWAY:
+                    return GIVEAWAY;
                 case EVENTTYPE_ID_FISH:
                 default:
                     return FISH;
@@ -590,9 +592,9 @@ abstract class Event {
             details = fetchNewWorkEventDetails(server);
             baseDetails = details;
             setJoinSelections(Map.ofEntries(
-                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName),
-                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName),
-                entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
+                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName + " (" + SMALL_TASK_REWARD + ")"),
+                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName + " (" + MEDIUM_TASK_REWARD + ")"),
+                entry(BIG_TASK_SELECTION_ID, details.bigTaskName + " (" + BIG_TASK_REWARD + ")")));
         }
 
         WorkEvent(long server, LocalDateTime endTime, int existingEventId) {
@@ -602,9 +604,9 @@ abstract class Event {
             details = fetchExistingWorkEventDetails(existingEventId);
             baseDetails = details;
             setJoinSelections(Map.ofEntries(
-                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName),
-                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName),
-                entry(BIG_TASK_SELECTION_ID, details.bigTaskName)));
+                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName + " (" + SMALL_TASK_REWARD + ")"),
+                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName + " (" + MEDIUM_TASK_REWARD + ")"),
+                entry(BIG_TASK_SELECTION_ID, details.bigTaskName + " (" + BIG_TASK_REWARD + ")")));
 
             List<WorkParticipant> existingParticipants
                 = fetchExistingWorkEventParticipants(existingEventId);
@@ -619,6 +621,10 @@ abstract class Event {
         }
 
         int getPayout() {
+            return getPayout(true);
+        }
+
+        int getPayout(boolean withMultiplier) {
             int basePayout = 0;
             if (details.smallTaskProgress >= SMALL_TASK_GOAL) {
                 basePayout += SMALL_TASK_REWARD;
@@ -629,7 +635,9 @@ abstract class Event {
             if (details.bigTaskProgress >= BIG_TASK_GOAL) {
                 basePayout += BIG_TASK_REWARD;
             }
-            basePayout *= getPayoutMultiplier();
+            if (withMultiplier) {
+                basePayout *= getPayoutMultiplier();
+            }
             return basePayout;
         }
 
@@ -825,7 +833,15 @@ abstract class Event {
             builder.append("\n\nWages per person: ");
             messageFrames.add(createEmbedResponse(builder.toString()));
 
+            builder.append(getPayout(false));
+            messageFrames.add(createEmbedResponse(builder.toString()));
+
+            builder.append(" x ");
+            builder.append(Stats.twoDecimals.format(getPayoutMultiplier()));
+            messageFrames.add(createEmbedResponse(builder.toString()));
+
             int payout = getPayout();
+            builder.append(" = ");
             builder.append(payout);
             builder.append(" coins");
             messageFrames.add(createEmbedResponse(builder.toString()));
