@@ -896,7 +896,7 @@ class Gacha {
 
         StringBuilder output = new StringBuilder("Your characters:");
         for (GachaCharacter character : characters) {
-            output.append("\n" + character.toString(true));
+            output.append('\n').append(character.toString(true));
         }
         return output.toString();
     }

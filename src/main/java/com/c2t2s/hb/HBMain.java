@@ -67,12 +67,12 @@ public class HBMain {
         }
 
         SingleResponse(String message) {
-            this.message = message;
+            setMessage(message);
             buttons = null;
         }
 
         SingleResponse(String message, ActionRow buttons) {
-            this.message = message;
+            setMessage(message);
             this.buttons = buttons;
         }
 
@@ -96,7 +96,7 @@ public class HBMain {
         MultistepResponse() {}
 
         MultistepResponse(String message) {
-            messages.add(message);
+            addMessage(message);
         }
 
         MultistepResponse(String message, ActionRow buttons) {
