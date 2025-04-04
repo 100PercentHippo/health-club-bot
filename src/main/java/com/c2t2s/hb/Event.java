@@ -56,40 +56,43 @@ abstract class Event {
                 return new FishEvent(server, endTime);
             }
 
-            if (!lastEvent.completed) {
-                // Continue an ongoing event
-                switch (lastEvent.eventType) {
-                    case WORK:
-                        return new WorkEvent(server, endTime, lastEvent.eventId);
-                    case FISH:
-                        return new FishEvent(server, endTime, lastEvent.eventId);
-                    case PICKPOCKET:
-                        return new PickEvent(server, endTime, lastEvent.eventId);
-                    case ROB:
-                        return new RobEvent(server, endTime, lastEvent.eventId);
-                    case SUPER_SLOTS:
-                        return new SlotsEvent(server, endTime, lastEvent.eventId);
-                    case GIVEAWAY:
-                        return new GiveawayEvent(server, endTime, lastEvent.eventId);
-                }
-            }
+            // TODO: Remove this debug logic
+            return new GiveawayEvent(server, endTime);
 
-            EventType nextType = EventType.getNextEventType(lastEvent.eventType);
-            switch (nextType) {
-                case WORK:
-                    return new WorkEvent(server, endTime);
-                default:
-                case FISH:
-                    return new FishEvent(server, endTime);
-                case PICKPOCKET:
-                    return new PickEvent(server, endTime);
-                case ROB:
-                    return new RobEvent(server, endTime);
-                case SUPER_SLOTS:
-                    return new SlotsEvent(server, endTime);
-                case GIVEAWAY:
-                    return new GiveawayEvent(server, endTime);
-            }
+        //     if (!lastEvent.completed) {
+        //         // Continue an ongoing event
+        //         switch (lastEvent.eventType) {
+        //             case WORK:
+        //                 return new WorkEvent(server, endTime, lastEvent.eventId);
+        //             case FISH:
+        //                 return new FishEvent(server, endTime, lastEvent.eventId);
+        //             case PICKPOCKET:
+        //                 return new PickEvent(server, endTime, lastEvent.eventId);
+        //             case ROB:
+        //                 return new RobEvent(server, endTime, lastEvent.eventId);
+        //             case SUPER_SLOTS:
+        //                 return new SlotsEvent(server, endTime, lastEvent.eventId);
+        //             case GIVEAWAY:
+        //                 return new GiveawayEvent(server, endTime, lastEvent.eventId);
+        //         }
+        //     }
+
+        //     EventType nextType = EventType.getNextEventType(lastEvent.eventType);
+        //     switch (nextType) {
+        //         case WORK:
+        //             return new WorkEvent(server, endTime);
+        //         default:
+        //         case FISH:
+        //             return new FishEvent(server, endTime);
+        //         case PICKPOCKET:
+        //             return new PickEvent(server, endTime);
+        //         case ROB:
+        //             return new RobEvent(server, endTime);
+        //         case SUPER_SLOTS:
+        //             return new SlotsEvent(server, endTime);
+        //         case GIVEAWAY:
+        //             return new GiveawayEvent(server, endTime);
+        //     }
         }
     }
 
@@ -2358,12 +2361,16 @@ abstract class Event {
             long selection;
             boolean won = false;
             int roll = -1;
-            String rollString = "";
+            StringBuilder rollString = new StringBuilder();
 
             GiveawayParticipant(User user, GachaCharacter character, int characterMultiplier,
                     long selection) {
                 super(user, character, characterMultiplier);
                 this.selection = selection;
+            }
+
+            String getRollString() {
+                return rollString.toString();
             }
         }
 
@@ -2512,9 +2519,13 @@ abstract class Event {
                 return createErrorResponse("You already joined that team with that character");
             }
 
+            System.out.println("Updating giveaway participant:");
+            System.out.println("{" + prizeSelections.get(0L).size() + ", " + + prizeSelections.get(1L).size() + ", "+ prizeSelections.get(2L).size() + ", "+ prizeSelections.get(3L).size() + ", "+ prizeSelections.get(4L).size() + "}");
             prizeSelections.get(oldSelection).remove(oldParticipant);
+            System.out.println("{" + prizeSelections.get(0L).size() + ", " + + prizeSelections.get(1L).size() + ", "+ prizeSelections.get(2L).size() + ", "+ prizeSelections.get(3L).size() + ", "+ prizeSelections.get(4L).size() + "}");
             prizeSelections.get(selection).add(newParticipant);
             updateGiveawayEventParticipant(newParticipant, details.eventId);
+            System.out.println("{" + prizeSelections.get(0L).size() + ", " + + prizeSelections.get(1L).size() + ", "+ prizeSelections.get(2L).size() + ", "+ prizeSelections.get(3L).size() + ", "+ prizeSelections.get(4L).size() + "}");
 
             StringBuilder builder = new StringBuilder();
             builder.append(user.getNickname());
@@ -2626,8 +2637,10 @@ abstract class Event {
                     List<Integer> winners = new ArrayList<>();
                     for (int index : eligibleWinners) {
                         GiveawayParticipant participant = participants.get(index);
-                        participant.roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
-                        participant.rollString += '`' + participant.roll + '`';
+                        participant.roll = HBMain.RNG_SOURCE.nextInt(5) + 1; // TODO: Restore to 100
+                        participant.rollString.append('`');
+                        participant.rollString.append(participant.roll);
+                        participant.rollString.append('`');
                         if (participant.roll > highRoll) {
                             highRoll = participant.roll;
                             winners.clear();
@@ -2654,14 +2667,15 @@ abstract class Event {
 
                     if (eligibleWinners.size() > 1) {
                         for (int index : eligibleWinners) {
-                            participants.get(index).rollString += " - Tied!";
+                            participants.get(index).rollString.append(" - Tied!");
                         }
+                        rollBlock.setBody(getRollString(participants));
                         messageFrames.add(createEmbedResponse(description, blocks, true));
                         // Remove "Tied!" suffix
                         for (int index : eligibleWinners) {
-                            String rollString = participants.get(index).rollString;
-                            participants.get(index).rollString
-                                = rollString.substring(0, rollString.length() - 5);
+                            String rollString = participants.get(index).getRollString();
+                            participants.get(index).rollString = new StringBuilder(
+                                rollString.substring(0, rollString.length() - 5));
                         }
                     } else if (eligibleWinners.isEmpty()) {
                         System.out.println("Impossible state: encounted empty winner list while "
@@ -2669,9 +2683,9 @@ abstract class Event {
                     } else {
                         // 1 Winner
                         GiveawayParticipant participant = participants.get(eligibleWinners.get(0));
-                        participant.rollString += " - Winner!";
+                        participant.rollString.append(" - Winner!");
                         participant.won = true;
-                        givePrize(participant.uid, prize);
+                        mainBlock.setTitle(givePrize(participant.uid, prize));
                         messageFrames.add(createEmbedResponse(description, blocks, true));
                     }
                 } while (eligibleWinners.size() > 1);
