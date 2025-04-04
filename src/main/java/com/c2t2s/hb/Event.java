@@ -2686,6 +2686,7 @@ abstract class Event {
                         participant.rollString.append(" - Winner!");
                         participant.won = true;
                         mainBlock.setTitle(givePrize(participant.uid, prize));
+                        rollBlock.setBody(getRollString(participants));
                         messageFrames.add(createEmbedResponse(description, blocks, true));
                     }
                 } while (eligibleWinners.size() > 1);
