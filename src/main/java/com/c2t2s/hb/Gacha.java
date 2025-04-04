@@ -2,14 +2,9 @@ package com.c2t2s.hb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.c2t2s.hb.GachaItems.Item;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 
 class Gacha {
 
@@ -252,13 +247,13 @@ class Gacha {
                 + (level * 10);
         }
 
-        GachaItems.StatArray getCharacterStats() {
+        private GachaItems.StatArray getCharacterStats() {
             int baseAmount = getBaseBuffAmount();
             return new GachaItems.StatArray((int)workBonus * baseAmount, (int)fishBonus * baseAmount,
                 (int)pickBonus * baseAmount, (int)robBonus * baseAmount, (int)miscBonus * baseAmount);
         }
 
-        private GachaItems.StatArray getTotalStatArray() {
+        GachaItems.StatArray getTotalStatArray() {
             if (item == null) {
                 return getCharacterStats();
             } else {
@@ -993,10 +988,10 @@ class Gacha {
         List<GachaCharacter> characters = queryCharacters(uid, substring, withItems, shiny);
         List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
         if (orderBy != null) {
-            characters.sort((c1, c2) -> c2.getCharacterStats().getStat(orderBy)
-                - c1.getCharacterStats().getStat(orderBy));
+            characters.sort((c1, c2) -> c2.getTotalStatArray().getStat(orderBy)
+                - c1.getTotalStatArray().getStat(orderBy));
             characters.forEach(c -> {
-                int stat = c.getCharacterStats().getStat(orderBy);
+                int stat = c.getTotalStatArray().getStat(orderBy);
                 StringBuilder description = new StringBuilder();
                 description.append('[');
                 if (stat >= 0) {
@@ -1359,11 +1354,11 @@ class Gacha {
         return queryCharacters(uid, substring, false, -1);
     }
 
-    private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean withItems, int foil) {
+    private static List<GachaCharacter> queryCharacters(long uid, String substring, boolean onlyWithItems, int foil) {
         if (substring == null) { substring = ""; }
         substring = '%' + substring + '%';
         String query = getPartialCharacterQuery(uid) + " WHERE uid = " + uid;
-        if (withItems) { query += " AND iid IS NOT NULL"; }
+        if (onlyWithItems) { query += " AND iid IS NOT NULL"; }
         if (foil >= 0) { query += " AND foil = " + foil; }
         query += " AND LOWER(name) LIKE LOWER(?) ORDER BY rarity DESC, foil DESC, name ASC;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {

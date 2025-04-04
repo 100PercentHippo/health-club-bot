@@ -122,7 +122,7 @@ class EventUser {
         } else if (user.eventsToday == 2) {
             builder.append("3rd");
         } else {
-            // Assumes no user will participant in 10 or more events in one day
+            // Assumes no user will participant in 21 or more events in one day
             builder.append(user.eventsToday + 1);
             builder.append("th");
         }

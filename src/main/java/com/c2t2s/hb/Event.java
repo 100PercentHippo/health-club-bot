@@ -478,7 +478,7 @@ abstract class Event {
         output.append(" event with ");
         output.append(character.getDisplayName());
         output.append(' ');
-        output.append(character.getCharacterStats().printStat(type.assocatedStat));
+        output.append(character.getTotalStatArray().printStat(type.assocatedStat));
         output.append("\nYour selection was: ");
         if (joinSelections != null && !joinSelections.isEmpty()) {
             output.append(joinSelections.get(selection));
@@ -524,7 +524,7 @@ abstract class Event {
         builder.append("joined with ");
         builder.append(character.getDisplayName());
         builder.append(' ');
-        builder.append(character.getCharacterStats().printStat(type.assocatedStat));
+        builder.append(character.getTotalStatArray().printStat(type.assocatedStat));
         builder.append(".\nTotal payout bonus is now +");
         builder.append(ONE_DECIMAL.format(getPayoutBonusPercent()));
         builder.append('%');
@@ -535,7 +535,7 @@ abstract class Event {
     }
 
     static int getStat(GachaCharacter character, GachaItems.ITEM_STAT stat) {
-        return character.getCharacterStats().getStat(stat);
+        return character.getTotalStatArray().getStat(stat);
     }
 
     private static class WorkEvent extends Event {
@@ -592,9 +592,9 @@ abstract class Event {
             details = fetchNewWorkEventDetails(server);
             baseDetails = details;
             setJoinSelections(Map.ofEntries(
-                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName + " (" + SMALL_TASK_REWARD + ")"),
-                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName + " (" + MEDIUM_TASK_REWARD + ")"),
-                entry(BIG_TASK_SELECTION_ID, details.bigTaskName + " (" + BIG_TASK_REWARD + ")")));
+                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName + " (" + SMALL_TASK_REWARD + " coins)"),
+                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName + " (" + MEDIUM_TASK_REWARD + " coins)"),
+                entry(BIG_TASK_SELECTION_ID, details.bigTaskName + " (" + BIG_TASK_REWARD + " coins)")));
         }
 
         WorkEvent(long server, LocalDateTime endTime, int existingEventId) {
@@ -604,9 +604,9 @@ abstract class Event {
             details = fetchExistingWorkEventDetails(existingEventId);
             baseDetails = details;
             setJoinSelections(Map.ofEntries(
-                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName + " (" + SMALL_TASK_REWARD + ")"),
-                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName + " (" + MEDIUM_TASK_REWARD + ")"),
-                entry(BIG_TASK_SELECTION_ID, details.bigTaskName + " (" + BIG_TASK_REWARD + ")")));
+                entry(SMALL_TASK_SELECTION_ID, details.smallTaskName + " (" + SMALL_TASK_REWARD + " coins)"),
+                entry(MEDIUM_TASK_SELECTION_ID, details.mediumTaskName + " (" + MEDIUM_TASK_REWARD + " coins)"),
+                entry(BIG_TASK_SELECTION_ID, details.bigTaskName + " (" + BIG_TASK_REWARD + " coins)")));
 
             List<WorkParticipant> existingParticipants
                 = fetchExistingWorkEventParticipants(existingEventId);
@@ -1173,7 +1173,6 @@ abstract class Event {
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             StringBuilder payoutBuilder = new StringBuilder();
             payoutBuilder.append(details.payout);
-            payoutBuilder.append(" coins");
             inlineBlocks.peekLast().setBody(payoutBuilder.toString());
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             details.payout *= getPayoutMultiplier();
@@ -1183,7 +1182,7 @@ abstract class Event {
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
             payoutBuilder.append(" = ");
             payoutBuilder.append(details.payout);
-            payoutBuilder.append(" each");
+            payoutBuilder.append(" coins each");
             inlineBlocks.peekLast().setBody(payoutBuilder.toString());
             messageFrames.add(createEmbedResponse("", inlineBlocks, true));
 
