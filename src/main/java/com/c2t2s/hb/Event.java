@@ -1499,14 +1499,14 @@ abstract class Event {
                 userPayouts.add("");
             }
             // Add one extra to userTargets to represent total
-            userTargets.add("");
+            userTargets.add("`" + totalTargetsSelected + "`/`" + details.totalTargets + "`");
 
             builderOne.append("\n**Total:**");
             InlineBlock column1
                 = new InlineBlock("Participants:", builderOne.toString());
             InlineBlock column2
                 = new InlineBlock("Targets Hit:",
-                    getUserTargetsString(userTargets) + '`' + totalTargetsSelected + '`');
+                    getUserTargetsString(userTargets));
             InlineBlock column3
                 = new InlineBlock("Payout:", "");
             Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(column1, column2, column3));
@@ -1518,7 +1518,7 @@ abstract class Event {
                     totalTargetsSelected += participant.targets;
                     userTargets.remove(participant.joinOrder);
                     userTargets.add(participant.joinOrder,
-                        '`' + TWO_DIGITS.format(participant.targets) + '`');
+                        "`" + TWO_DIGITS.format(participant.targets) + "`");
                     if (totalTargetsSelected > details.totalTargets) {
                         description = "Total targets: ~~" + details.totalTargets + "~~ "
                             + (details.totalTargets / 2) + ". Too many pockets picked! Half the "
@@ -1527,11 +1527,15 @@ abstract class Event {
                         details.targetsExceeded = true;
                     }
                     userTargets.remove(participants.size());
-                    userTargets.add('`' + totalTargetsSelected + "`/`" + details.totalTargets + '`');
+                    userTargets.add("`" + totalTargetsSelected + "`/`" + details.totalTargets + "`");
                     column2.setBody(getUserTargetsString(userTargets));
                     messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
             }
+
+            // Pause after showing targest
+            messageFrames.add(createEmbedResponse(description, blocks, true));
+            messageFrames.add(createEmbedResponse(description, blocks, true));
 
             // Payout participants in increasing order of targets selected
             int targetsPaid = 0;
@@ -1554,8 +1558,8 @@ abstract class Event {
                     participant.payout = targetsToPay * (long)coinsPerTarget;
 
                     userTargets.remove(participant.joinOrder);
-                    userTargets.add(participant.joinOrder, '`' + participant.successfulTargets
-                        + "`/`" + participant.targets + '`');
+                    userTargets.add(participant.joinOrder, "`" + participant.successfulTargets
+                        + "`/`" + participant.targets + "`");
                     userPayouts.remove(participant.joinOrder);
                     userPayouts.add(participant.joinOrder, Long.toString(participant.payout));
                     column2.setBody(getUserTargetsString(userTargets));
