@@ -522,8 +522,8 @@ public class HBMain {
                 i -> Gacha.handlePity(i.getUser().getId(), i.getArgumentLongValueByIndex(0).get()))),
             entry(GACHA_CHARACTER_INFO_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleCharacterInfo(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
-            entry(GACHA_CHARACTER_LIST_COMMAND, new MultistepCasinoCommand(
-                i -> new MultistepResponse(Gacha.handleCharacterList(i.getUser().getId())))),
+            entry(GACHA_CHARACTER_LIST_COMMAND, new SimpleCasinoCommand(
+                i -> Gacha.handleCharacterList(i.getUser().getId()))),
             entry(GACHA_BANNER_INFO_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleBannerInfo(i.getServer().get().getId(), i.getUser().getId(),
                     i.getArgumentLongValueByIndex(0).get()))),
@@ -549,7 +549,7 @@ public class HBMain {
             entry(GACHA_EVENT_JOIN, new SimpleCasinoCommand(
                 i -> CasinoServerManager.handleEventJoin(i.getServer().get().getId(),
                     i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
-                    i.getArgumentLongValueByIndex(1).get()), true)),
+                    i.getArgumentLongValueByIndex(1).get()), true, true, true)),
             entry(REGISTER_CHANNEL_COMMAND, new SimpleCasinoCommand(
                 i -> handleRegisterChannel(i.getUser().getId(), i.getServer(), i.getChannel(), i.getArgumentLongValueByIndex(0).get()),
                 false,

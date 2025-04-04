@@ -2400,13 +2400,6 @@ abstract class Event {
             baseDetails = details;
 
             setJoinSelections(getSelections());
-
-            // TODO: Remove debug logic
-            for (int i = 0; i < 10; i++) {
-                silentUserJoin(new GiveawayParticipant(Casino.getUser(0),
-                    GachaCharacter.fromUniqueId(265369114221084673L, "6|0|Test Character G"),
-                    100, HBMain.RNG_SOURCE.nextInt(5)));
-            }
         }
 
         GiveawayEvent(long server, LocalDateTime endTime, int existingEventId) {
