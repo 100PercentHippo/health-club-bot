@@ -1442,6 +1442,9 @@ abstract class Event {
                 return createErrorResponse("You already selected that many targets and that character");
             }
 
+            // So order remains sequential without having to reorder entries
+            newParticipant.joinOrder = oldParticipant.joinOrder;
+
             participants.remove(oldParticipant);
             participants.add(newParticipant);
             updatePickEventParticipant(newParticipant, details.eventId);
