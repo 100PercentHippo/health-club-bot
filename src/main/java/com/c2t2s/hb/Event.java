@@ -231,8 +231,8 @@ abstract class Event {
     protected boolean canUsersRejoin = true;
     protected boolean isInitialMessagePosted = false;
 
-    static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(1);
-    static final Duration NEW_EVENT_DELAY = Duration.ofSeconds(90);
+    static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(5);
+    static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(2);
     static final int COUNTDOWN_SECONDS = 10;
     static final String INVALID_SELECTION_PREFIX = "Invalid selection: ";
     static final NumberFormat TWO_DIGITS = new DecimalFormat("00");

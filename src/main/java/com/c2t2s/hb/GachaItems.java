@@ -2,7 +2,7 @@ package com.c2t2s.hb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1080,7 +1080,7 @@ public class GachaItems {
             + "enhancement_level, gem_slots, gem_work, gem_fish, gem_pick, gem_rob, gem_misc, gem_additions, "
             + "gem_subtractions, gem_granted_slots, gem_count FROM gem_stats RIGHT OUTER JOIN gacha_item ON "
             + "gem_stats.iid = gacha_item.iid WHERE uid = " + uid + " AND LOWER(name) LIKE LOWER(?) AND destroyed = false "
-            + "ORDER BY (initial_additions + gem_additions - initial_subtractions - gem_subtractions) DESC LIMIT 25;";
+            + "ORDER BY (initial_additions + coalesce(gem_additions, 0) - initial_subtractions - coalesce(gem_subtractions, 0)) DESC LIMIT 25;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             while (results.next()) {
                 items.add(Item.getItem(new FetchedItem(results.getInt(1), results.getLong(2), results.getLong(3),
@@ -1127,7 +1127,7 @@ public class GachaItems {
     }
 
     static Map<Item, String> fetchItemList(long uid) {
-        Map<Item, String> items = new HashMap<>();
+        Map<Item, String> items = new LinkedHashMap<>();
         for (Item item : fetchItems(uid)) {
             items.put(item, "");
         }

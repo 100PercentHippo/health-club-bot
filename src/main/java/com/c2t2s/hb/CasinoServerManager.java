@@ -435,7 +435,7 @@ public class CasinoServerManager {
                 Duration.ofSeconds(1));
         } else if (followup != null) {
             schedule(() -> { sendEventMessage(server, followup); return null; },
-                Duration.ofMinutes(1));
+                Duration.ofSeconds(30));
         }
     }
 
@@ -451,7 +451,7 @@ public class CasinoServerManager {
                 Duration.ofSeconds(1));
         } else if (followup != null) {
             schedule(() -> { sendEventMessage(server, followup); return null; },
-                Duration.ofMinutes(1));
+                Duration.ofSeconds(30));
         }
         return null;
     }
