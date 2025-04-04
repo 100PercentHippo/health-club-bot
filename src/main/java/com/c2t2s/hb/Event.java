@@ -56,43 +56,40 @@ abstract class Event {
                 return new FishEvent(server, endTime);
             }
 
-            // TODO: Remove this debug logic
-            return new GiveawayEvent(server, LocalDateTime.now().plusMinutes(2));
+            if (!lastEvent.completed) {
+                // Continue an ongoing event
+                switch (lastEvent.eventType) {
+                    case WORK:
+                        return new WorkEvent(server, endTime, lastEvent.eventId);
+                    case FISH:
+                        return new FishEvent(server, endTime, lastEvent.eventId);
+                    case PICKPOCKET:
+                        return new PickEvent(server, endTime, lastEvent.eventId);
+                    case ROB:
+                        return new RobEvent(server, endTime, lastEvent.eventId);
+                    case SUPER_SLOTS:
+                        return new SlotsEvent(server, endTime, lastEvent.eventId);
+                    case GIVEAWAY:
+                        return new GiveawayEvent(server, endTime, lastEvent.eventId);
+                }
+            }
 
-        //     if (!lastEvent.completed) {
-        //         // Continue an ongoing event
-        //         switch (lastEvent.eventType) {
-        //             case WORK:
-        //                 return new WorkEvent(server, endTime, lastEvent.eventId);
-        //             case FISH:
-        //                 return new FishEvent(server, endTime, lastEvent.eventId);
-        //             case PICKPOCKET:
-        //                 return new PickEvent(server, endTime, lastEvent.eventId);
-        //             case ROB:
-        //                 return new RobEvent(server, endTime, lastEvent.eventId);
-        //             case SUPER_SLOTS:
-        //                 return new SlotsEvent(server, endTime, lastEvent.eventId);
-        //             case GIVEAWAY:
-        //                 return new GiveawayEvent(server, endTime, lastEvent.eventId);
-        //         }
-        //     }
-
-        //     EventType nextType = EventType.getNextEventType(lastEvent.eventType);
-        //     switch (nextType) {
-        //         case WORK:
-        //             return new WorkEvent(server, endTime);
-        //         default:
-        //         case FISH:
-        //             return new FishEvent(server, endTime);
-        //         case PICKPOCKET:
-        //             return new PickEvent(server, endTime);
-        //         case ROB:
-        //             return new RobEvent(server, endTime);
-        //         case SUPER_SLOTS:
-        //             return new SlotsEvent(server, endTime);
-        //         case GIVEAWAY:
-        //             return new GiveawayEvent(server, endTime);
-        //     }
+            EventType nextType = EventType.getNextEventType(lastEvent.eventType);
+            switch (nextType) {
+                case WORK:
+                    return new WorkEvent(server, endTime);
+                default:
+                case FISH:
+                    return new FishEvent(server, endTime);
+                case PICKPOCKET:
+                    return new PickEvent(server, endTime);
+                case ROB:
+                    return new RobEvent(server, endTime);
+                case SUPER_SLOTS:
+                    return new SlotsEvent(server, endTime);
+                case GIVEAWAY:
+                    return new GiveawayEvent(server, endTime);
+            }
         }
     }
 
@@ -2640,7 +2637,7 @@ abstract class Event {
                     List<Integer> winners = new ArrayList<>();
                     for (int index : eligibleWinners) {
                         GiveawayParticipant participant = participants.get(index);
-                        participant.roll = HBMain.RNG_SOURCE.nextInt(2) + 1; // TODO: Revert to 100
+                        participant.roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
                         participant.rollString.append('`');
                         participant.rollString.append(participant.roll);
                         participant.rollString.append('`');
