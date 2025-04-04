@@ -103,7 +103,7 @@ abstract class Event {
     static final int EVENTTYPE_ID_SUPER_SLOTS = 6;
     static final int EVENTTYPE_ID_GIVEAWAY = 7;
     static final Color MISC_EVENT_COLOR = new Color(255, 120, 17); // Orange
-    static final double GIVEAWAY_EVENT_CHANCE = 0.5; // TODO: Reduce to 0.25
+    static final double GIVEAWAY_EVENT_CHANCE = 0.25;
 
     enum EventType {
         FISH(EVENTTYPE_ID_FISH, GachaItems.ITEM_STAT.FISH, new Color(91, 170, 255)), // Light Blue
@@ -1460,6 +1460,10 @@ abstract class Event {
             return createEmbedResponse(builder.toString(), displayCurrentState());
         }
 
+        private String getUserTargetsString(List<String> userTargets) {
+            return userTargets.stream().collect(Collectors.joining("\n"));
+        }
+
         @Override
         Queue<EmbedResponse> createResolutionMessages() {
             Queue<EmbedResponse> messageFrames = new LinkedList<>();
@@ -1480,6 +1484,8 @@ abstract class Event {
             String description = "Total targets: " + details.totalTargets + "\nCoins per target: "
                 + coinsPerTarget;
             StringBuilder builderOne = new StringBuilder();
+            List<String> userTargets = new ArrayList<>();
+            List<String> userPayouts = new ArrayList<>();
             for (PickParticipant participant : participants) {
                 if (builderOne.length() != 0) {
                     builderOne.append('\n');
@@ -1489,27 +1495,27 @@ abstract class Event {
                     payoutOrder.put(participant.targets, new ArrayList<>());
                 }
                 payoutOrder.get(participant.targets).add(participant);
+                userTargets.add("`??`");
+                userPayouts.add("");
             }
             builderOne.append("\n**Total:**");
-            String userTargets = Casino.repeatString("`??`\n", participants.size());
             InlineBlock column1
                 = new InlineBlock("Participants:", builderOne.toString());
             InlineBlock column2
                 = new InlineBlock("Targets Hit:",
-                    userTargets + '`' + totalTargetsSelected + '`');
+                    getUserTargetsString(userTargets) + '`' + totalTargetsSelected + '`');
             InlineBlock column3
                 = new InlineBlock("Payout:", "");
+            Queue<InlineBlock> blocks = new LinkedList<>(Arrays.asList(column1, column2, column3));
 
             // Reveal everyone's targets in order smallest to largest
-            messageFrames.add(createEmbedResponse(description, new LinkedList<>(Arrays.asList(
-                column1, column2, column3)), true));
+            messageFrames.add(createEmbedResponse(description, blocks, true));
             for (Map.Entry<Integer, List<PickParticipant>> entry : payoutOrder.entrySet()) {
                 for (PickParticipant participant : entry.getValue()) {
                     totalTargetsSelected += participant.targets;
-                    // userTargets is blocks of `??`\n
-                    userTargets = userTargets.substring(0, (participant.joinOrder * 5) + 1)
-                        + TWO_DIGITS.format(participant.targets)
-                        + userTargets.substring((participant.joinOrder * 5) + 3);
+                    userTargets.remove(participant.joinOrder);
+                    userTargets.add(participant.joinOrder,
+                        '`' + TWO_DIGITS.format(participant.targets) + '`');
                     if (totalTargetsSelected > details.totalTargets) {
                         description = "Total targets: ~~" + details.totalTargets + "~~ "
                             + (details.totalTargets / 2) + ". Too many pockets picked! Half the "
@@ -1517,16 +1523,14 @@ abstract class Event {
                         details.totalTargets /= 2;
                         details.targetsExceeded = true;
                     }
-                    column2 = new InlineBlock("Targets Hit:",
-                        userTargets + '`' + totalTargetsSelected + '`');
-                    messageFrames.add(createEmbedResponse(description,
-                        new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
+                    column2.setBody(getUserTargetsString(userTargets) + '`' + totalTargetsSelected + "`/`"
+                        + details.totalTargets + '`');
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
             }
 
             // Payout participants in increasing order of targets selected
             int targetsPaid = 0;
-            String column3text = Casino.repeatString("\n", participants.size());
             for (Map.Entry<Integer, List<PickParticipant>> entry : payoutOrder.entrySet()) {
                 int targetsToPay;
                 if (targetsPaid > details.totalTargets) {
@@ -1545,22 +1549,14 @@ abstract class Event {
                     participant.successfulTargets = targetsToPay;
                     participant.payout = targetsToPay * (long)coinsPerTarget;
 
-                    int index = 0;
-                    for (int i = 0; i < participant.joinOrder; i++) {
-                        index = column3text.indexOf('\n', index) + 1;
-                    }
-                    if (index < 0) {
-                        // This shouldn't happen as there should always be an equal number
-                        // of newlines and participants
-                        System.out.println("Invalid index encountered while updating pick payout "
-                            + "text. Text is:\n" + column3text);
-                        continue;
-                    }
-                    column3text = column3text.substring(0, index) + participant.payout
-                        + column3text.substring(index);
-                    column3 = new InlineBlock("Payout:", column3text);
-                    messageFrames.add(createEmbedResponse(description,
-                        new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
+                    String oldTargets = userTargets.remove(participant.joinOrder);
+                    userTargets.add(participant.joinOrder, '`' + participant.successfulTargets
+                        + "`/" + oldTargets);
+                    userPayouts.remove(participant.joinOrder);
+                    userPayouts.add(participant.joinOrder, Long.toString(participant.payout));
+                    column2.setBody(getUserTargetsString(userTargets));
+                    column3.setBody(getUserTargetsString(userPayouts));
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
             }
 
@@ -1585,14 +1581,10 @@ abstract class Event {
                     logCompletePickEventParticipant(participant, details.eventId);
                 }
             }
-            column3 = new InlineBlock("Payout:",
-                intermediatePayoutBuilder.toString());
-            messageFrames.add(createEmbedResponse(description,
-                new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
-            column3 = new InlineBlock("Payout:",
-                finalPayoutBuilder.toString());
-            messageFrames.add(createEmbedResponse(description,
-                new LinkedList<>(Arrays.asList(column1, column2, column3)), true));
+            column3.setBody(intermediatePayoutBuilder.toString());
+            messageFrames.add(createEmbedResponse(description, blocks, true));
+            column3.setBody(finalPayoutBuilder.toString());
+            messageFrames.add(createEmbedResponse(description, blocks, true));
 
             logPickEventCompletion(details);
 
