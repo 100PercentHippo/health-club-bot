@@ -1498,6 +1498,9 @@ abstract class Event {
                 userTargets.add("`??`");
                 userPayouts.add("");
             }
+            // Add one extra to userTargets to represent total
+            userTargets.add("");
+
             builderOne.append("\n**Total:**");
             InlineBlock column1
                 = new InlineBlock("Participants:", builderOne.toString());
@@ -1523,8 +1526,9 @@ abstract class Event {
                         details.totalTargets /= 2;
                         details.targetsExceeded = true;
                     }
-                    column2.setBody(getUserTargetsString(userTargets) + '`' + totalTargetsSelected + "`/`"
-                        + details.totalTargets + '`');
+                    userTargets.remove(participants.size());
+                    userTargets.add('`' + totalTargetsSelected + "`/`" + details.totalTargets + '`');
+                    column2.setBody(getUserTargetsString(userTargets));
                     messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
             }
@@ -1533,7 +1537,7 @@ abstract class Event {
             int targetsPaid = 0;
             for (Map.Entry<Integer, List<PickParticipant>> entry : payoutOrder.entrySet()) {
                 int targetsToPay;
-                if (targetsPaid > details.totalTargets) {
+                if (targetsPaid >= details.totalTargets) {
                     targetsToPay = 0;
                 } else if (targetsPaid + (entry.getKey() * entry.getValue().size())
                         > details.totalTargets) {
@@ -1549,9 +1553,9 @@ abstract class Event {
                     participant.successfulTargets = targetsToPay;
                     participant.payout = targetsToPay * (long)coinsPerTarget;
 
-                    String oldTargets = userTargets.remove(participant.joinOrder);
+                    userTargets.remove(participant.joinOrder);
                     userTargets.add(participant.joinOrder, '`' + participant.successfulTargets
-                        + "`/" + oldTargets);
+                        + "`/`" + participant.targets + '`');
                     userPayouts.remove(participant.joinOrder);
                     userPayouts.add(participant.joinOrder, Long.toString(participant.payout));
                     column2.setBody(getUserTargetsString(userTargets));
