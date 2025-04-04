@@ -1681,7 +1681,7 @@ abstract class Event {
             builder.append("a few valuables for yourself, and make a break for it before the ");
             builder.append("crew knows what happened. There won't be much to grab if multiple ");
             builder.append("people go loud, and the bonus is pretty tempting, so this time ");
-            builder.append("you're sticking to the plan.\n\n-# unless?\n\n");
+            builder.append("you're sticking to the plan.\n-# unless?\n\n");
 
             return createEmbedResponse(builder.toString());
         }
@@ -2626,6 +2626,9 @@ abstract class Event {
                 for (GiveawayParticipant participant : participants) {
                     if (participantNames.length() != 0) { participantNames.append('\n'); }
                     participantNames.append(participant.nickname);
+                    if (participant.getCid() == GIVEAWAY_CHARACTER_CID) {
+                        participantNames.append(" (with Tie Breaker)");
+                    }
                     mainBlock.setBody(participantNames.toString());
                     messageFrames.add(createEmbedResponse(description, blocks, true));
                     eligibleWinners.add(nameIndex);
@@ -2637,7 +2640,7 @@ abstract class Event {
                     List<Integer> winners = new ArrayList<>();
                     for (int index : eligibleWinners) {
                         GiveawayParticipant participant = participants.get(index);
-                        participant.roll = HBMain.RNG_SOURCE.nextInt(5) + 1; // TODO: Restore to 100
+                        participant.roll = HBMain.RNG_SOURCE.nextInt(2) + 1; // TODO: Revert to 100
                         participant.rollString.append('`');
                         participant.rollString.append(participant.roll);
                         participant.rollString.append('`');
