@@ -1496,7 +1496,7 @@ abstract class Event {
                 }
                 payoutOrder.get(participant.targets).add(participant);
                 userTargets.add("`??`");
-                userPayouts.add("");
+                userPayouts.add(".");
             }
             // Add one extra to userTargets to represent total
             userTargets.add("`" + totalTargetsSelected + "`/`" + details.totalTargets + "`");
@@ -1535,7 +1535,6 @@ abstract class Event {
 
             // Pause after showing targest
             messageFrames.add(createEmbedResponse(description, blocks, true));
-            messageFrames.add(createEmbedResponse(description, blocks, true));
 
             // Payout participants in increasing order of targets selected
             int targetsPaid = 0;
@@ -1563,6 +1562,7 @@ abstract class Event {
                     userPayouts.remove(participant.joinOrder);
                     userPayouts.add(participant.joinOrder, Long.toString(participant.payout));
                     column2.setBody(getUserTargetsString(userTargets));
+                    messageFrames.add(createEmbedResponse(description, blocks, true));
                     column3.setBody(getUserTargetsString(userPayouts));
                     messageFrames.add(createEmbedResponse(description, blocks, true));
                 }
