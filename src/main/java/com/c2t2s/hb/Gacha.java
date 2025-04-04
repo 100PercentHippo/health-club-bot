@@ -991,12 +991,26 @@ class Gacha {
         // Remove leading space so you can use "Foil Test"
         substring = substring.trim();
         List<GachaCharacter> characters = queryCharacters(uid, substring, withItems, shiny);
+        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
         if (orderBy != null) {
             characters.sort((c1, c2) -> c2.getCharacterStats().getStat(orderBy)
                 - c1.getCharacterStats().getStat(orderBy));
+            characters.forEach(c -> {
+                int stat = c.getCharacterStats().getStat(orderBy);
+                StringBuilder description = new StringBuilder();
+                description.append('[');
+                if (stat >= 0) {
+                    description.append('+');
+                }
+                description.append(stat);
+                description.append("] ");
+                description.append(c.getDisplayName());
+                output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(),
+                    description.toString()));
+            });
+        } else {
+            characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));
         }
-        List<HBMain.AutocompleteStringOption> output = new ArrayList<>(characters.size());
-        characters.forEach(c -> output.add(new HBMain.AutocompleteStringOption(c.getUniqueId(), c.getDisplayName())));
         return output;
     }
 
