@@ -1636,18 +1636,20 @@ abstract class Event {
         RobEventDetails details;
         List<RobParticipant> participants = new ArrayList<>();
 
+        private static final Map<Long, String> ROB_SELECTION = Map.ofEntries(entry(QUIET_SELECTION_ID,
+                "Quiet: Stick to the plan - receive a bonus if everybody else is quiet as well"),
+            entry(LOUD_SELECTION_ID,
+                "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
+                    + "as nobody else goes loud"));
+
         RobEvent(long server, LocalDateTime endTime) {
-            super(EventType.ROB, server, endTime,
-                Map.ofEntries(entry(QUIET_SELECTION_ID,"Quiet: Stick to the plan - receive a "
-                    + "bonus if everybody else is quiet as well"), entry(LOUD_SELECTION_ID,
-                    "Loud: Betray the team to grab loot early and run - earn bonus coins so long "
-                    + "as nobody else goes loud")));
+            super(EventType.ROB, server, endTime, ROB_SELECTION);
             details = fetchNewRobEventDetails(server);
             baseDetails = details;
         }
 
         RobEvent(long server, LocalDateTime endTime, int existingEventId) {
-            super(EventType.ROB, server, endTime);
+            super(EventType.ROB, server, endTime, ROB_SELECTION);
             isInitialMessagePosted = true;
             details = fetchExistingRobEventDetails(existingEventId);
             baseDetails = details;
