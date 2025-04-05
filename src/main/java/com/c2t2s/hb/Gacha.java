@@ -96,6 +96,13 @@ class Gacha {
             this.shinyUrl = shinyUrl;
             this.prismaticUrl = prismaticUrl;
 
+            this.workBonus = workBonus;
+            this.fishBonus = fishBonus;
+            this.pickBonus = pickBonus;
+            this.robBonus = robBonus;
+            this.miscBonus = miscBonus;
+            this.item = item;
+
             if (duplicates > MAX_CHARACTER_DUPLICATES) {
                 duplicates = MAX_CHARACTER_DUPLICATES;
             }
@@ -242,8 +249,8 @@ class Gacha {
 
         private GachaItems.StatArray getCharacterStats() {
             int baseAmount = getBaseBuffAmount();
-            return new GachaItems.StatArray((int)workBonus * baseAmount, (int)fishBonus * baseAmount,
-                (int)pickBonus * baseAmount, (int)robBonus * baseAmount, (int)miscBonus * baseAmount);
+            return new GachaItems.StatArray((int)(workBonus * baseAmount), (int)(fishBonus * baseAmount),
+                (int)(pickBonus * baseAmount), (int)(robBonus * baseAmount), (int)(miscBonus * baseAmount));
         }
 
         GachaItems.StatArray getTotalStatArray() {
@@ -1401,17 +1408,10 @@ class Gacha {
         return Casino.addMoney(uid, coinEquivalent);
     }
 
-
     private static int awardCharacterXp(long uid, long cid, SHINY_TYPE shiny, int amount) {
         return CasinoDB.executeIntQuery("UPDATE gacha_user_character SET xp = xp + "
             + amount + " WHERE uid = " + uid + " AND cid = " + cid + " AND foil = " + shiny.getId()
             + " RETURNING xp;");
-    }
-
-    private static long awardPullFiller(long uid, long bannerId) {
-        CasinoDB.executeUpdate("UPDATE gacha_user_banner SET pulls_pulled = pulls_pulled + 1 WHERE uid = "
-            + uid + "AND banner_id = " + bannerId + ";");
-        return addPulls(uid, 1);
     }
 
     static long getPullCount(long uid) {
