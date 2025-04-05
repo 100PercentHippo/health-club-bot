@@ -1310,8 +1310,8 @@ class Gacha {
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
                         results.getString(8), results.getString(9), results.getString(10), results.getString(11),
-                        results.getLong(12), results.getLong(13), results.getLong(14), results.getLong(15),
-                        results.getLong(16), item);
+                        results.getDouble(12), results.getDouble(13), results.getDouble(14), results.getDouble(15),
+                        results.getDouble(16), item);
             }
             return null;
         }, null);
@@ -1328,8 +1328,8 @@ class Gacha {
                 return new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
                         results.getString(8), results.getString(9), results.getString(10), results.getString(11),
-                        results.getLong(12), results.getLong(13), results.getLong(14), results.getLong(15),
-                        results.getLong(16), item);
+                        results.getDouble(12), results.getDouble(13), results.getDouble(14), results.getDouble(15),
+                        results.getDouble(16), item);
             }
             return null;
         }, null);
@@ -1361,8 +1361,8 @@ class Gacha {
                 output.add(new GachaCharacter(results.getLong(1), results.getString(2), results.getInt(3), SHINY_TYPE.fromId(results.getInt(4)),
                         GachaItems.ITEM_STAT.fromIndex(results.getInt(5)), results.getInt(6), results.getInt(7),
                         results.getString(8), results.getString(9), results.getString(10), results.getString(11),
-                        results.getLong(12), results.getLong(13), results.getLong(14), results.getLong(15),
-                        results.getLong(16), item));
+                        results.getDouble(12), results.getDouble(13), results.getDouble(14), results.getDouble(15),
+                        results.getDouble(16), item));
             }
             return output;
         }, new ArrayList<>(), substring);
