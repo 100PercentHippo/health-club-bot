@@ -359,6 +359,19 @@ public class GachaItems {
                 item.additions + gemAdditions, item.subtractions + gemSubtractions,
                 item.enhancementLevel, item.gemSlots + slotsFromGems, gemCount);
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof Item)) {
+                return false;
+            }
+            return ((Item)other).itemId == itemId;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int)itemId;
+        }
     }
 
     static class StatRollResult {

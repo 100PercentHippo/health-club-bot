@@ -1028,7 +1028,7 @@ class Gacha {
 
         StringBuilder response = new StringBuilder();
         GachaItems.Item oldItem = character.item;
-        if (oldItem != null && oldItem.itemId == item.itemId) {
+        if (item.equals(oldItem)) {
             return character.name + " is already using " + item.getName();
         }
         GachaCharacter oldCharacter = getCharacterByItem(uid, iid);
