@@ -389,7 +389,8 @@ class Blackjack {
         game = new BlackJackGame(wager);
         Casino.takeMoney(uid, wager);
         storeNewBlackjackGame(uid, game);
-        return new HBMain.SingleResponse("Bid " + wager + " on Blackjack\n" + game.displayGame(), getButtons(game));
+        String bonus = EventUser.checkGameBonus(uid, EventUser.DailyGame.BLACKJACK);
+        return new HBMain.SingleResponse("Bid " + wager + " on Blackjack" + bonus + '\n' + game.displayGame(), getButtons(game));
     }
 
     static HBMain.SingleResponse handleSplit(long uid) {

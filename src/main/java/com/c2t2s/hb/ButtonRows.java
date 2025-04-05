@@ -8,11 +8,11 @@ class ButtonRows {
     // Hide default constructor
     private ButtonRows() {}
 
-    static ActionRow OVERUNDER_BUTTONS = ActionRow.of(Button.secondary("overunder.over", "Over"),
+    static final ActionRow OVERUNDER_BUTTONS = ActionRow.of(Button.secondary("overunder.over", "Over"),
         Button.secondary("overunder.under", "Under"),
         Button.secondary("overunder.same", "Same"));
 
-    static ActionRow BLACKJACK_BUTTONS = ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
+    static final ActionRow BLACKJACK_BUTTONS = ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
         Button.secondary("blackjack.stand", "Stand"));
     static ActionRow makeBlackJackSplit(long wager) {
         return ActionRow.of(Button.secondary("blackjack.hit", "Hit"),
@@ -40,9 +40,9 @@ class ButtonRows {
         return ActionRow.of(Button.success("roll.deathroll|" + max, "Roll 1-" + max));
     }
 
-    static ActionRow WORKOUT_OFFER_VOLUNTARY_BREAK = ActionRow.of(Button.secondary("workout.break", "Manually Break Streak"));
-    static ActionRow WORKOUT_OFFER_VOLUNTARY_RESTORE = ActionRow.of(Button.secondary("workout.restore", "Manually Restore Streak"));
-    static ActionRow WORKOUT_UNDO_BREAK = ActionRow.of(Button.secondary("workout.restore", "Undo"));
-    static ActionRow WORKOUT_UNDO_RESTORE = ActionRow.of(Button.secondary("workout.break", "Undo"));
+    static final ActionRow WORKOUT_OFFER_VOLUNTARY_BREAK = ActionRow.of(Button.secondary("workout.break", "Manually Break Streak"));
+    static final ActionRow WORKOUT_OFFER_VOLUNTARY_RESTORE = ActionRow.of(Button.secondary("workout.restore", "Manually Restore Streak"));
+    static final ActionRow WORKOUT_UNDO_BREAK = ActionRow.of(Button.secondary("workout.restore", "Undo"));
+    static final ActionRow WORKOUT_UNDO_RESTORE = ActionRow.of(Button.secondary("workout.break", "Undo"));
 
 }

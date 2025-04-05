@@ -121,23 +121,23 @@ class HealthClub {
             ButtonRows.WORKOUT_UNDO_RESTORE);
     }
 
-    static String handleSelectReward(long uid, long selection) {
-        int parsedSelect = (int)selection;
-        if (parsedSelect != COIN_REWARD_ID && parsedSelect != PULL_REWARD_AMOUNT) {
-            return "Unable to update workout reward: Unknown value " + parsedSelect;
-        }
-        WorkoutUser user = getUser(uid);
-        if (user == null) {
-            return Casino.USER_NOT_FOUND_MESSAGE;
-        }
-        if (parsedSelect == user.selectedReward) {
-            return "Your workout reward is now " + getRewardDescription(parsedSelect)
-                + ". (It is also what you already had selected)";
-        }
+    // static String handleSelectReward(long uid, long selection) {
+    //     int parsedSelect = (int)selection;
+    //     if (parsedSelect != COIN_REWARD_ID && parsedSelect != PULL_REWARD_ID) {
+    //         return "Unable to update workout reward: Unknown value " + parsedSelect;
+    //     }
+    //     WorkoutUser user = getUser(uid);
+    //     if (user == null) {
+    //         return Casino.USER_NOT_FOUND_MESSAGE;
+    //     }
+    //     if (parsedSelect == user.selectedReward) {
+    //         return "Your workout reward is now " + getRewardDescription(parsedSelect)
+    //             + ". (It is also what you already had selected)";
+    //     }
 
-        int updatedSelection = updateReward(uid, parsedSelect);
-        return "Your workout reward is now " + getRewardDescription(updatedSelection);
-    }
+    //     int updatedSelection = updateReward(uid, parsedSelect);
+    //     return "Your workout reward is now " + getRewardDescription(updatedSelection);
+    // }
 
     private static String awardReward(long uid, int selection) {
         StringBuilder response = new StringBuilder("Received ");
@@ -179,7 +179,7 @@ class HealthClub {
     //   longest_streak integer NOT NULL DEFAULT 0,
     //   total_workouts integer NOT NULL DEFAULT 0,
     //   last_workout timestamp NOT NULL DEFAULT '2021-01-01 00:00:00',
-    //   reward integer NOT NULL DEFAULT 1,
+    //   reward integer NOT NULL DEFAULT 2,
     //   CONSTRAINT workout_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
@@ -202,10 +202,6 @@ class HealthClub {
     private static WorkoutUser getUser(long uid) {
         return executeWorkoutUserQuery("SELECT " + WORKOUT_USER_FIELDS + " FROM workout_user WHERE uid = "
             + uid + ";");
-    }
-
-    private static WorkoutUser addWorkout(long uid, boolean streakBroken) {
-        return streakBroken ? addWorkoutAndBreakStreak(uid) : addWorkout(uid);
     }
 
     private static WorkoutUser addWorkout(long uid) {

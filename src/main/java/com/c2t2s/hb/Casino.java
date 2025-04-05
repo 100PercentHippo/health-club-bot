@@ -10,25 +10,33 @@ class Casino {
     // Hide default constructor
     private Casino() {}
 
-    private static class User {
+    static class User {
+        long uid;
+        private String nickname;
         private int work;
         private int fish;
         private int pick;
         private int rob;
         private long balance;
+        private long chocolateCoins;
         private boolean inJail;
         private Timestamp timer;
         private Timestamp timer2;
 
-        private User(int w, int f, int p, int r, long b, boolean jail, Timestamp time, Timestamp time2) {
-            work = w;
-            fish = f;
-            pick = p;
-            rob = r;
-            balance = b;
-            inJail = jail;
-            timer = time;
-            timer2 = time2;
+        private User(long uid, String nickname, int work, int fish, int pick, int rob,
+                long balance, long chocolateCoins, boolean inJail, Timestamp timer,
+                Timestamp timer2) {
+            this.uid = uid;
+            this.nickname = nickname;
+            this.work = work;
+            this.fish = fish;
+            this.pick = pick;
+            this.rob = rob;
+            this.balance = balance;
+            this.chocolateCoins = chocolateCoins;
+            this.inJail = inJail;
+            this.timer = timer;
+            this.timer2 = timer2;
         }
 
         private int getMorality() {
@@ -37,6 +45,10 @@ class Casino {
 
         private long getBalance() {
             return balance;
+        }
+
+        private long getChocolateCoinBalance() {
+            return chocolateCoins;
         }
 
         private boolean isJailed() {
@@ -50,6 +62,13 @@ class Casino {
         private Timestamp getTimer2() {
             return timer2;
         }
+
+        long getUid() { return uid; }
+        String getNickname() { return nickname; }
+        int getWork() { return work; }
+        int getFish() { return fish; }
+        int getPick() { return pick; }
+        int getRob()  { return rob;  }
     }
 
     private static class OverUnderGame {
@@ -76,7 +95,6 @@ class Casino {
         }
     }
 
-    private static final long MONEY_MACHINE_UID = -1;
     static final int PREDICTION_OVER = 0;
     static final int PREDICTION_UNDER = 1;
     static final int PREDICTION_SAME = 2;
@@ -158,7 +176,6 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkRobBonus(uid, "`/work`");
         String output = "";
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 25) {
@@ -184,7 +201,7 @@ class Casino {
         } else {
             output = ":artist: You make an artistic masterpiece and sell it for 250 coins! Your new balance is " + logWork(uid, 250);
         }
-        return output + bonus;
+        return output;
     }
 
 // Payout:
@@ -207,7 +224,6 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkPickBonus(uid, "`/fish`");
         String output = "";
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 80) {
@@ -235,7 +251,7 @@ class Casino {
                     + logFish(uid, true, 250);
             }
         }
-        return output + bonus;
+        return output;
     }
 
 // Payout:
@@ -260,12 +276,11 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkRobBonus(uid, "`/rob`");
         String output = "";
         if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             robFailed(uid);
             output = "You were caught! You are dragged off to jail for 2 hours.";
-            return output + bonus;
+            return output;
         }
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 5) {
@@ -298,7 +313,7 @@ class Casino {
             output = ":bank: You rob The Bank and grab 350 coins worth of diamonds! Your new balance is "
                 + logRob(uid, true, 350);
         }
-        return output + bonus;
+        return output;
     }
 
 // Payout:
@@ -323,12 +338,11 @@ class Casino {
                 return stillTiredMessage(remainingTime);
             }
         }
-        String bonus = Events.checkPickBonus(uid, "`/pickpocket`");
         String output = "";
         if (HBMain.RNG_SOURCE.nextInt(2) == 0) {
             pickFailed(uid);
             output = "You were caught! You are dragged off to jail for 30 minutes.";
-            return output + bonus;
+            return output;
         }
         int roll = HBMain.RNG_SOURCE.nextInt(100);
         if (roll < 10) {
@@ -360,7 +374,7 @@ class Casino {
             output = ":gem: You grab a large diamond worth 250 coins!! Your new balance is "
                 + logPick(uid, true, 250);
         }
-        return output + bonus;
+        return output;
     }
 
     static String handleClaim(long uid, String name) {
@@ -379,7 +393,7 @@ class Casino {
             + "\n\t`/fish` Fish for 30 minutes. This is a lawful pursuit"
             + "\n\t`/pickpocket` Attempt to pickpocket. This is a criminal pursuit and risks 30 minutes in jail"
             + "\n\t`/rob` Attempt a robbery. This is a crimal pursuit and risks 2 hours of jail time"
-            + "\nIf you get a particularly lawful or particularly crimal record, you may get unique options."
+            + "\nIf you get a particularly lawful or particularly criminal record, you may get unique options."
             + "You can also gamble with `/guess`, `/bigguess`, `/hugeguess`, `/slots`, `/minislots`, `/moneymachine`, `/overunder`, or `/blackjack`";
     }
 
@@ -404,6 +418,7 @@ class Casino {
             guessLoss(uid, amount);
             output.append("The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount));
         }
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.GUESS));
         return output.toString();
     }
 
@@ -428,50 +443,101 @@ class Casino {
             hugeGuessLoss(uid, amount);
             output.append("The correct value was " + correct + ". Your new balance is " + takeMoney(uid, amount));
         }
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.HUGEGUESS));
         return output.toString();
     }
 
-    static String handleFeed(long uid, Long amount) {
+    static String handleFeed(long server, long uid, Long amount) {
         User user = getUser(uid);
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
         }
-        if (user.getBalance() < amount) {
-            return insuffientBalanceMessage(user.getBalance());
+        if (user.getBalance() + user.getChocolateCoinBalance() < amount) {
+            StringBuilder errorMessage = new StringBuilder("Your balance of ");
+            if (user.getChocolateCoinBalance() > 0) {
+                errorMessage.append(user.getChocolateCoinBalance());
+                errorMessage.append(" chocolate coin");
+                errorMessage.append(getPluralSuffix(user.getChocolateCoinBalance()));
+                errorMessage.append(" and ");
+            }
+            errorMessage.append(user.getBalance());
+            errorMessage.append(" coin");
+            errorMessage.append(getPluralSuffix(user.getBalance()));
+            errorMessage.append(" is not enough to cover that!");
+            return errorMessage.toString();
         }
         long remainingTime = user.getTimer2().getTime() - System.currentTimeMillis();
         if (remainingTime > 0) {
             return "You have recently fed the money machine. Try again in " + formatTime(remainingTime) + ".";
         }
-        User moneyMachine = getUser(MONEY_MACHINE_UID);
-        if (moneyMachine == null) {
+        long pot = CasinoServerManager.getMoneyMachinePot(server);
+        if (pot < 0) {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
-        long pot = moneyMachine.getBalance() + amount;
+        long chocolateCoinsSpent = (amount > user.getChocolateCoinBalance() ? user.getChocolateCoinBalance() : amount);
+        long coinsSpent = amount - chocolateCoinsSpent;
+
+        pot += amount;
         double winChance = 0.25;
         if (pot < 20000) {
             winChance = 0.05 + (0.2 * ((double)pot / 20000));
         }
-        StringBuilder output = new StringBuilder("Fed " + amount + " coin" + getPluralSuffix(amount) + " to the Money Machine\n");
-        if (HBMain.RNG_SOURCE.nextDouble() < winChance && (amount >= 100 || HBMain.RNG_SOURCE.nextInt(100) < amount)) { // Win
+        StringBuilder output = new StringBuilder("Fed ");
+        if (chocolateCoinsSpent > 0) {
+            output.append(chocolateCoinsSpent);
+            output.append(" chocolate coin");
+            output.append(getPluralSuffix(chocolateCoinsSpent));
+            output.append(' ');
+            if (coinsSpent > 0) { output.append("and "); }
+        }
+        if (coinsSpent > 0) {
+            output.append(coinsSpent);
+            output.append(" coin");
+            output.append(getPluralSuffix(coinsSpent));
+            output.append(' ');
+        }
+        output.append("to the Money Machine\n");
+        long balance;
+        long chocolateBalance = user.getChocolateCoinBalance() - chocolateCoinsSpent;
+        boolean win = HBMain.RNG_SOURCE.nextDouble() < winChance && (amount >= 100 || HBMain.RNG_SOURCE.nextInt(100) < amount);
+        if (win) { // Win
             long winnings = (long)(pot * 0.75);
-            long newPot = pot - winnings;
-            output.append("The money machine is satisfied! :dollar: You win "
-                + winnings + "! Your new balance is " + moneyMachineWin(uid, winnings, winnings - amount, newPot)
-                + ". The pot is now " + newPot + ".");
+            pot -= winnings;
+            balance = moneyMachineWin(server, uid, chocolateCoinsSpent, coinsSpent, winnings, pot);
+            output.append("The money machine is satisfied! :dollar: You win ");
+            output.append(winnings);
+            output.append("!");
         } else { // Lose
-            output.append("Even with a current pot of " + pot + " the money machine is still hungry. Your new balance is "
-                + moneyMachineLoss(uid, amount));
+            balance = moneyMachineLoss(server, uid, chocolateCoinsSpent, coinsSpent);
+            output.append("Even with a current pot of ");
+            output.append(pot);
+            output.append(" the money machine is still hungry.");
+        }
+        output.append("\nYour new balance is ");
+        output.append(balance);
+        output.append(" coin");
+        output.append(getPluralSuffix(balance));
+        if (chocolateBalance > 0) {
+            output.append(" and ");
+            output.append(chocolateBalance);
+            output.append(" chocolate coin");
+            output.append(getPluralSuffix(chocolateBalance));
+        }
+        output.append(".");
+        if (win) {
+            output.append(" The pot is now ");
+            output.append(pot);
+            output.append('.');
         }
         return output.toString();
     }
 
-    static String handlePot() {
-        User moneyMachine = getUser(MONEY_MACHINE_UID);
-        if (moneyMachine == null) {
+    static String handlePot(long server) {
+        long pot = CasinoServerManager.getMoneyMachinePot(server);
+        if (pot < 0) {
             return "A database error occurred. The money machine is nowhere to be found.";
         }
-        return "The current Money Machine pot is " + moneyMachine.getBalance();
+        return "The current Money Machine pot is " + pot;
     }
 
 // Slots Payout:
@@ -572,6 +638,7 @@ class Casino {
         }
         output.append("New balance: " + balance);
         logSlots(uid, amount, winnings, diamonds, winCondition);
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.SLOTS));
         responseSteps.add(output.toString());
         return new HBMain.MultistepResponse(responseSteps);
     }
@@ -664,6 +731,7 @@ class Casino {
         }
         output.append("New balance: " + balance);
         logMinislots(uid, amount, winnings, diamonds, winCondition);
+        output.append(EventUser.checkGameBonus(uid, EventUser.DailyGame.MINISLOTS));
         responseSteps.add(output.toString());
         return new HBMain.MultistepResponse(responseSteps);
     }
@@ -688,8 +756,9 @@ class Casino {
         }
         int target = HBMain.RNG_SOURCE.nextInt(10) + 1;
         logInitialOverUnder(uid, amount, target);
+        String bonus = EventUser.checkGameBonus(uid, EventUser.DailyGame.OVERUNDER);
         return new HBMain.SingleResponse("Bid " + amount + " on overunder\nYour initial value is " + target
-            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`", ButtonRows.OVERUNDER_BUTTONS);
+            + ". Predict if the next value (1-10) will be `over`, `under`, or the `same`" + bonus, ButtonRows.OVERUNDER_BUTTONS);
     }
 
     static HBMain.SingleResponse handleOverUnderFollowup(long uid, int prediction) {
@@ -708,7 +777,7 @@ class Casino {
             } else {
                 logOverUnderProgress(uid, game.getRound() + 1, target);
                 return new HBMain.SingleResponse("Correct! Your new value for the " + ((game.getRound() + 1) == 2 ? "second" : "third")
-                    + " round is " + target, ButtonRows.OVERUNDER_BUTTONS); 
+                    + " round is " + target, ButtonRows.OVERUNDER_BUTTONS);
             }
         } else { // Loss
             String correct = "";
@@ -735,7 +804,12 @@ class Casino {
         if (user == null) {
             return USER_NOT_FOUND_MESSAGE;
         }
-        return "Your current balance is " + user.getBalance() + " coin" + getPluralSuffix(user.getBalance()) + ".";
+        String output = "Your current balance is " + user.getBalance() + " coin" + getPluralSuffix(user.getBalance()) + ".";
+        if (user.getChocolateCoinBalance() > 0) {
+            output += "\nYou " + (user.getBalance() > 0 ? "also " : "" ) + "have " + user.getChocolateCoinBalance()
+                + " chocolate coin" + getPluralSuffix(user.getChocolateCoinBalance()) + ".";
+        }
+        return output;
     }
 
     static String handleGive(long donorUid, long recipientUid, long amount) {
@@ -765,11 +839,11 @@ class Casino {
         }
     }
 
-    static String handleLeaderboard(long entries) {
+    static String handleLeaderboard(long serverId, long entries) {
         if (entries > 10) {
             entries = 10;
         }
-        return parseLeaderboard(entries);
+        return parseLeaderboard(serverId, entries);
     }
 
     //////////////////////////////////////////////////////////
@@ -779,6 +853,7 @@ class Casino {
     //  name varchar(40) NOT NULL DEFAULT '',
     //  nickname varchar(40) NOT NULL DEFAULT '',
     //  balance bigint NOT NULL DEFAULT 0,
+    //  chocolate_coins bigint NOT NULL DEFAULT 0,
     //  in_jail boolean NOT NULL DEFAULT false,
     //  last_claim timestamp NOT NULL DEFAULT '2021-01-01 00:00:00',
     //  timestamp2 timestamp NOT NULL DEFAULT '2021-01-01 00:00:00'
@@ -847,11 +922,10 @@ class Casino {
 
     // CREATE TABLE IF NOT EXISTS moneymachine_user (
     //  uid bigint PRIMARY KEY,
-    //  chocolate_coins bigint NOT NULL DEFAULT 0,
-    //  chocolate_spent bigint NOT NULL DEFAULT 0,
     //  feeds integer NOT NULL DEFAULT 0,
     //  wins integer NOT NULL DEFAULT 0,
     //  spent integer NOT NULL DEFAULT 0,
+    //  chocolate_spent bigint NOT NULL DEFAULT 0,
     //  winnings integer NOT NULL DEFAULT 0,
     //  CONSTRAINT moneymachine_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
@@ -878,9 +952,19 @@ class Casino {
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
     }
 
+    static long takeMoney(long uid, long coins, long chocolateCoins) {
+        return CasinoDB.executeLongQuery("UPDATE money_user SET (balance, chocolate_coins) = (balance - "
+        + coins + ", chocolate_coins - " + chocolateCoins + ") WHERE uid = " + uid + " RETURNING balance;");
+    }
+
     static long addMoney(long uid, long amount) {
         return CasinoDB.executeLongQuery("UPDATE money_user SET balance = balance + "
             + amount + " WHERE uid = " + uid + " RETURNING balance;");
+    }
+
+    static long addChocolateCoins(long uid, long amount) {
+        return CasinoDB.executeLongQuery("UPDATE money_user SET chocolate_coins = chocolate_coins + "
+            + amount + " WHERE uid = " + uid + " RETURNING chocolate_coins;");
     }
 
     private static long addWorkMoney(long uid, int amount, String delay) {
@@ -898,18 +982,21 @@ class Casino {
             + interval + "' WHERE uid = " + uid + ";");
     }
 
-    private static String parseLeaderboard(long entries) {
-        String query = "SELECT name, balance FROM money_user ORDER BY balance DESC LIMIT " + entries + ";";
+    private static String parseLeaderboard(long serverId, long entries) {
+        String query = "SELECT nickname, balance FROM money_user WHERE uid in (SELECT uid FROM "
+            + "casino_server_user WHERE server_id = " + serverId + ") ORDER BY balance DESC LIMIT "
+            + entries + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
-            StringBuilder leaderboard = new StringBuilder();
+            StringBuilder leaderboard = new StringBuilder("Coin leaderboard:\n");
             int place = 1;
             while (results.next()) {
-                leaderboard.append("#" + place++ + " ");
-                String name = results.getString(1);
-                if (name.contains("#")) {
-                    name = name.substring(0, name.indexOf('#'));
-                }
-                leaderboard.append(name + " " + results.getLong(2) + "\n");
+                leaderboard.append('#');
+                leaderboard.append(place++);
+                leaderboard.append(' ');
+                leaderboard.append(results.getString(1));
+                leaderboard.append(' ');
+                leaderboard.append(results.getLong(2));
+                leaderboard.append('\n');
             }
             return leaderboard.toString();
         }, "");
@@ -948,19 +1035,25 @@ class Casino {
             + (winCondition == 3 ? 1 : 0) + ") WHERE uid = " + uid + ";");
     }
 
-    private static User getUser(long uid) {
-        String query = "SELECT work_count, fish_count, pick_count, rob_count, balance, in_jail, last_claim, timestamp2 FROM money_user NATURAL JOIN job_user WHERE uid = " + uid + ";";
+    static User getUser(long uid) {
+        String query = "SELECT uid, nickname, work_count, fish_count, pick_count, rob_count, balance, in_jail, "
+            + "last_claim, timestamp2, chocolate_coins FROM money_user NATURAL JOIN job_user WHERE uid = "
+            + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {
             if (results.next()) {
-                int work = results.getInt(1);
-                int fish = results.getInt(2);
-                int pick = results.getInt(3);
-                int rob = results.getInt(4);
-                long balance = results.getLong(5);
-                boolean isJail = results.getBoolean(6);
-                Timestamp time = results.getTimestamp(7);
-                Timestamp time2 = results.getTimestamp(8);
-                return new Casino.User(work, fish, pick, rob, balance, isJail, time, time2);
+                long fetchedUid = results.getLong(1);
+                String nickname = results.getString(2);
+                int work = results.getInt(3);
+                int fish = results.getInt(4);
+                int pick = results.getInt(5);
+                int rob = results.getInt(6);
+                long balance = results.getLong(7);
+                boolean isJail = results.getBoolean(8);
+                Timestamp time = results.getTimestamp(9);
+                Timestamp time2 = results.getTimestamp(10);
+                long chocolateCoins = results.getLong(11);
+                return new Casino.User(fetchedUid, nickname, work, fish, pick, rob, balance,
+                    chocolateCoins,isJail, time, time2);
             }
             return null;
         }, null);
@@ -975,7 +1068,7 @@ class Casino {
 
     private static long logFish(long uid, boolean rare, int income) {
         long balance = addWorkMoney(uid, income, "30 minutes");
-        CasinoDB.executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + " 
+        CasinoDB.executeUpdate("UPDATE job_user SET (fish_count, fish_jackpots, fish_profit) = (fish_count + 1, fish_jackpots + "
             + (rare ? 1 : 0) + ", fish_profit + " + income + ") WHERE uid = " + uid + ";");
         return balance;
     }
@@ -1006,21 +1099,23 @@ class Casino {
         return balance;
     }
 
-    private static long moneyMachineWin(long uid, long winnings, long profit, long newPot) {
-        long balance = addMoney(uid, profit);
-        CasinoDB.executeUpdate("UPDATE money_user SET balance = " + newPot + " WHERE uid = " + MONEY_MACHINE_UID + ";");
+    private static long moneyMachineWin(long server, long uid, long chocolateCoinsSpent, long coinsSpent, long winnings, long newPot) {
+        // coinsSpent - winnings is going to be negative, which gives money
+        // this should be changed in the future
+        long balance = takeMoney(uid, coinsSpent - winnings, chocolateCoinsSpent);
+        CasinoServerManager.setMoneyMachinePot(server, newPot);
         setTimer2Time(uid, "1 minute");
-        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings) = (feeds + 1, wins + 1, winnings + "
-            + winnings + ") WHERE uid = " + uid + ";");
+        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, wins, winnings, spent, chocolate_spent) = (feeds + 1, wins + 1, winnings + "
+            + winnings + ", spent + " + coinsSpent + ", chocolate_spent + " + chocolateCoinsSpent + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
-    private static long moneyMachineLoss(long uid, long bet) {
-        long balance = takeMoney(uid, bet);
-        addMoney(MONEY_MACHINE_UID, bet);
+    private static long moneyMachineLoss(long server, long uid, long chocolateCoinsSpent, long coinsSpent) {
+        long balance = takeMoney(uid, coinsSpent, chocolateCoinsSpent);
+        CasinoServerManager.increaseMoneyMachinePot(server, chocolateCoinsSpent + coinsSpent);
         setTimer2Time(uid, "1 minute");
-        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, spent) = (feeds + 1, spent + "
-            + bet + ") WHERE uid = " + uid + ";");
+        CasinoDB.executeUpdate("UPDATE moneymachine_user SET (feeds, spent, chocolate_spent) = (feeds + 1, spent + "
+            + coinsSpent + ", chocolate_spent + " + chocolateCoinsSpent + ") WHERE uid = " + uid + ";");
         return balance;
     }
 
