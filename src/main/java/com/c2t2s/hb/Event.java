@@ -2311,7 +2311,7 @@ abstract class Event {
     private static class GiveawayEvent extends Event {
         static final int COIN_AMOUNT_1 = 250;
         static final int COIN_AMOUNT_2 = 251;
-        static final int GIVEAWAY_CHARACTER_CID = 0; // TODO
+        static final int GIVEAWAY_CHARACTER_CID = 18;
         static final int GIVEAWAY_GEM_GID = 19;
         static final int GIVEAWAY_GEM_DUPLICATES = 2;
         static final long COIN_1_SELECTION_ID = 0;
@@ -2328,7 +2328,7 @@ abstract class Event {
             ITEM(ITEM_SELECTION_ID, "A Random High Quality Item"),
             GAMBLERS_GEM(GEM_SELECTION_ID, Integer.toString(GIVEAWAY_GEM_DUPLICATES)
                 + " Gambler's Gems"),
-            CHARACTER(CHARACTER_SELECTION_ID, "Placeholder (2 Star Misc)");
+            CHARACTER(CHARACTER_SELECTION_ID, "2 Star Misc Character: Tie Breaker");
 
             long id;
             String description;

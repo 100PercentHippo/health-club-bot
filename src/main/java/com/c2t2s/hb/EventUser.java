@@ -157,14 +157,6 @@ class EventUser {
     //   CONSTRAINT event_user_uid FOREIGN KEY(uid) REFERENCES money_user(uid)
     // );
 
-    // CREATE TABLE IF NOT EXISTS event_participants (
-    //   uid bigint,
-    //   cid bigint,
-    //   notes varchar(40) DEFAULT '',
-    //   PRIMARY KEY(uid, cid),
-    //   CONSTRAINT event_participants_uid FOREIGN KEY(uid, cid) REFERENCES gacha_user_characters(uid, cid)
-    // );
-
     static EventUser getEventUser(long uid) {
         String query = "SELECT daily_games_today, events_today, next_reset FROM event_user WHERE uid = " + uid + ";";
         return CasinoDB.executeQueryWithReturn(query, results -> {

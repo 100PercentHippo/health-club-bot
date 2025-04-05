@@ -453,7 +453,7 @@ public class HBMain {
             entry(VERSION_COMMAND, new SimpleCasinoCommand(
                 Changelog::getVersion)),
             entry(HELP_COMMAND, new SimpleCasinoCommand(
-                HBMain::getHelpText,
+                i -> getHelpText(i.getArgumentLongValueByIndex(0).orElse(0L)),
                 true)),
             entry(CHANGELOG_COMMAND, new SimpleCasinoCommand(
                 i -> Changelog.getChangelog(i.getArgumentStringValueByIndex(0).orElse("")),
@@ -886,11 +886,15 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName(VERSION_COMMAND)
             .setDescription("Check the current bot version").setEnabledInDms(false));
         builders.add(new SlashCommandBuilder().setName(HELP_COMMAND)
-            .setDescription("Print available Casino Bot commands").setEnabledInDms(true));
+            .setDescription("Print available Casino Bot commands").setEnabledInDms(true)
+            .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.LONG, "Subsection", "Help subsection to view", false,
+                Arrays.asList(SlashCommandOptionChoice.create("Base", HELP_SUBSECTION_DEFAULT),
+                    SlashCommandOptionChoice.create("Gacha", HELP_SUBSECTION_GACHA)))));
         builders.add(new SlashCommandBuilder().setName(CHANGELOG_COMMAND)
             .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true)
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.STRING, "Versions", "Changelog version range", false,
-                Arrays.asList(SlashCommandOptionChoice.create("3.2.0-latest", "3.2.0-latest"),
+                Arrays.asList(SlashCommandOptionChoice.create("4.0.0", "4.0.0"),
+                    SlashCommandOptionChoice.create("3.2.0-3.3.1", "3.2.0-3.3.1"),
                     SlashCommandOptionChoice.create("3.1.8-3.1.11", "3.1.8-3.1.11"),
                     SlashCommandOptionChoice.create("3.1.0-3.1.7", "3.1.0-3.1.7"),
                     SlashCommandOptionChoice.create("2.0.0-2.0.13", "2.0.0-2.0.13"),
@@ -1015,7 +1019,28 @@ public class HBMain {
         System.out.println("Command registration complete");
     }
 
-    private static String getHelpText() {
+    private static final long HELP_SUBSECTION_DEFAULT = 0;
+    private static final long HELP_SUBSECTION_GACHA = 1;
+
+    private static String getHelpText(long subsection) {
+        if (subsection == HELP_SUBSECTION_GACHA) {
+            return "\nGacha Commands:"
+                + "\n\t`/" + PULL_COMMAND + "` Pull for gacha characters!"
+                + "\n\t`/" + PULLS_COMMAND + "` Check your available pulls"
+                + "\n\t`/" + PITY_COMMAND + "` Check your gacha pity"
+                + "\n\t`/" + GACHA_CHARACTER_LIST_COMMAND + "` List the characters you've pulled"
+                + "\n\t`/" + GACHA_CHARACTER_INFO_COMMAND + "` View information about an owned character"
+                + "\n\t`/" + GACHA_BANNER_LIST_COMMAND + "` List the available banners"
+                + "\n\t`/" + GACHA_BANNER_INFO_COMMAND + "` View information about an available banner"
+                + "\n\t`/" + GACHA_ITEM_LIST_COMMAND + "` List your items"
+                + "\n\t`/" + GACHA_ITEM_INFO_COMMAND + "` View information about an owned item"
+                + "\n\t`/" + GACHA_ITEM_EQUIP_COMMAND + "` Give an item to a character"
+                + "\n\t`/" + GACHA_ITEM_UNEQUIP_COMMAND + "` Take an item from a character"
+                + "\n\t`/" + GACHA_ITEM_REROLL_COMMAND + "` Reroll 3 items with a shared trait into a new item"
+                + "\n\t`/" + LIST_GEMS_COMMAND + "` List your gems"
+                + "\n\t`/" + APPLY_GEM_COMMAND + "` Socket a gem into an item"
+                + "\n\t`/" + GACHA_EVENT_JOIN + "` Join the running gacha event";
+        }
         return "Casino Bot Version " + Changelog.getVersion()
             + "\nCommands:"
             + "\n\t`/" + HELP_COMMAND + "` Displays this help text"
@@ -1040,15 +1065,7 @@ public class HBMain {
             + "\n\t`/" + FEED_COMMAND + "` Feed the Money Machine!"
             + "\n\t`/" + OVERUNDER_COMMAND + "` Multiple rounds of predicting if the next number is over or under"
             + "\n\t`/" + BLACKJACK_COMMAND + "` Play a hand of blackjack"
-            + "\n\t`/" + ALLORNOTHING_COMMAND + "` Push your luck and go for a new record!"
-            + "\nGacha Commands:"
-            + "\n\t`/" + PULL_COMMAND + "` Pull for gacha characters!"
-            + "\n\t`/" + PULLS_COMMAND + "` Check your available pulls"
-            + "\n\t`/" + PITY_COMMAND + "` Check your gacha pity"
-            + "\n\t`/" + GACHA_CHARACTER_LIST_COMMAND + "` List the characters you've pulled"
-            + "\n\t`/" + GACHA_CHARACTER_INFO_COMMAND + "` View information about an owned character"
-            + "\n\t`/" + GACHA_BANNER_LIST_COMMAND + "` List the available banners"
-            + "\n\t`/" + GACHA_BANNER_INFO_COMMAND + "` View information about an available banner";
+            + "\n\t`/" + ALLORNOTHING_COMMAND + "` Push your luck and go for a new record!";
     }
 
     private static <T extends InteractionBase> void respondImmediately(SingleResponse singleResponse, T interaction) {

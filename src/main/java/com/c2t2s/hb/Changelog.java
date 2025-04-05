@@ -5,7 +5,7 @@ class Changelog {
     // Hide default constructor
     private Changelog() {}
 
-    private static final String VERSION_STRING = "3.3.1.6"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "4.0.0.0"; //Update this in pom.xml too when updating
 
     static String getVersion() {
         return VERSION_STRING;
@@ -16,16 +16,47 @@ class Changelog {
     }
 
     private static String getLatestReleaseString() {
-        return "\n- Fixed a case where gacha characters could be awarded from outside the selected banner"
-            + "\n- Added a button to facilitate deathroll followups";
+        return "\n\n**Gacha Events:**"
+            + "\n- Use your gacha characters to join new events for character xp, coins, and pulls!"
+            + "\n- Work and Fish events are cooperative, while Rob and Pick events are potentially adversarial, and Misc events vary"
+            + "\n- Click the About button on a new event to see how it works"
+            + "\n- Characters have Work, Fish, Pick, Rob, and Misc stats, and boost the payout of associated events"
+            + "\n- Stats increase with star rarity, duplicates, xp and are greatly boosted for matching events"
+            + "\n\n**Gacha Items:**"
+            + "\n- Boost your character's stats with items"
+            + "\n- Items have Work, Fish, Pick, Rob, and Misc stats and add to the character that equips them"
+            + "\n- Items can be modified by socketing gems"
+            + "\n- 3 Items with a matching stat can be rerolled into a new item"
+            + "\n- Items and Gems are new pull rewards"
+            + "\n- You have a chance for upgraded items from income commands you've run a lot"
+            + "\n\n**New Gacha Banners:**"
+            + "\n- 3 new banners: Beta, Rabbit and Steel, and Toontown"
+            + "\n- Existing characters were wiped, but if you unlocked a beta character before you get a unique skin for it"
+            + "\n\n**AllOrNothing Record Reset:**"
+            + "\n- Records have been reset - go set some new ones!"
+            + "\n\nOther changes:"
+            + "\n- New gacha commands (see `/help` for a full list)"
+            + "\n- `/gacha banner info` now shows if a character is owned, and how many duplicates"
+            + "\n- New gacha filler: Chocolate Coins (they're edible)"
+            + "\n- Behind the scenes optimizations to support running the bot on multiple servers"
+            + "\n- All users get a random 'Daily Game' that awards a pull"
+            + "\n- Gacha character names are now hidden until someone unlocks them"
+            + "\n- Commands can now only be run in supported channels"
+            + "\n- Simplified the command for new overunder games to `/overunder`"
+            + "\n- Messages that exceed discord's character limit will now be truncated instead of refusing to display";
     }
 
     static String getChangelog(String version) {
         switch (version) {
             default:
-            case "3.2.0-latest":
-                return "Changelog:\n" + VERSION_STRING + getLatestReleaseString()
-                    + "\n3.3.0"
+            case "4.0.0":
+                return "Changelog:\n" + VERSION_STRING + getLatestReleaseString();
+            case "3.2.0-3.3.1":
+                return "Historical Changelog for 3.2.0-3.3.0:"
+                    + "\n3.3.1.6"
+                    + "\n- Fixed a case where gacha characters could be awarded from outside the selected banner"
+                    + "\n- Added a button to facilitate deathroll followups"
+                    + "\n3.3.1"
                     + "\n- Splitting is now supported in blackjack"
                     + "\n- Updated how blackjack stats are stored. This should now cause blackjack to no longer appear to massively "
                     + "underperform when viewing `/stats`, but existing blackjack stats have been reset as a result"

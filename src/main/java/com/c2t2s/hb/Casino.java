@@ -393,7 +393,7 @@ class Casino {
             + "\n\t`/fish` Fish for 30 minutes. This is a lawful pursuit"
             + "\n\t`/pickpocket` Attempt to pickpocket. This is a criminal pursuit and risks 30 minutes in jail"
             + "\n\t`/rob` Attempt a robbery. This is a crimal pursuit and risks 2 hours of jail time"
-            + "\nIf you get a particularly lawful or particularly crimal record, you may get unique options."
+            + "\nIf you get a particularly lawful or particularly criminal record, you may get unique options."
             + "You can also gamble with `/guess`, `/bigguess`, `/hugeguess`, `/slots`, `/minislots`, `/moneymachine`, `/overunder`, or `/blackjack`";
     }
 

@@ -1220,17 +1220,6 @@ class Gacha {
     //   CONSTRAINT gacha_user_gem_gid FOREIGN KEY(gid) REFERENCES gacha_gem(gid)
     // );
 
-    // CREATE TABLE IF NOT EXISTS gacha_user_character_gem (
-    //   uid bigint,
-    //   cid bigint,
-    //   gid bigint,
-    //   times_used integer NOT NULL DEFAULT 0,
-    //   PRIMARY_KEY(uid, cid, gid),
-    //   CONSTRAINT gacha_user_character_gem_uid FOREIGN KEY(uid) REFERENCES gacha_user(uid),
-    //   CONSTRAINT gacha_user_character_gem_cid FOREIGN KEY(cid) REFERENCES gacha_character(cid),
-    //   CONSTRAINT gacha_user_character_gem_gid FOREIGN KEY(gid) REFERENCES gacha_gem(gid)
-    // );
-
     static final String GACHA_USER_BANNER_COLUMNS = "times_pulled, one_star_pity, two_star_pity, three_star_pity, four_star_pity, five_star_pity";
 
     private static String getPartialCharacterQuery(long uid) {
