@@ -437,8 +437,9 @@ class AllOrNothing {
 
     static void addUserToCache(long uid) {
         for (Difficulty difficulty: Difficulty.values()) {
-            if (records != null && !records.get(difficulty).personalBests.containsKey(uid)) {
-                records.get(difficulty).personalBests.put(uid, new RecordEntry(0, 0, 0));
+            RecordCache cache = getRecordCache(difficulty);
+            if (cache != null && cache.personalBests.containsKey(uid)) {
+                cache.personalBests.put(uid, new RecordEntry(0, 0, 0));
             }
         }
     }
