@@ -1231,7 +1231,7 @@ abstract class Event {
             builder.append("`.\nYou catch: ");
             displayBlocks.peekLast().setBody(builder.toString());
             messageFrames.add(createEmbedResponse("", displayBlocks, true));
-            if (highestRoll >= getRequiredRoll(boat1Users.size(), false)) {
+            if (highestRoll >= getRequiredRoll(participants.size(), false)) {
                 payout = deep ? BASE_RARE_FISH_VALUE : BASE_UNCOMMON_FISH_VALUE;
                 builder.append(deep ? details.deepRare : details.shallowUncommon);
                 builder.append(" \n+");
@@ -1242,7 +1242,7 @@ abstract class Event {
                     participant.gotUncommon = !deep;
                     if (participant.roll == highestRoll) { participant.wasHighest = true; }
                 }
-            } else if (highestRoll >= getRequiredRoll(boat1Users.size(), true)) {
+            } else if (highestRoll >= getRequiredRoll(participants.size(), true)) {
                 payout = deep ? BASE_UNCOMMON_FISH_VALUE : BASE_COMMON_FISH_VALUE;
                 builder.append(deep ? details.deepUncommon : details.shallowCommon);
                 builder.append(" \n+");
