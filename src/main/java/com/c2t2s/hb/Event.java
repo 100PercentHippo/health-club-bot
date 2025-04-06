@@ -2138,7 +2138,10 @@ abstract class Event {
                 return createErrorResponse("Unrecognized selection");
             }
             SlotsTeam team = teams.get(selection);
-            team.members.add(new Participant(user, character, getStat(character)));
+            SlotsParticipant participant = new SlotsParticipant(user, character,
+                getStat(character), selection);
+            team.members.add(participant);
+            logSlotsEventParticipant(participant, baseDetails.eventId);
 
             StringBuilder builder = new StringBuilder();
             builder.append(user.getNickname());
@@ -2175,7 +2178,8 @@ abstract class Event {
 
             Participant oldParticipant = null;
             long oldTeam = -1;
-            Participant newParticipant = new Participant(user, character, getStat(character));
+            SlotsParticipant newParticipant = new SlotsParticipant(user, character,
+                getStat(character), selection);
             for (Map.Entry<Long, SlotsTeam> entry : teams.entrySet()) {
                 List<Participant> members = entry.getValue().members;
                 if (members.contains(newParticipant)) {
@@ -2193,6 +2197,7 @@ abstract class Event {
 
             teams.get(oldTeam).members.remove(oldParticipant);
             teams.get(selection).members.add(newParticipant);
+            updateSlotsEventParticipant(newParticipant, baseDetails.eventId);
 
             StringBuilder builder = new StringBuilder();
             if (oldTeam == selection) {
