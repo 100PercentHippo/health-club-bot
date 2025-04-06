@@ -1445,7 +1445,7 @@ abstract class Event {
             newParticipant.joinOrder = oldParticipant.joinOrder;
 
             participants.remove(oldParticipant);
-            participants.add(newParticipant);
+            participants.add(newParticipant.joinOrder, newParticipant);
             updatePickEventParticipant(newParticipant, details.eventId);
 
             StringBuilder builder = new StringBuilder();
@@ -1486,6 +1486,8 @@ abstract class Event {
             StringBuilder builderOne = new StringBuilder();
             List<String> userTargets = new ArrayList<>();
             List<String> userPayouts = new ArrayList<>();
+            List<String> intermediatePayoutMessages = new ArrayList<>();
+            List<String> finalPayoutMessages = new ArrayList<>();
             for (PickParticipant participant : participants) {
                 if (builderOne.length() != 0) {
                     builderOne.append('\n');
@@ -1497,6 +1499,8 @@ abstract class Event {
                 payoutOrder.get(participant.targets).add(participant);
                 userTargets.add("`??`");
                 userPayouts.add(".");
+                intermediatePayoutMessages.add("");
+                finalPayoutMessages.add("");
             }
             // Add one extra to userTargets to represent total
             userTargets.add("`" + totalTargetsSelected + "`/`" + details.totalTargets + "`");
@@ -1569,29 +1573,23 @@ abstract class Event {
             }
 
             // Modify payout to include multiplier
-            StringBuilder intermediatePayoutBuilder = new StringBuilder();
-            StringBuilder finalPayoutBuilder = new StringBuilder();
             for (Map.Entry<Integer, List<PickParticipant>> entry : payoutOrder.entrySet()) {
                 for (PickParticipant participant : entry.getValue()) {
-                    String line = "";
-                    if (intermediatePayoutBuilder.length() != 0) {
-                        line = "\n";
-                    }
-                    line = line + participant.payout + " x "
+                    String partialString = participant.payout + " x "
                         + Stats.twoDecimals.format(getPayoutMultiplier());
-                    intermediatePayoutBuilder.append(line);
-                    finalPayoutBuilder.append(line);
+                    intermediatePayoutMessages.remove(participant.joinOrder);
+                    intermediatePayoutMessages.add(participant.joinOrder, partialString);
                     participant.payout *= getPayoutMultiplier();
-                    finalPayoutBuilder.append(" = ");
-                    finalPayoutBuilder.append(participant.payout);
-
+                    finalPayoutMessages.remove(participant.joinOrder);
+                    finalPayoutMessages.add(participant.joinOrder, partialString + " = "
+                        + participant.payout);
                     Casino.addMoney(participant.uid, participant.payout);
                     logCompletePickEventParticipant(participant, details.eventId);
                 }
             }
-            column3.setBody(intermediatePayoutBuilder.toString());
+            column3.setBody(getUserTargetsString(intermediatePayoutMessages));
             messageFrames.add(createEmbedResponse(description, blocks, true));
-            column3.setBody(finalPayoutBuilder.toString());
+            column3.setBody(getUserTargetsString(finalPayoutMessages));
             messageFrames.add(createEmbedResponse(description, blocks, true));
 
             logPickEventCompletion(details);
@@ -2108,10 +2106,10 @@ abstract class Event {
         String createAboutMessage() {
             return "At the end of the event a 10x10 board will be filled with the same fruits "
                 + "from `/slots`: :cherries:, :tangerine:, :lemon:, :blueberries:, and :grapes:. "
-                + "Each participant picks a team, and receives 1 coin every time that team's "
+                + "Each participant picks a team, and receives 5 coins every time that team's "
                 + "fruit appears on the slots board. Bonus coins are awarded for groups of fruit "
                 + "- multiple adjacent copies of the team's fruit. Diamonds also appear rarely, "
-                + "and award 1 coin to all teams. There's no limit to the number of participants "
+                + "and award 5 coins to all teams. There's no limit to the number of participants "
                 + "that can join a given team, but whichever team *you* join is decidedly "
                 + "cooler than the others and is definitely going to earn more coins.";
         }
