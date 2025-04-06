@@ -267,7 +267,8 @@ public class GachaItems {
         }
 
         public String getItemListDescription() {
-            return getName() + "\n\t" + getModifiers().toString() + " " + gems.size() + "/" + gemSlots + " gems";
+            return getName() + "\n\t" + getModifiers().toString() + " "
+                + Math.max(gems.size(), abstractedGems) + "/" + gemSlots + " gems";
         }
 
         public String getFullDescription() {
