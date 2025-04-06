@@ -864,11 +864,11 @@ abstract class Event {
         private static final int UNCOMMON_FISH_DB_SIZE = 1;
         private static final int RARE_FISH_DB_SIZE = 2;
         private static final int BASE_EASY_ROLL_REQUIREMENT = 50;
-        private static final int BASE_HARD_ROLL_REQUIREMENT = 100;
+        private static final int BASE_HARD_ROLL_REQUIREMENT = 110;
         private static final int ROLL_REDUCTION_PER_PARTICIPANT = 10;
-        private static final int BASE_COMMON_FISH_VALUE = 200;
-        private static final int BASE_UNCOMMON_FISH_VALUE = 500;
-        private static final int BASE_RARE_FISH_VALUE = 1000;
+        private static final int BASE_COMMON_FISH_VALUE = 100;
+        private static final int BASE_UNCOMMON_FISH_VALUE = 250;
+        private static final int BASE_RARE_FISH_VALUE = 500;
         private static final Map<Long, String> selectionMap =
             Map.ofEntries(entry(BOAT_1_VALUE, "Boat 1"),
                 entry(BOAT_2_VALUE, "Boat 2"),
