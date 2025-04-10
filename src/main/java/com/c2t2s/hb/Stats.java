@@ -304,7 +304,13 @@ class Stats {
             + "\n\tBase 2 Star Chance: 1/32  (Max pity 48)"
             + "\n\tBase 3 Star Chance: 1/128 (Max pity 192)"
             + "\n\tEach increases as you approach max pity"
-            + "\n\tShiny Chance: 1/20 for any awarded character";
+            + "\n\tShiny Chance: 1/20 for any awarded character"
+            + "\n\nNon-coin Filler Odds:"
+            + "\n\tItem Chance: 1/8"
+            + "\n\tCommon Gem Chance: 1/6"
+            + "\n\tUncommon Gem Chance: 1/25"
+            + "\n\tRare Gem Chance: 1/100"
+            + "\n\tChocolate Coin Chance: 1/10";
     }
 
     static String handleAllOrNothingStats(long server, long uid, int rollsToDouble) {

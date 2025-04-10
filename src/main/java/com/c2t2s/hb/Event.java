@@ -230,6 +230,7 @@ abstract class Event {
     protected int totalPayoutMultiplier = 0;
     protected boolean canUsersRejoin = true;
     protected boolean isInitialMessagePosted = false;
+    protected boolean acceptUserSelections = false;
 
     static final Duration EVENT_ENDING_REMINDER_WINDOW = Duration.ofMinutes(5);
     static final Duration NEW_EVENT_DELAY = Duration.ofMinutes(2);
@@ -420,9 +421,9 @@ abstract class Event {
             return "Unable to join event: Event has ended";
         } else if (!CasinoServerManager.hasEvent(server)) {
             return "Unable to join event: No event found";
-        } else if (joinSelections != null && !joinSelections.isEmpty()
+        } else if (!acceptUserSelections && joinSelections != null && !joinSelections.isEmpty()
                 && !joinSelections.containsKey(selection)) {
-            // If options was empty, any user input is valid
+            // If acceptUserSelections is true, any user input is valid
             return "Unable to join event: Unrecognized selection " + selection;
         } else if (participatingUsers.containsKey(uid) && !canUsersRejoin) {
             return "Unable to join event: You are already participating in this event!";
@@ -1312,6 +1313,7 @@ abstract class Event {
             super(EventType.PICKPOCKET, server, endTime, PICK_SELECTION);
             int totalTargets = HBMain.generateBoundedNormal(AVERAGE_PICK_TARGETS,
                 PICK_TARGETS_STD_DEV, MIN_PICK_TARGETS);
+            acceptUserSelections = true;
             details = fetchNewPickEventDetails(server, totalTargets);
             baseDetails = details;
         }
@@ -1319,6 +1321,7 @@ abstract class Event {
         PickEvent(long server, LocalDateTime endTime, int existingEventId) {
             super(EventType.PICKPOCKET, server, endTime, PICK_SELECTION);
             isInitialMessagePosted = true;
+            acceptUserSelections = true;
             details = fetchExistingPickEventDetails(existingEventId);
             baseDetails = details;
 
