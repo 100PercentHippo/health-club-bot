@@ -551,6 +551,7 @@ abstract class Event {
         private static final int RANDOM_WORKERS = 2;
         private static final String EMPTY_LOADING_BAR = "▱";
         private static final String FULL_LOADING_BAR = "▰";
+        private static final String[] NPC_NAMES = {"Bill", "Coin", "Buck", "Penny"};
 
         static class WorkEventDetails extends EventDetails {
             String location;
@@ -802,9 +803,10 @@ abstract class Event {
             messageFrames.add(createEmbedResponse(builder.toString() + "\n\n"
                 + statusBuilder.toString()));
 
+            String npc1Name = NPC_NAMES[HBMain.RNG_SOURCE.nextInt(NPC_NAMES.length)];
             int workertask = HBMain.RNG_SOURCE.nextInt(3);
-            builder.append("\nBill joins '").append(getTaskName(workertask))
-                .append("' and rolls ");
+            builder.append('\n').append(npc1Name).append(" joins '")
+                .append(getTaskName(workertask)).append("' and rolls ");
             messageFrames.add(createEmbedResponse(builder.toString() + "`??`\n"
                 + statusBuilder.toString()));
             int roll = HBMain.RNG_SOURCE.nextInt(100) + 1;
@@ -817,8 +819,13 @@ abstract class Event {
             messageFrames.add(createEmbedResponse(builder.toString() + "\n"
                 + statusBuilder.toString()));
 
+            String npc2Name = NPC_NAMES[HBMain.RNG_SOURCE.nextInt(NPC_NAMES.length)];
             workertask = HBMain.RNG_SOURCE.nextInt(3);
-            builder.append("\nCoin joins '").append(getTaskName(workertask))
+            builder.append('\n').append(npc2Name);
+            if (npc2Name.equals(npc1Name)) {
+                builder.append(" Jr.");
+            }
+            builder.append(" joins '").append(getTaskName(workertask))
                 .append("' and rolls ");
             messageFrames.add(createEmbedResponse(builder.toString() + "`??`"
                 + statusBuilder.toString()));
@@ -1268,6 +1275,9 @@ abstract class Event {
         static final int AVERAGE_PICK_TARGETS = 40;
         static final int PICK_TARGETS_STD_DEV = 10;
         private static final int POT_PER_PLAYER = 200;
+        private static final long DEFAULT_SELECTION_FILLER = -10;
+        private static final Map<Long, String> PICK_SELECTION = Map.ofEntries(
+            entry(DEFAULT_SELECTION_FILLER, "Type the desired number of targets (1-99)"));
 
         static class PickEventDetails extends EventDetails {
             int totalTargets;
@@ -1299,7 +1309,7 @@ abstract class Event {
         List<PickParticipant> participants = new ArrayList<>();
 
         PickEvent(long server, LocalDateTime endTime) {
-            super(EventType.PICKPOCKET, server, endTime);
+            super(EventType.PICKPOCKET, server, endTime, PICK_SELECTION);
             int totalTargets = HBMain.generateBoundedNormal(AVERAGE_PICK_TARGETS,
                 PICK_TARGETS_STD_DEV, MIN_PICK_TARGETS);
             details = fetchNewPickEventDetails(server, totalTargets);
@@ -1307,7 +1317,7 @@ abstract class Event {
         }
 
         PickEvent(long server, LocalDateTime endTime, int existingEventId) {
-            super(EventType.PICKPOCKET, server, endTime);
+            super(EventType.PICKPOCKET, server, endTime, PICK_SELECTION);
             isInitialMessagePosted = true;
             details = fetchExistingPickEventDetails(existingEventId);
             baseDetails = details;
@@ -1398,7 +1408,10 @@ abstract class Event {
         @Override
         EmbedResponse createPublicUserJoinMessage(User user, GachaCharacter character,
                 long selection) {
-            if (selection < 1 || selection > 99) {
+            if (selection == DEFAULT_SELECTION_FILLER) {
+                return createErrorResponse("Manually enter number of targets "
+                    + "(autocomplete cannot be used with PickEvents)");
+            } else if (selection < 1 || selection > 99) {
                 return createErrorResponse("Number of targets must be between 1 and 99");
             }
             PickParticipant participant = new PickParticipant(user, character, getStat(character),
@@ -1426,7 +1439,10 @@ abstract class Event {
         @Override
         EmbedResponse createPublicUserRejoinMessage(User user,
                 GachaCharacter character, long selection) {
-            if (selection < 1 || selection > 99) {
+            if (selection == DEFAULT_SELECTION_FILLER) {
+                return createErrorResponse("Manually enter number of targets "
+                    + "(autocomplete cannot be used with PickEvents)");
+            } else if (selection < 1 || selection > 99) {
                 return createErrorResponse("Number of targets must be between 1 and 99");
             }
 
@@ -2577,7 +2593,7 @@ abstract class Event {
                     }
                     return prize.description;
                 case CHARACTER:
-                    Gacha.awardCharacter(uid, uid, details.shiny);
+                    Gacha.awardCharacter(uid, GIVEAWAY_CHARACTER_CID, details.shiny);
                     return details.getShinyAdjective() + prize.description;
                 default:
                     return "";
