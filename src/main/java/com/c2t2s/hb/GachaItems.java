@@ -224,6 +224,10 @@ public class GachaItems {
             return bonuses[GEM_BONUS_INDEX];
         }
 
+        StatArray getBaseModifiers() {
+            return bonuses[INITIAL_BONUS_INDEX];
+        }
+
         List<String> applyGem(GachaGems.Gem gem) {
             GachaGems.GemApplicationResult applicationResult = gem.apply(this);
             gems.add(applicationResult.result);
@@ -268,7 +272,11 @@ public class GachaItems {
 
         public String getItemListDescription() {
             return getName() + "\n\t" + getModifiers().toString() + " "
-                + Math.max(gems.size(), abstractedGems) + "/" + gemSlots + " gems";
+                + getAppliedGemCount() + "/" + gemSlots + " gems";
+        }
+
+        public int getAppliedGemCount() {
+            return Math.max(gems.size(), abstractedGems);
         }
 
         public String getFullDescription() {
@@ -689,6 +697,78 @@ public class GachaItems {
         results.add(builder.toString());
 
         return new HBMain.MultistepResponse(results);
+    }
+
+    private static final int MINIMUM_GEM_REMOVAL_COST = 1000;
+    private static final int GEM_REMOVAL_COST_PER_TIER = 1000;
+
+    private static int getGemRemovalCost(Item item) {
+        return Math.max(MINIMUM_GEM_REMOVAL_COST, GEM_REMOVAL_COST_PER_TIER * item.getTier());
+    }
+
+    static HBMain.SingleResponse handleGemRemoveInitial(long uid, String iidString) {
+        long iid = Item.parseItemIdString(iidString);
+        if (iid < 0) {
+            return new HBMain.SingleResponse("Unable to parse item id");
+        }
+        Item item = fetchItem(uid, iid);
+        if (item == null) {
+            return new HBMain.SingleResponse("Unable to remove gems: Item " + iid + " not found");
+        }
+        int gemCount = item.getAppliedGemCount();
+        if (gemCount < 1) {
+            return new HBMain.SingleResponse("Unable to remove gems: Specified item has no gems");
+        }
+
+        int cost = getGemRemovalCost(item);
+        StringBuilder builder = new StringBuilder();
+        builder.append("Removing ").append(gemCount).append(" gem")
+            .append(Casino.getPluralSuffix(gemCount)).append(" from ").append(item.getName())
+            .append(" will cost ").append(cost).append(" coins\nThe stats will change from ")
+            .append(item.getModifiers()).append(" to ").append(item.getBaseModifiers());
+        return new HBMain.SingleResponse(builder.toString(),
+            ButtonRows.makeRemoveGem(cost, iidString));
+    }
+
+    static String handleGemRemoveFollowup(long uid, String iidString) {
+        long iid = Item.parseItemIdString(iidString);
+        if (iid < 0) {
+            return "Unable to parse item id";
+        }
+        Item item = fetchItem(uid, iid);
+        if (item == null) {
+            return "Unable to remove gems: Item " + iid + " not found";
+        } else if (item.getAppliedGemCount() < 1) {
+            return "Unable to remove gems: Specified item has no gems";
+        }
+
+        int cost = getGemRemovalCost(item);
+        long balance = Casino.checkBalance(uid);
+        if (balance < 0) {
+            return "Unable to remove gems: Balance check failed or was negative (" + balance +")";
+        } else if (balance < cost) {
+            return "Unbale to remove gems: Your current balance of " + balance
+                + " is not enough to cover that";
+        }
+
+        balance = Casino.takeMoney(uid, cost);
+        StringBuilder builder = new StringBuilder();
+        builder.append("Spent ").append(cost).append(" coins to remove gems:\n\n")
+            .append(item.getItemListDescription()).append("\nIs now:\n");
+        item.removeAllGems();
+        // RemoveAllGems doesn't perfectly update the stats (per a comment)
+        // but it does update the db
+        item = fetchItem(uid, iid);
+        if (item == null) {
+            return "Removed gems, but encountered a DB error formatting output";
+        }
+        builder.append(item.getItemListDescription()).append("\n\nYour balance is now ")
+            .append(balance);
+        return builder.toString();
+    }
+
+    static String handleGemRemoveCancel() {
+        return "Successfully did nothing";
     }
 
     static List<HBMain.AutocompleteStringOption> handleItemAutocomplete(long uid, String partialName) {

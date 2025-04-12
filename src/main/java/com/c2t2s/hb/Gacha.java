@@ -714,18 +714,18 @@ class Gacha {
     }
 
     // Item Chance: 1/8
-    // Common Gem Chance: 1/6
-    // Uncommon Gem Chance: 1/25
-    // Rare Gem Chance: 1/100
-    // Chocolate Coin Chance: 1/10
+    // Common Gem Chance: 1/3
+    // Uncommon Gem Chance: 1/12
+    // Rare Gem Chance: 1/50
+    // Chocolate Coin Chance: 1/7
     // Extra Pulls Chance : 1/1000
     // Then adjust for the fact filler makes up ~83.5% of pulls
     private static final double FILLER_ADJUSTMENT = 1.198;
     private static final double ITEM_CHANCE = 0.125 * FILLER_ADJUSTMENT;
-    private static final double COMMON_GEM_CHANCE = 0.167 * FILLER_ADJUSTMENT;
-    private static final double UNCOMMON_GEM_CHANCE = 0.04 * FILLER_ADJUSTMENT;
-    private static final double RARE_GEM_CHANCE = 0.01 * FILLER_ADJUSTMENT;
-    private static final double CHOCOLATE_COIN_CHANCE = 0.1 * FILLER_ADJUSTMENT;
+    private static final double COMMON_GEM_CHANCE = 0.333 * FILLER_ADJUSTMENT;
+    private static final double UNCOMMON_GEM_CHANCE = 0.083 * FILLER_ADJUSTMENT;
+    private static final double RARE_GEM_CHANCE = 0.02 * FILLER_ADJUSTMENT;
+    private static final double CHOCOLATE_COIN_CHANCE = 0.143 * FILLER_ADJUSTMENT;
     private static final double EXTRA_PULLS_CHANCE = 0.001 * FILLER_ADJUSTMENT;
 
     private static final double ITEM_ROLL_LIMIT = ITEM_CHANCE;

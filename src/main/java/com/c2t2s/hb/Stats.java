@@ -307,10 +307,10 @@ class Stats {
             + "\n\tShiny Chance: 1/20 for any awarded character"
             + "\n\nNon-coin Filler Odds:"
             + "\n\tItem Chance: 1/8"
-            + "\n\tCommon Gem Chance: 1/6"
-            + "\n\tUncommon Gem Chance: 1/25"
-            + "\n\tRare Gem Chance: 1/100"
-            + "\n\tChocolate Coin Chance: 1/10";
+            + "\n\tCommon Gem Chance: 1/3"
+            + "\n\tUncommon Gem Chance: 1/12"
+            + "\n\tRare Gem Chance: 1/50"
+            + "\n\tChocolate Coin Chance: 1/7";
     }
 
     static String handleAllOrNothingStats(long server, long uid, int rollsToDouble) {

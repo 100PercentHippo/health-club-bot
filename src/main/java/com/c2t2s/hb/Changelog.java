@@ -5,7 +5,7 @@ class Changelog {
     // Hide default constructor
     private Changelog() {}
 
-    private static final String VERSION_STRING = "4.0.7.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "4.1.0.0"; //Update this in pom.xml too when updating
 
     static String getVersion() {
         return VERSION_STRING;
@@ -48,6 +48,34 @@ class Changelog {
 
     static String getChangelog(String version) {
         switch (version) {
+            case "4.0.1-4.1.0":
+                return "Changelog for 4.0.1-4.1.0:"
+                    + "\n4.1.0:"
+                    + "\n- Added `/gacha gem remove` allowing you to remove gems from an item"
+                    + "\n- It costs coins, scaling with the item's tier, and the gems are not returned"
+                    + "\n- Doubled the chance of all gems types from pulls"
+                    + "\n- Reduced the payout from FishEvents (again)"
+                    + "\n4.0.7:"
+                    + "\n- Fix PickEvents rejecting all selections"
+                    + "\n- Add pull filler odds to `/stats`"
+                    + "\n4.0.6:"
+                    + "\n- PickEvents now provide an autocomplete selection reminding of the expected input"
+                    + "\n- More NPCs have joined the roster for WorkEvents"
+                    + "\n- GiveawayEvents now correctly award the character reward"
+                    + "\n4.0.5:"
+                    + "\n- FishEvents now correctly apply the reduced roll requirement based on boat size"
+                    + "\n- Reduced the payout from FishEvents"
+                    + "\n4.0.4:"
+                    + "\n- `/gacha item list` now correctly shows socketed gem count"
+                    + "\n4.0.3:"
+                    + "\n- SlotsEvents will now correctly persist if the server is restarted"
+                    + "\n4.0.2:"
+                    + "\n- PickEvent resolution message will now list the correct selection for each user"
+                    + "\n4.0.1:"
+                    + "\n- Character stats are now nonzero"
+                    + "\n- RobEvents will no longer sometimes be missing autocomplete options"
+                    + "\n- First time `/claim` should no longer cause an error"
+                    + "\n- Equipped items will no longer be listed twice in `/gacha item list`";
             default:
             case "4.0.0":
                 return "Changelog:\n" + VERSION_STRING + getLatestReleaseString();

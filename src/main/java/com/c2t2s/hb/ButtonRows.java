@@ -45,4 +45,8 @@ class ButtonRows {
     static final ActionRow WORKOUT_UNDO_BREAK = ActionRow.of(Button.secondary("workout.restore", "Undo"));
     static final ActionRow WORKOUT_UNDO_RESTORE = ActionRow.of(Button.secondary("workout.break", "Undo"));
 
+    static ActionRow makeRemoveGem(int cost, String iid) {
+        return ActionRow.of(Button.secondary("gacha gem remove.cancel|", "Nevermind"),
+            Button.danger("gacha gem remove.remove|" + iid, "Remove gems (" + cost + "coins)"));
+    }
 }

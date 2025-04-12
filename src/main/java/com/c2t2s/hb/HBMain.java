@@ -432,6 +432,7 @@ public class HBMain {
     private static final String GACHA_COMMAND_ITEM_OPTION = "item";
     private static final String APPLY_GEM_GEM_OPTION = "gem";
     private static final String LIST_GEMS_COMMAND = "gacha gem list";
+    private static final String REMOVE_GEMS_COMMAND = "gacha gem remove";
     private static final String GACHA_EVENT_JOIN = "gacha event join";
     private static final String GACHA_COMMAND_CHARACTER_OPTION = "character";
             static final String GACHA_EVENT_PREFIX = "gacha event";
@@ -536,6 +537,8 @@ public class HBMain {
             entry(APPLY_GEM_COMMAND, new MultistepCasinoCommand(
                 i -> GachaItems.handleApplyGem(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
                     i.getArgumentStringValueByIndex(1).get()))),
+            entry(REMOVE_GEMS_COMMAND, new ImmediateCasinoCommand(
+                i -> GachaItems.handleGemRemoveInitial(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get()))),
             entry(GACHA_ITEM_EQUIP_COMMAND, new SimpleCasinoCommand(
                 i -> Gacha.handleGiveItem(i.getUser().getId(), i.getArgumentStringValueByIndex(0).get(),
                     i.getArgumentStringValueByIndex(1).get()))),
@@ -646,6 +649,9 @@ public class HBMain {
                 case GACHA_EVENT_PREFIX:
                     handleGachaEventButtonPress(interaction);
                     break;
+                case REMOVE_GEMS_COMMAND:
+                    handleGachaGemRemoveButtonPress(interaction);
+                    break;
                 default:
                     System.out.println("Encountered unexpected interaction prefix: " + prefix + "\nFull id: " + interaction.getCustomId());
             }
@@ -678,6 +684,10 @@ public class HBMain {
                         stringOptions = GachaItems.handleGemAutocomplete(interaction.getUser().getId(),
                             interaction.getFocusedOption().getStringValue().orElse(""));
                     }
+                    break;
+                case REMOVE_GEMS_COMMAND:
+                    stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
+                        interaction.getFocusedOption().getStringValue().orElse(""));
                     break;
                 case GACHA_ITEM_INFO_COMMAND:
                     stringOptions = GachaItems.handleItemAutocomplete(interaction.getUser().getId(),
@@ -850,6 +860,30 @@ public class HBMain {
             interaction.getServer().get().getId())), interaction, true);
     }
 
+    private static void handleGachaGemRemoveButtonPress(MessageComponentInteraction interaction) {
+        String fullCommand = interaction.getCustomId();
+        int index = fullCommand.indexOf('|');
+        if (index < 0) {
+            System.out.println("Encountered unexpected gacha gem remove button press: "
+                + fullCommand);
+            return;
+        }
+        switch (fullCommand.substring(0, index)) {
+            case "gacha gem remove.cancel":
+                respondImmediately(new SingleResponse(GachaItems.handleGemRemoveCancel()), interaction);
+                return;
+            case "gacha gem remove.remove":
+                respondImmediately(new SingleResponse(GachaItems.handleGemRemoveFollowup(
+                    interaction.getUser().getId(), fullCommand.substring(index + 1))),
+                    interaction);
+                return;
+            default:
+                System.out.println(String.format("Encountered unexpected roll command: %s (full command %s)",
+                    fullCommand.substring(0, index), fullCommand));
+                return;
+        }
+    }
+
     private static String handleRegisterChannel(long uid, Optional<Server> serverOptional,
             Optional<TextChannel> channelOptional, long subcommand) {
         if (!serverOptional.isPresent() || !channelOptional.isPresent()) {
@@ -893,7 +927,8 @@ public class HBMain {
         builders.add(new SlashCommandBuilder().setName(CHANGELOG_COMMAND)
             .setDescription("Print recent Casino Bot changelog").setEnabledInDms(true)
             .addOption(SlashCommandOption.createWithChoices(SlashCommandOptionType.STRING, "Versions", "Changelog version range", false,
-                Arrays.asList(SlashCommandOptionChoice.create("4.0.0", "4.0.0"),
+                Arrays.asList(SlashCommandOptionChoice.create("4.0.1-4.1.0", "4.0.1-4.1.0"),
+                    SlashCommandOptionChoice.create("4.0.0", "4.0.0"),
                     SlashCommandOptionChoice.create("3.2.0-3.3.1", "3.2.0-3.3.1"),
                     SlashCommandOptionChoice.create("3.1.8-3.1.11", "3.1.8-3.1.11"),
                     SlashCommandOptionChoice.create("3.1.0-3.1.7", "3.1.0-3.1.7"),
@@ -978,7 +1013,9 @@ public class HBMain {
                 Arrays.asList(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "list", "List your gems"),
                     SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "apply", "Apply a gem to an item",
                         Arrays.asList(SlashCommandOption.createStringOption(APPLY_GEM_GEM_OPTION, "Which gem to apply", true, true),
-                            SlashCommandOption.createStringOption(GACHA_COMMAND_ITEM_OPTION, "Item to apply gem to", true, true))))))
+                            SlashCommandOption.createStringOption(GACHA_COMMAND_ITEM_OPTION, "Item to apply gem to", true, true))),
+                    SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "remove", "Remove all the gems from an item",
+                        Arrays.asList(SlashCommandOption.createStringOption(GACHA_COMMAND_ITEM_OPTION, "Item to remove gems from", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pull", "Try to win a gacha character!",
                 Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true),
                 SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 25", false, 1, 25))))

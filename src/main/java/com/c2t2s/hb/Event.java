@@ -481,7 +481,7 @@ abstract class Event {
         output.append(' ');
         output.append(character.getTotalStatArray().printStat(type.assocatedStat));
         output.append("\nYour selection was: ");
-        if (joinSelections != null && !joinSelections.isEmpty()) {
+        if (!acceptUserSelections && joinSelections != null && !joinSelections.isEmpty()) {
             output.append(joinSelections.get(selection));
         } else {
             output.append(selection);
@@ -875,8 +875,8 @@ abstract class Event {
         private static final int BASE_HARD_ROLL_REQUIREMENT = 110;
         private static final int ROLL_REDUCTION_PER_PARTICIPANT = 10;
         private static final int BASE_COMMON_FISH_VALUE = 100;
-        private static final int BASE_UNCOMMON_FISH_VALUE = 250;
-        private static final int BASE_RARE_FISH_VALUE = 500;
+        private static final int BASE_UNCOMMON_FISH_VALUE = 200;
+        private static final int BASE_RARE_FISH_VALUE = 300;
         private static final Map<Long, String> selectionMap =
             Map.ofEntries(entry(BOAT_1_VALUE, "Boat 1"),
                 entry(BOAT_2_VALUE, "Boat 2"),
