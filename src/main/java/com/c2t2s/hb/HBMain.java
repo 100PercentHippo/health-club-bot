@@ -1076,6 +1076,7 @@ public class HBMain {
                 + "\n\t`/" + GACHA_ITEM_REROLL_COMMAND + "` Reroll 3 items with a shared trait into a new item"
                 + "\n\t`/" + LIST_GEMS_COMMAND + "` List your gems"
                 + "\n\t`/" + APPLY_GEM_COMMAND + "` Socket a gem into an item"
+                + "\n\t`/" + REMOVE_GEMS_COMMAND + "` Remove the gems from an item"
                 + "\n\t`/" + GACHA_EVENT_JOIN + "` Join the running gacha event";
         }
         return "Casino Bot Version " + Changelog.getVersion()

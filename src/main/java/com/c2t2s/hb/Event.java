@@ -1856,18 +1856,18 @@ abstract class Event {
                 messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
                 StringBuilder payoutString = new StringBuilder(
                     Integer.toString(TOO_FEW_PLAYERS_PAYOUT));
-                payoutBlock.setBody(Casino.repeatString(payoutString.toString(),
+                payoutBlock.setBody(Casino.repeatString(payoutString.toString() + "\n",
                     participants.size()));
                 messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
                 payoutString.append(" x ");
                 payoutString.append(Stats.twoDecimals.format(getPayoutMultiplier()));
-                payoutBlock.setBody(Casino.repeatString(payoutString.toString(),
+                payoutBlock.setBody(Casino.repeatString(payoutString.toString() + "\n",
                     participants.size()));
                 messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
                 payoutString.append(" = ");
                 long finalPayout = (long)(TOO_FEW_PLAYERS_PAYOUT * getPayoutMultiplier());
                 payoutString.append(finalPayout);
-                payoutBlock.setBody(Casino.repeatString(payoutString.toString(),
+                payoutBlock.setBody(Casino.repeatString(payoutString.toString() + "\n",
                     participants.size()));
                 messageFrames.add(createEmbedResponse(builder.toString(), blocks, true));
 

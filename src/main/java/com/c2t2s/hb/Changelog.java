@@ -5,7 +5,7 @@ class Changelog {
     // Hide default constructor
     private Changelog() {}
 
-    private static final String VERSION_STRING = "4.1.0.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "4.1.0.1"; //Update this in pom.xml too when updating
 
     static String getVersion() {
         return VERSION_STRING;

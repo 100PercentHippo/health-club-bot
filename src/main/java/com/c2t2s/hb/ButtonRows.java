@@ -47,6 +47,6 @@ class ButtonRows {
 
     static ActionRow makeRemoveGem(int cost, String iid) {
         return ActionRow.of(Button.secondary("gacha gem remove.cancel|", "Nevermind"),
-            Button.danger("gacha gem remove.remove|" + iid, "Remove gems (" + cost + "coins)"));
+            Button.danger("gacha gem remove.remove|" + iid, "Remove gems (" + cost + " coins)"));
     }
 }
