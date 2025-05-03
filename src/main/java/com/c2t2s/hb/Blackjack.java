@@ -282,7 +282,7 @@ class Blackjack {
             if (!isGameSplit()) {
                 return activeHand;
             }
-            return new BlackJackHand(rawCards.substring(splitIndex));
+            return new BlackJackHand(rawCards.substring(0, splitIndex));
         }
 
         private BlackJackHand getSecondSplitHand() {

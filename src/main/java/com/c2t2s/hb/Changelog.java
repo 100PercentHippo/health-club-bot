@@ -5,7 +5,7 @@ class Changelog {
     // Hide default constructor
     private Changelog() {}
 
-    private static final String VERSION_STRING = "4.1.0.1"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "4.1.1.0"; //Update this in pom.xml too when updating
 
     static String getVersion() {
         return VERSION_STRING;
@@ -50,6 +50,9 @@ class Changelog {
         switch (version) {
             case "4.0.1-4.1.0":
                 return "Changelog for 4.0.1-4.1.0:"
+                    + "\n4.1.1:"
+                    + "\n- Failed PickEvents no longer repeatedly halve the target count during payout"
+                    + "\n- Split blackjack hands will no longer resolve the second hand twice"
                     + "\n4.1.0:"
                     + "\n- Added `/gacha gem remove` allowing you to remove gems from an item"
                     + "\n- It costs coins, scaling with the item's tier, and the gems are not returned"

@@ -1542,7 +1542,7 @@ abstract class Event {
                     userTargets.remove(participant.joinOrder);
                     userTargets.add(participant.joinOrder,
                         "`" + TWO_DIGITS.format(participant.targets) + "`");
-                    if (totalTargetsSelected > details.totalTargets) {
+                    if (!details.targetsExceeded && totalTargetsSelected > details.totalTargets) {
                         description = "Total targets: ~~" + details.totalTargets + "~~ "
                             + (details.totalTargets / 2) + ". Too many pockets picked! Half the "
                             + "targets ran away\nCoins per target: " + coinsPerTarget;
