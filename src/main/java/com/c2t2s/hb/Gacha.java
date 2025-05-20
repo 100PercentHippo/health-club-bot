@@ -1349,7 +1349,7 @@ class Gacha {
         String query = getPartialCharacterQuery(uid) + " WHERE uid = " + uid;
         if (onlyWithItems) { query += " AND iid IS NOT NULL"; }
         if (foil >= 0) { query += " AND foil = " + foil; }
-        query += " AND LOWER(name) LIKE LOWER(?) ORDER BY rarity DESC, foil DESC, name ASC;";
+        query += " AND LOWER(name) LIKE LOWER(?) ORDER BY rarity DESC, foil DESC, name ASC LIMIT 25;";
         return CasinoDB.executeValidatedQueryWithReturn(query, results -> {
             List<GachaCharacter> output = new ArrayList<>();
             while (results.next()) {
