@@ -5,7 +5,7 @@ class Changelog {
     // Hide default constructor
     private Changelog() {}
 
-    private static final String VERSION_STRING = "4.1.1.1"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "4.1.2.0"; //Update this in pom.xml too when updating
 
     static String getVersion() {
         return VERSION_STRING;
@@ -49,7 +49,9 @@ class Changelog {
     static String getChangelog(String version) {
         switch (version) {
             case "4.0.1-4.1.0":
-                return "Changelog for 4.0.1-4.1.0:"
+                return "Changelog for 4.0.1-4.2.0:"
+                    + "\n4.1.2:"
+                    + "\n- Reduced maximum number of simultaneous pulls to 20"
                     + "\n4.1.1:"
                     + "\n- Failed PickEvents no longer repeatedly halve the target count during payout"
                     + "\n- Split blackjack hands will no longer resolve the second hand twice"

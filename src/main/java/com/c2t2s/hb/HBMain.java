@@ -1018,7 +1018,7 @@ public class HBMain {
                         Arrays.asList(SlashCommandOption.createStringOption(GACHA_COMMAND_ITEM_OPTION, "Item to remove gems from", true, true))))))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pull", "Try to win a gacha character!",
                 Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to pull on", true, true),
-                SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 25", false, 1, 25))))
+                SlashCommandOption.createLongOption("pulls", "Number of pulls to use, default 1, max 20", false, 1, 20))))
             .addOption(SlashCommandOption.create(SlashCommandOptionType.SUB_COMMAND, "pulls", "Check how many gacha pulls you have"))
             .addOption(SlashCommandOption.createWithOptions(SlashCommandOptionType.SUB_COMMAND, "pity", "Check your gacha pity",
                 Arrays.asList(SlashCommandOption.createLongOption("banner", "Which banner to view", true, true))))
