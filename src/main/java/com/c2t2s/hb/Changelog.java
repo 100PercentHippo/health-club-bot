@@ -5,7 +5,7 @@ class Changelog {
     // Hide default constructor
     private Changelog() {}
 
-    private static final String VERSION_STRING = "4.1.2.0"; //Update this in pom.xml too when updating
+    private static final String VERSION_STRING = "4.1.3.0"; //Update this in pom.xml too when updating
 
     static String getVersion() {
         return VERSION_STRING;
@@ -50,6 +50,8 @@ class Changelog {
         switch (version) {
             case "4.0.1-4.1.0":
                 return "Changelog for 4.0.1-4.2.0:"
+                    + "\n4.1.3:"
+                    + "\n- Gem removal preview now correctly applies item modifiers"
                     + "\n4.1.2:"
                     + "\n- Reduced maximum number of simultaneous pulls to 20"
                     + "\n4.1.1:"

@@ -183,8 +183,10 @@ public class GachaItems {
         abstract void addRandomStat(int amount, boolean initial);
         abstract void subtractRandomStat(int amount, boolean initial);
 
-        abstract int getModifier(ITEM_STAT stat);
+                 int getModifier(ITEM_STAT stat) { return getModifier(stat, false); }
+        abstract int getModifier(ITEM_STAT stat, boolean withoutGems);
         abstract StatArray getModifiers();
+        abstract StatArray getModifiersWithoutGems();
         abstract double getBonusModifier();
         abstract int getBonusModifierContribution(int baseModifier);
         abstract int getTier();
@@ -548,9 +550,11 @@ public class GachaItems {
         }
 
         @Override
-        int getModifier(ITEM_STAT stat) {
-            int modifier = bonuses[INITIAL_BONUS_INDEX].getStat(stat)
-                + bonuses[GEM_BONUS_INDEX].getStat(stat);
+        int getModifier(ITEM_STAT stat, boolean withoutGems) {
+            int modifier = bonuses[INITIAL_BONUS_INDEX].getStat(stat);
+            if (!withoutGems) {
+                modifier += bonuses[GEM_BONUS_INDEX].getStat(stat);
+            }
             return modifier + (stat == bonusStat ? getBonusModifierContribution(modifier) : 0);
         }
 
@@ -559,6 +563,15 @@ public class GachaItems {
             return new StatArray(getModifier(ITEM_STAT.fromIndex(0)),
                 getModifier(ITEM_STAT.fromIndex(1)), getModifier(ITEM_STAT.fromIndex(2)),
                 getModifier(ITEM_STAT.fromIndex(3)), getModifier(ITEM_STAT.fromIndex(4)));
+        }
+
+        @Override
+        StatArray getModifiersWithoutGems() {
+            return new StatArray(getModifier(ITEM_STAT.fromIndex(0), true),
+                getModifier(ITEM_STAT.fromIndex(1), true),
+                getModifier(ITEM_STAT.fromIndex(2), true),
+                getModifier(ITEM_STAT.fromIndex(3), true),
+                getModifier(ITEM_STAT.fromIndex(4), true));
         }
 
         @Override
@@ -725,7 +738,7 @@ public class GachaItems {
         builder.append("Removing ").append(gemCount).append(" gem")
             .append(Casino.getPluralSuffix(gemCount)).append(" from ").append(item.getName())
             .append(" will cost ").append(cost).append(" coins\nThe stats will change from ")
-            .append(item.getModifiers()).append(" to ").append(item.getBaseModifiers());
+            .append(item.getModifiers()).append(" to ").append(item.getModifiersWithoutGems());
         return new HBMain.SingleResponse(builder.toString(),
             ButtonRows.makeRemoveGem(cost, iidString));
     }
